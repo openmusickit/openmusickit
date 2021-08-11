@@ -59,7 +59,7 @@ defaults:
       tooltip: true
 
 sidebars: [home_sidebar]
-baseurl: /
+baseurl: /openmusickit/
 plugins:
     - jekyll-remote-theme
     
