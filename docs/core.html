@@ -29,6 +29,48 @@ nb_path: "00_core.ipynb"
 </div>
     {% endraw %}
 
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%html</span>
+<span class="p">&lt;</span><span class="nt">style</span><span class="p">&gt;</span>
+<span class="p">.</span><span class="nc">output_stderr</span> <span class="p">{</span>
+    <span class="k">display</span><span class="p">:</span> <span class="kc">none</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p">&lt;/</span><span class="nt">style</span><span class="p">&gt;</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+<style>
+.output_stderr {
+    display: none;
+}
+</style>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p><strong>ABSTRACT:</strong> Current methods for encoding musical pitch information are either lossy or not mathematically consistent and useful. This module explains why that is, demonstrates an novel, vector-based approach to music pitch encoding which is non-lossy as well as mathematically useful and consistent, and implements the core algorithms of this method using Python primitive types (tuples and integers) and simple arithmetic operations.</p>
@@ -41,13 +83,265 @@ nb_path: "00_core.ipynb"
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Current-problems-in-pitch-encoding">Current problems in pitch encoding<a class="anchor-link" href="#Current-problems-in-pitch-encoding"> </a></h2><p>The majority of pitch encoding schemas assume an equal-tempered, twelve-tone scale in which members of so-called "enharmonic" pitch sets (such as {G$\flat$, F$\sharp$} ) are treated as if they were the same note.</p>
 <p>The typical encoding is:</p>
-<blockquote><p>0 = C (and B$\sharp$)<br>
-1 = D$\flat$, C$\sharp$</p>
+<blockquote><p>0  = C (and B$\sharp$)<br>
+1  = D$\flat$, C$\sharp$<br>
+2  = D<br>
+3  = E$\flat$, D$\sharp$<br>
+4  = E (and F$\flat$)<br>
+5  = F (and E$\sharp$)<br>
+6  = G$\flat$, F$\sharp$<br>
+7  = G<br>
+8  = A$\flat$, G$\sharp$<br>
+9  = A<br>
+10 = B$\flat$, A$\sharp$<br>
+11 = B (and C$\flat$)</p>
 </blockquote>
+<p>The problems with such an encoding should be obvious to a reasonably proficient musician.</p>
+<h3 id="Chordal-analysis-problems">Chordal analysis problems<a class="anchor-link" href="#Chordal-analysis-problems"> </a></h3><p>The particular quality and function of a harmonic structure (a chord, for example) is based on the quality of the intervals from the root. For example, in a simple C Major triad, the quality of the third (E$\natural$ or E$\flat$) and the fifth (G$\natural$, G$\sharp$, G$\flat$). One can show the result of various combination in a simple chart:```C       Gb     G      G#</p>
+<p>Eb      Cdim   Cmin   N/A</p>
+<p>E       N/A    Cmaj   Caug
+```</p>
+<p>The chord {C, E$\flat$, G$\flat$} is <em>obviously</em> a C diminished triad.
+But how should one interpret any of the following?</p>
+<ul>
+<li>{C, D$\sharp$, G$\flat$} - Cdim5$\sharp$9 ?</li>
+<li>{C, E$\flat$, F$\sharp$} - Cmin Add$\sharp$4 ?</li>
+<li>{C, D$\sharp$, F$\sharp$} - D$\sharp$dim$\flat$7/C (third inversion with an omitted fifth) ?</li>
+</ul>
+<p>These analyses don't make sense because the letter names communicate the wrong information; three halfsteps up from the root of a chord is either minor third or it is an augmented second. And which one it is matters to how a chord is understood.</p>
+<p>Not incidentally, one of the "N/A" (not applicable) chords present an interesting example as well.</p>
+<p>{C, E$\flat$, G$\sharp$} looks like some kind of hard-to-analyse C-root triad. But respelling {0, 2, 8} <em>properly</em> yields it's more obvious analysis. {G$\sharp$, B$\sharp$, D$\sharp$} is a simple G$\sharp$ major triad.</p>
+<p>Unless it is the even simpler A$\flat$ major triad.</p>
+<p>(Making sense of {C, E, G$\flat$} is left as an exercise for the reader.)</p>
+<h3 id="Progression-analysis-problems">Progression analysis problems<a class="anchor-link" href="#Progression-analysis-problems"> </a></h3><p>This is simply an extension of the problem addressed above in chordal analysis.</p>
+<p>Given an integer-encoded note set {1, 3, 7, 10}, how should this chord be analysed?</p>
+<p>Setting aside the difficulty in determinging which of those is the root of the chord (4), what set of rules would definitively choose between two options:</p>
+<ul>
+<li>D$\sharp$7</li>
+<li>E$\flat$7</li>
+</ul>
+<p>Consider the following two progressions:</p>
+<blockquote><p>{1, 3, 7, 10} -&gt; {0, 3, 6, 8}<br>
+{1, 3, 7, 10} -&gt; {1, 4, 7, 11}</p>
+</blockquote>
+<p>Showing what each scalar value could represent, we have:&gt; {{D$\flat$, C$\sharp$}, {E$\flat$, D$\sharp$}, {G}, {B$\flat$, A$\sharp$}} -&gt; {{C}, {E$\flat$, D$\sharp$}, {G$\flat$, F$\sharp$}, {A$\flat$, G$\sharp$}}  &gt; {{D$\flat$, C$\sharp$}, {E$\flat$, D$\sharp$}, {G}, {B$\flat$, A$\sharp$}} -&gt; {{D$\flat$, C$\sharp$}, {E}, {G}, {B}}</p>
+<p>Can you write an algorithm that successfully analyses these two progressions? Could you even write an algorithm that would successfully determine which member of each enharmonic pair is the "correct" one?</p>
+<h3 id="Performance-problems">Performance problems<a class="anchor-link" href="#Performance-problems"> </a></h3><h4 id="Sightreading-and-improvisation">Sightreading and improvisation<a class="anchor-link" href="#Sightreading-and-improvisation"> </a></h4><p>When a performer sees {D, F$\sharp$, A, C$\sharp$) in a score, Dmaj7 is easily understood. They know where to place their hands on the instrument, what additional notes or scales can be played, and how the chord relates to the key of the piece as a whole.</p>
+<p>On the other hand {D, G$\flat$, A, D$\flat$} is simply confusing. It is not immediately clear what is intended. It is a mistake.</p>
+<h4 id="Continuous-and-non-tempered-tuning">Continuous and non-tempered tuning<a class="anchor-link" href="#Continuous-and-non-tempered-tuning"> </a></h4><p>Piano keyboards treat G$\flat$ and F$\sharp$ as the same note because they have equalized (or "tempered") the tuning across twelve notes in an octave. This is neccessary in order to have finite and reasonable number of fixed, discreet pitches. However, many instruments (notably the viols and the human voice) do not rely on quantized intervals but can tune continuously across the available pitch space. To a violin player, G$\flat$ and F$\sharp$ <em>really are</em> different notes, which will be tuned differently. They are not simply two different ways to write the same note.</p>
+<p>This is, ultimately, the primary problem...</p>
+<h3 id="Ontological-problem">Ontological problem<a class="anchor-link" href="#Ontological-problem"> </a></h3><p>C$\sharp$ and D$\flat$ are different notes.</p>
+<p>A key on a piano (or MIDI note ID) is one particular representation of a note, but it isn't the note. An encoding system that represents piano keys is now two steps removed from the essence of a note, a representation of a representation.</p>
 
 </div>
 </div>
 </div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><strong>The goal of a musical encoding should be to represent music in a way that preserves as much semantic meaning as possible. You cannot teach a computer how to reason about music if you give it less information than a first year music student would get.</strong></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Tonal-Vector:-musical-pitches-as-two-tuples">Tonal Vector: musical pitches as two-tuples<a class="anchor-link" href="#Tonal-Vector:-musical-pitches-as-two-tuples"> </a></h2><p>The identification of pitchclass name can be accomplished with two pieces of information:</p>
+<ul>
+<li>it's "diatonic" value (that is, what letter name it has)</li>
+<li>it's "chromatic" value (that is, what keyboard key it is)</li>
+</ul>
+<p>Every pitchclass name can then be translated into a tuple of the form <code>(d, c)</code>.
+This form shall be called a <code>TonalVector</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Note: Besides <em>diatonic</em> and <em>chromatic</em>, you may also think of these as <em>discrete</em> and <em>continuous</em>. The present implementation assumes <code>c</code> is an integer. However, a decimal number could be used to represent microtonal pitches or just intonation.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><img src="/openmusickit/images/keyboard.png" alt="keyboard"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Any pitchclass name based on <strong>C</strong> (from C-doubleflat to C-doublesharp) would have a <code>d</code> value of <code>0</code>, but they would be distinguished by their <code>c</code> value:</p>
+<ul>
+<li>C$\flat$ = <code>(0, 11)</code></li>
+<li>C$\natural$ = <code>(0,  0)</code></li>
+<li>C$\sharp$ = <code>(0,  1)</code></li>
+</ul>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Intervallic-vectors">Intervallic vectors<a class="anchor-link" href="#Intervallic-vectors"> </a></h3><p>Each of these two-tuples can also be used to identify the abstract interval, as measured from an origin of <code>(0, 0)</code>.</p>
+<p>For example:</p>
+<ul>
+<li>E = <code>(2, 4)</code></li>
+<li>E is a Major Third up from C.</li>
+<li>Therefore <code>(2, 4)</code> also represents any major third.</li>
+</ul>
+<p>This can be used as a vector for addition and subtraction:</p>
+<p>What is a Major Third up from E$\flat$?</p>
+<ul>
+<li>Major Third = <code>(2, 4)</code></li>
+<li>E$\flat$ = <code>(2, 3)</code></li>
+<li><code>(2, 3) + (2, 4) = (4, 7)</code></li>
+<li><code>(4, 7)</code> = G</li>
+</ul>
+<p>What is a Minor Second down from F?</p>
+<ul>
+<li>Minor Second = <code>(1, 1)</code></li>
+<li>F = <code>(3, 5)</code></li>
+<li><code>(3, 5) - (1, 1) = (2, 4)</code></li>
+<li><code>(2, 4)</code> = E</li>
+</ul>
+<p>What is the interval between D and A$\flat$?</p>
+<ul>
+<li>A$\flat$ = <code>(5, 8)</code></li>
+<li>D = <code>(1, 2)</code></li>
+<li><code>(5, 8) - (1, 2) = (4, 6)</code></li>
+<li><code>(4, 6)</code> = Diminished Fifth</li>
+</ul>
+<h4 id="Modulo">Modulo<a class="anchor-link" href="#Modulo"> </a></h4><p>Obviously, intervals can be built which cross the B/C octave divide. The implementation below takes this into account by using modulo arithmetic to keep the result of operations within the <code>(0:6)</code> and <code>(0:11)</code> ranges. Special care must be taken to account for C$\flat$ and B$\sharp$.</p>
+<h4 id="Octave">Octave<a class="anchor-link" href="#Octave"> </a></h4><p>A third scalar can be added to the Tonal Vector, qualifying its octave. This system assigns Middle C to <code>(0, 0, 0)</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Operations-on-Tonal-Vectors">Operations on Tonal Vectors<a class="anchor-link" href="#Operations-on-Tonal-Vectors"> </a></h2><p>While the <code>TonalVector</code> class provides a "smart" representation of the Tonal Vector, including arithmetic operations, translations from conventional pitch names to vectors, and other useful features, it is possible to represent the Tonal Vector idea as a raw vector of scalars. Therefore operations on Tonal Vectors are implemented here as pure functions.</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="tonal_sum" class="doc_header"><code>tonal_sum</code><a href="https://github.com/openmusickit/openmusickit/tree/master/openmusickit/tonal_algebra.py#L7" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>tonal_sum</code>(<strong><code>x</code></strong>, <strong><code>y</code></strong>)</p>
+</blockquote>
+<p>Returns the value of x + y.</p>
+<h2 id="Examples">Examples<a class="anchor-link" href="#Examples"> </a></h2><blockquote><blockquote><blockquote><p>tonal_sum((0, 0), (2, 3))
+(2, 3)
+tonal_sum((3, 6), (4, 6))
+(0, 0)
+tonal_sum((0, 0, 0), (2, 3))
+(2, 3, 0)
+tonal_sum((3, 6, 0), (4, 6))
+(0, 0, 1)
+tonal_sum((6, 11, 1), (2, 4))
+(1, 3, 2)</p>
+</blockquote>
+</blockquote>
+</blockquote>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">D</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">min3</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">tonal_sum</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">min3</span><span class="p">)</span> <span class="c1"># (3, 5) = F</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(3, 5)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">fsharp</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># Above middle C</span>
+<span class="n">dim5</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="c1"># Diminished fifth, no octave qualification</span>
+
+<span class="n">tonal_sum</span><span class="p">(</span><span class="n">fsharp</span><span class="p">,</span> <span class="n">dim5</span><span class="p">)</span> <span class="c1"># (0, 0, 1) C above middle C</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(0, 0, 1)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
 </div>
  
 
