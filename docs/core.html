@@ -55,26 +55,6 @@ nb_path: "00_core.ipynb"
 </div>
 </div>
 
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-<div class="output_html rendered_html output_subarea ">
-<style>
-.output_stderr {
-    display: none;
-}
-</style>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
 </div>
     {% endraw %}
 
@@ -131,7 +111,7 @@ But how should one interpret any of the following?</p>
 <blockquote><p>{1, 3, 7, 10} -&gt; {0, 3, 6, 8}<br>
 {1, 3, 7, 10} -&gt; {1, 4, 7, 11}</p>
 </blockquote>
-<p>Showing what each scalar value could represent, we have:&gt; {{D$\flat$, C$\sharp$}, {E$\flat$, D$\sharp$}, {G}, {B$\flat$, A$\sharp$}} -&gt; {{C}, {E$\flat$, D$\sharp$}, {G$\flat$, F$\sharp$}, {A$\flat$, G$\sharp$}}  &gt; {{D$\flat$, C$\sharp$}, {E$\flat$, D$\sharp$}, {G}, {B$\flat$, A$\sharp$}} -&gt; {{D$\flat$, C$\sharp$}, {E}, {G}, {B}}</p>
+<p>Showing what each scalar value could represent, we have:&gt; ({D$\flat$, C$\sharp$}, {E$\flat$, D$\sharp$}, {G}, {B$\flat$, A$\sharp$}) -&gt; ({C}, {E$\flat$, D$\sharp$}, {G$\flat$, F$\sharp$}, {A$\flat$, G$\sharp$})  &gt; ({D$\flat$, C$\sharp$}, {E$\flat$, D$\sharp$}, {G}, {B$\flat$, A$\sharp$}) -&gt; ({D$\flat$, C$\sharp$}, {E}, {G}, {B})</p>
 <p>Can you write an algorithm that successfully analyses these two progressions? Could you even write an algorithm that would successfully determine which member of each enharmonic pair is the "correct" one?</p>
 <h3 id="Performance-problems">Performance problems<a class="anchor-link" href="#Performance-problems"> </a></h3><h4 id="Sightreading-and-improvisation">Sightreading and improvisation<a class="anchor-link" href="#Sightreading-and-improvisation"> </a></h4><p>When a performer sees {D, F$\sharp$, A, C$\sharp$) in a score, Dmaj7 is easily understood. They know where to place their hands on the instrument, what additional notes or scales can be played, and how the chord relates to the key of the piece as a whole.</p>
 <p>On the other hand {D, G$\flat$, A, D$\flat$} is simply confusing. It is not immediately clear what is intended. It is a mistake.</p>
@@ -244,7 +224,7 @@ This form shall be called a <code>TonalVector</code>.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="tonal_sum" class="doc_header"><code>tonal_sum</code><a href="https://github.com/openmusickit/openmusickit/tree/master/openmusickit/tonal_algebra.py#L7" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>tonal_sum</code>(<strong><code>x</code></strong>, <strong><code>y</code></strong>)</p>
+<h4 id="tonal_sum" class="doc_header"><code>tonal_sum</code><a href="https://github.com/openmusickit/openmusickit/tree/master/openmusickit/tonal_algebra.py#L14" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>tonal_sum</code>(<strong><code>x</code></strong>, <strong><code>y</code></strong>)</p>
 </blockquote>
 <p>Returns the value of x + y.</p>
 <h2 id="Examples">Examples<a class="anchor-link" href="#Examples"> </a></h2><blockquote><blockquote><blockquote><p>tonal_sum((0, 0), (2, 3))
@@ -294,22 +274,6 @@ tonal_sum((6, 11, 1), (2, 4))
 </div>
 </div>
 
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(3, 5)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
 </div>
     {% endraw %}
 
@@ -327,22 +291,6 @@ tonal_sum((6, 11, 1), (2, 4))
 </pre></div>
 
     </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(0, 0, 1)</pre>
-</div>
-
-</div>
-
 </div>
 </div>
 
