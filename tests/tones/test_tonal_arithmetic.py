@@ -1,5 +1,3 @@
-import pytest
-
 from test_fixtures import tonal_tuples, tonal_oct_tuples
 from openmusickit.tones import tonal_arithmetic as ta
 
