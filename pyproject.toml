@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmusickit"
+version = "0.0.1"
+description = "Open Music Kit: Music encoding/decoding tools for computational analysis and machine learning."
+authors = [
+  { name = "Adam Michael Wood", email = "adam.michael.wood@gmail.com" }
+]
+license = { text = "Apache-2.0" }
+readme = "README.md"
+requires-python = ">=3.8"
+
+# Add your base dependencies here
+dependencies = [
+]
+
+# [project.urls]
+# Homepage = "https://github.com/openmusickit"
+# Documentation = "https://openmusickit.org"
+# Repository = "https://github.com/openmusickit/openmusickit"
+# Issues = "https://github.com/openmusickit/openmusickit/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
