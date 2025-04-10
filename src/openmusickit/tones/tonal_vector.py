@@ -4,33 +4,48 @@ from . import tonal_arithmetic as ta
 from . import interval_quality as iq
 from .constants import D_LEN, C_LEN, MS, AC, Accidental
 
+
 class TonalVector(tuple):
     """A tuple of form (d_iatonic, c_hromatic, (o_ctave)),
     representing either a pitch or interval (or both).
     TonalVector implements tonal arithmetic with __dunder__ methods,
     allowing use of standard operators (+, -, =, <, >)."""
+    _cache = {}
 
-    #__slots__ = ['d', 'c','o', 'pitch', 'interval'
-    #            '_diatone', '_has_octave']
-    
-    def __new__(cls, tp: tuple[int]):
+    def __new__(cls, *args):
+        # Normalize input: if already a tuple/list, leave it
+        if len(args) == 1 and isinstance(args[0], (tuple, list)):
+            key = tuple(args[0])
+        else:
+            key = tuple(args)
 
-        # if not a rest (-1, -1),
-        if tp[0] != -1 or tp[1] != -1:
-            # normalize via modulo
-            tp = ta._tonal_modulo(tp)
-        
-        return super(TonalVector, cls).__new__(TonalVector, tp)
-        
-    def __init__(self, tp: tuple[int]):
+        if key in cls._cache:
+            return cls._cache[key]
+
+        self = super().__new__(cls, key)
+        cls._cache[key] = self
+        return self
+
+    def __init__(self, *args):
+        """
+        Examples
+        --------
+
+        >>> TonalVector(0,0) == TonalVector((0,0))
+        True
+
+        >>> TonalVector(0,0,0) == TonalVector((0,0,0,))
+        True
+
+        >>> TonalVector(0,0) is TonalVector((0,0))
+        True
+        """
+
+        if hasattr(self, '__initialized'):
+            return
 
         self.d = self[0] # diatonic value
         self.c = self[1] # chromatic value
-
-        if self.d == -1 and self.c == -1:
-            self.is_rest = True
-        else:
-            self.is_rest = False
 
         self._diatone = MS[self.d] # Q for source # rename?
         
@@ -44,6 +59,12 @@ class TonalVector(tuple):
 
         self.pitch = self.Pitch(self)
         self.interval = self.Interval(self)
+
+        self.__initialized = True
+
+    @classmethod
+    def vector_len(cls):
+        return 
 
     ### Util ###
 
