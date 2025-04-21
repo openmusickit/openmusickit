@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from openmusickit.tone.tone import Tone
+from openmusickit.tone.interval import Interval
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq
 from .constants import D_LEN, C_LEN, MS, AC, Accidental
 
 
-class TonalVector(tuple):
+class TonalVector(tuple, Tone, Interval):
     """A tuple of form (d_iatonic, c_hromatic, (o_ctave)),
     representing either a pitch or interval (or both).
     TonalVector implements tonal arithmetic with __dunder__ methods,
@@ -13,6 +15,26 @@ class TonalVector(tuple):
     _cache = {}
 
     def __new__(cls, *args):
+        """TonalVector is immutable and interned.
+
+        >>> TonalVector((0,0)) is TonalVector(0,0)
+        True
+
+        >>> TonalVector((0,0))._d = 1
+        Traceback (most recent call last):
+        ...
+        AttributeError: ...
+
+        The canonical way to create a TonalVector is to pass in a tuple:
+        
+        >>> TonalVector((0, 0, 0))
+        TonalVector((0, 0, 0))
+
+        For convenience, you can also pass in positional arguments:
+
+        >>> TonalVector(0, 0, 0)
+        TonalVector((0, 0, 0))
+        """
         # Normalize input: if already a tuple/list, leave it
         if len(args) == 1 and isinstance(args[0], (tuple, list)):
             key = tuple(args[0])
@@ -63,8 +85,37 @@ class TonalVector(tuple):
         self.__initialized = True
 
     @classmethod
-    def vector_len(cls):
-        return 
+    def abstract_vector_len(cls):
+        """An abstract TonalVector has two members (diatonic, chromatic),
+        and represents an abstract pitch class (C; A-flat; F-sharp) 
+        or interval (Perfect Unison; Minor Sixth; Augmented Fourth)
+        without an octave designation."""
+        return 2
+    
+    @classmethod
+    def qualified_vector_len(cls):
+        """A qualified TonalVector has three members (diatonic, chromatic, octave),
+        and represents a specfic, octave qualified pitch (C above middle C)
+        or interval (Perfect fifth plus 2 octaves; Minor sixth minus 1 octave)."""
+        return 3
+    
+    @classmethod
+    def from_string(cls, s, mid_c=4, prev_note=None):
+        """Creates and returns a TonalVector,
+        given a parsable string representation of a pitch or interval.
+        
+        Examples
+        --------
+        
+        >>> TonalVector.from_string('C')
+        TonalVector((0, 0))
+
+        >>> TonalVector.from_string('G#')
+        TonalVector((4, 8))
+
+        """
+        raise NotImplementedError
+    
 
     ### Util ###
 
@@ -289,8 +340,6 @@ class TonalVector(tuple):
 
     def __hash__(self) -> int:
         return hash(tuple(self))
-
-
 
 
     ### Represent as a pitch ###
