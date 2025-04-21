@@ -11,10 +11,13 @@ authors = [
 ]
 license = { text = "Apache-2.0" }
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 
 # Add your base dependencies here
 dependencies = [
+    "numpy (>=1.24,<2.0)",
+    "scipy (>=1.10,<2.0)",
+    "pydantic (>=2.6,<3.0)"
 ]
 
 # [project.urls]

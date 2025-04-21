@@ -549,8 +549,3 @@ def _qualify_octave_as_needed(x: tuple[int], y: tuple[int]) -> tuple[tuple[int],
         x = tuple(x)
         y = tuple(y)
     return x, y
-
-    
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
