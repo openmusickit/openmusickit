@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from fractions import Fraction as F
 from functools import singledispatchmethod
+from numbers import Real
 
 
 
@@ -30,14 +31,17 @@ class TemporalElement(ABC):
     @abstractmethod
     def temporal_system(self) -> TemporalSystem:
         raise NotImplementedError
+    
+    @abstractmethod
+    def scale(self, scalar: Real):
+        raise NotImplementedError
 
-class AbstractDuration(TemporalElement):
+class Duration(TemporalElement):
     """Any class that represents a basic unit of time and is notated as a single symbol.
     
-    Subclass AbstractDuration to create the specific duration units of a particular system.
+    Subclass Duration to create the specific duration units of a particular system.
     For example, WSMN's note durations (quarter, half note, tuplets, etc),
     are managed by MeteredDuration."""
-    pass
 
 
 class TemporalUnit(TemporalElement):

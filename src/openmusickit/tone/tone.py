@@ -92,6 +92,10 @@ class Tone(ABC, FrozenMeta):
         provide information about the meaning of each array member. """
         raise NotImplementedError
     
+    @abstractmethod
+    def __array__(self):
+        return self.to_array()
+    
     @classmethod
     def abstract_array_len(cls):
         """Vector size for an unqualified or abstract category of tone.
@@ -162,10 +166,12 @@ class PitchRepresentation(ABC):
     For an example implementation, see TonalVector.Pitch.
     """
 
+    @property
     @abstractmethod
     def unicode(self):
         raise NotImplementedError
     
+    @property
     @abstractmethod
     def ascii(self):
         raise NotImplementedError
