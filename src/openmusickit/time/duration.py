@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from fractions import Fraction as F
 from functools import singledispatchmethod
 from numbers import Real
+from typing import List
 
 
 
@@ -93,7 +94,7 @@ class TemporalUnit(TemporalElement):
 
     """
 
-    def __init__(self, count: int, base: AbstractDuration):
+    def __init__(self, count: int, base: Duration):
         self.count = count
         self.base = base
 
@@ -105,7 +106,7 @@ class TemporalUnit(TemporalElement):
     def rational_length(self) -> F:
         return self.count * self.base.rational_length 
 
-    def __eq__(self, durations: List[MeteredDuration]):
+    def __eq__(self, durations: List[Duration]):
         """Compares self to the combined value of an iterable of durations."""
         pass
 
