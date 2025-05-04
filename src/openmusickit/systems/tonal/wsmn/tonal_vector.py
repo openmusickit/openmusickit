@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from openmusickit.tone.tone import Tone
-from openmusickit.tone.interval import Interval
+from openmusickit.tone.tone import Tone, PitchRepresentation
+from openmusickit.tone.interval import Interval, IntervalRepresentation
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq
 from .constants import D_LEN, C_LEN, MS, AC, Accidental
@@ -344,7 +344,7 @@ class TonalVector(tuple, Tone, Interval):
 
     ### Represent as a pitch ###
 
-    class Pitch():
+    class Pitch(PitchRepresentation):
         """A TonalVector's pitch representation,
         which holds relevant details such as letter name, accidental, etc.
         
@@ -665,7 +665,7 @@ class TonalVector(tuple, Tone, Interval):
             return "".join([self.unicode, " | ", str(tuple(self._v))])
 
     
-    class Interval():
+    class Interval(IntervalRepresentation):
 
         def __init__(self, vector):
             """

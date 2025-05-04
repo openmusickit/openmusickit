@@ -1,4 +1,10 @@
-class MeteredDuration(AbstractDuration):
+from __future__ import annotations
+from fractions import Fraction as F
+from numbers import Rational
+
+from openmusickit.time.duration import Duration, TemporalElement, TemporalRatio
+
+class MeteredDuration(Duration):
     """The duration of notes, rests, or other temporal musical items
     as understood and notated in Western Standard Music Notation.
     
@@ -81,9 +87,9 @@ class MeteredDuration(AbstractDuration):
             raise ValueError("The denominator must be a power of 2.")
         
         # check if numerator is valid
-        if not _is_valid_numerator(n):
-            raise ValueError("The numerator must be 1 less than a power of 2. \
-                             (Nominal note value should be expressed in the simplest possible terms.)")
+        if not _is_one_less_than_pow_of_two(n):
+            if not _is_a_breve(n, d):
+                raise ValueError("The numerator must be 1 less than a power of 2, \n unless the note is a breve (double whole note).")
 
         # check dots are valid
         if dots < 0:
@@ -101,7 +107,7 @@ class MeteredDuration(AbstractDuration):
             self._d = d
             self._dots = dots
 
-        self.tr = tr
+        self._tr = tr
 
     @property
     def real_n(self):
@@ -128,7 +134,7 @@ class MeteredDuration(AbstractDuration):
         n, d = self.real_note_duration
         if TemporalRatio is None:
             return F(n, d)
-        return F(n, d) * self.tr.r
+        return F(n, d) * self._tr.r
     
     @property
     def scalar_length(self):
@@ -172,19 +178,48 @@ class MeteredDuration(AbstractDuration):
 
         return int(n), int(d), dots
     
-    def __repr__(self):
-        if self.dots == 0 and self.tr is None:
-            return f"Duration({self.n}, {self.d})"
-        elif self.dots == 0:
-            return f"Duration({self.n}, {self.d}, tr={repr(self.tr)})"
-        elif self.tr is None:
-            return f"Duration({self.n}, {self.d}, {self.dots})"
-        else:
-            return f"Duration({self.n}, {self.d}, {self.dots}, {repr(self.tr)})" 
+    def scale(self, scalar: int | F) -> MeteredDuration:
+        """Returns a MeteredDuration augmented of diminished by a power of two."""
+        if not _is_power_of_two(scalar):
+            raise ValueError("You can only scale a MeteredDuration by a power of 2.\n Try creating a new Duration from scratch.")
+            # We could do 3 and 1/3 as well, but they wouldn't be valid for all values of self.
+
+        # scale the numerator and reduce the fraction
+        f = F((self.n * scalar), self.d)
+
+        return MeteredDuration(f.numerator, f.denominator, self.dots, repr(self._tr))
+            
 
     
-def _is_power_of_two(n: int) -> bool:
-    return n > 0 and (n & (n - 1)) == 0
+    def __repr__(self):
+        if self.dots == 0 and self._tr is None:
+            return f"MeteredDuration({self.n}, {self.d})"
+        elif self.dots == 0:
+            return f"MeteredDuration({self.n}, {self.d}, tr={repr(self._tr)})"
+        elif self._tr is None:
+            return f"MeteredDuration({self.n}, {self.d}, {self.dots})"
+        else:
+            return f"MeteredDuration({self.n}, {self.d}, {self.dots}, {repr(self._tr)})" 
 
-def _is_valid_numerator(x):
+
+
+    
+def _is_power_of_two(n: int | F) -> bool:
+    try:
+        return n > 0 and (n & (n - 1)) == 0
+    except TypeError:
+        if n.numerator == 1:
+            d = n.denominator
+            return _is_power_of_two(d)
+        else:
+            return False
+
+def _is_one_less_than_pow_of_two(x):
   return _is_power_of_two(x + 1)
+
+def _is_a_breve(n, d):
+    if d != 1:
+        return False
+    if n not in (2, 3):
+        return False
+    return True
