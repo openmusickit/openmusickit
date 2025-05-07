@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from openmusickit.tone.tone import Tone, PitchRepresentation
+from openmusickit.tone.tone import TonalSystem, Tone, PitchRepresentation
 from openmusickit.tone.interval import Interval, IntervalRepresentation
+from .wsmn import WSMN
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq
 from .constants import D_LEN, C_LEN, MS, AC, Accidental
 
 
+@WSMN.register_tone_type()
 class TonalVector(tuple, Tone, Interval):
     """A tuple of form (d_iatonic, c_hromatic, (o_ctave)),
     representing either a pitch or interval (or both).
@@ -340,6 +342,14 @@ class TonalVector(tuple, Tone, Interval):
 
     def __hash__(self) -> int:
         return hash(tuple(self))
+    
+    def __call__(self, other):
+        if isinstance(other, TonalVector):
+            return self + other
+        try:
+            return other(self)
+        except TypeError:
+            raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector")
 
 
     ### Represent as a pitch ###

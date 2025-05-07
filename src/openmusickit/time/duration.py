@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from fractions import Fraction as F
 from functools import singledispatchmethod
 from numbers import Real
-from typing import List
+from typing import List, Iterable
 
 
 
@@ -118,7 +118,44 @@ class CompoundTemporalUnit(TemporalElement):
     """An iterable defining a series of ordered temporal elements."""
 
     def __init__(self, units: list[TemporalUnit]):
-        self.units = units
+        self._units = units
+
+    def __iter__(self):
+        return iter(self._units)
+
+    def __getitem__(self, index):
+        return self._units[index]
+    
+    def __len__(self):
+        return len(self._units)
+
+    def __contains__(self, item):
+        return item in self._units
+    
+    def index(self, item):
+        return self._units.index(item)
+    
+    def count(self, item):
+        return self._units.count(item)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._units!r})"
+
+    @property
+    def rational_length(self):
+        return sum([tu.n * (tu.d.rational_length) for tu in self._units])
+    
+    def first_out_of_bounds(self, series: Iterable[Duration]):
+        """Returns the index of the first items in `series`
+        that exceeds the length of self.
+        Returns None if the total length of series is <= length of self."""
+
+        srl = self.rational_length
+        for i in len(series):
+            srl -= series[i].rational_length
+            if srl < 0:
+                return i
+        return None
 
 
 class TemporalRatio:
