@@ -37,6 +37,7 @@ class TonalSystem:
     def __init__(self, name, desc):
         self._name = name
         self._desc = desc
+        self.tone_type = None 
 
     @property
     def name(self):
@@ -45,6 +46,16 @@ class TonalSystem:
     @property
     def desc(self):
         return self._desc
+
+
+    def register_tone_type(self):
+        def decorator(cls):
+            cls.tonal_system = self
+            self.tone_type = cls
+            return cls
+        return decorator
+
+
 
 class Tone(ABC, FrozenMeta):
 

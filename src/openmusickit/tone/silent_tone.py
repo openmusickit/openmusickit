@@ -2,12 +2,12 @@
 that occurs in the context of other notes or tones."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict
+from typing import ClassVar, Dict, Type
 
 
 from numpy import array
 
-from .tone import Tone
+from .tone import TonalSystem, Tone
 
 @dataclass(frozen=True)
 class SilentTone(Tone):
@@ -61,19 +61,22 @@ class SilentTone(Tone):
     _size: int
     _cache: ClassVar[Dict[int, SilentTone]] = {}
 
-    def __new__(cls, size: int|type|Tone = 1):
-        if type(size) == int:
-            _size = size
-        elif type(size) == type:
-            _size = size.qualified_vector_len()
+    def __new__(cls, context: TonalSystem|Type[Tone]|Tone|int = 1):
+        if type(context) == int:
+            _size = context
+        elif isinstance(context, Type[Tone]):
+            _size = context.qualified_vector_len()
+        elif isinstance(context, TonalSystem):
+            _size = context.tone_type.qualified_vector_len()
         else:
-            _size = len(size)
+            _size = len(context)
 
         if _size in cls._cache:
             return cls._cache[_size]
         
         self = super().__new__(cls)
         object.__setattr__(self, '_size', _size)
+        object.__setattr__(self, 'pitch', None)
 
         cls._cache[_size] = self
         return self

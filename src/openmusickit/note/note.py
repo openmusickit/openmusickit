@@ -1,6 +1,7 @@
-from typing import Callable, Any
+from typing import Callable, Type, Any
 
-from openmusickit.tone.tone import Tone
+from openmusickit.tone.tone import TonalSystem, Tone
+from openmusickit.tone.silent_tone import SilentTone
 from openmusickit.tone.interval import Interval
 from openmusickit.time.duration import Duration
 
@@ -30,6 +31,11 @@ class Note:
 
     def alter_tone(self, operation: Callable[[Tone, Tone | Interval], Tone], operand: Tone | Interval):
         """Set a new tone based on the current tone"""
+
+        # Pass over rests.
+        if type(self._t) is SilentTone:
+            return
+
         new_tone = operation(self._t, operand)
         self.set_tone(new_tone)
 
@@ -41,7 +47,14 @@ class Note:
         self.set_duration(new_duration)
 
     def __repr__(self):
+        if type(self._t) is SilentTone:
+            return f"Rest({self._d.__repr__()}, {self._t._size})"
         return f"Note({self._t.__repr__()}, {self._d.__repr__()})"
+    
+def Rest(duration: Duration, context: TonalSystem|Type[Tone]|Tone|int):
+    """Utility function that generates a Note with a Silent Tone.
+    Context is any object that identifies the TonalSystem of the surrounding notes."""
+    return Note(SilentTone(context), duration)
 
     
         
