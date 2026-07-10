@@ -352,6 +352,46 @@ class TonalVector(tuple, Tone, Interval):
             raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector")
 
 
+    def qualify_octave(self, oct: int=0):
+        """Returns a TonalVector with an octave designation set to `oct`.
+
+        Example
+        -------
+
+        >>> TonalVector((1, 2)).qualify_octave()
+        TonalVector((1, 2, 0))
+
+        >>> TonalVector((3, 4)).qualify_octave(2)
+        TonalVector((3, 4, 2))
+
+        >>> TonalVector((1, 2, 1)).qualify_octave()
+        TonalVector((1, 2, 0))
+
+        >>> TonalVector((3, 4, -1)).qualify_octave(2)
+        TonalVector((3, 4, 2))
+
+        """
+        return TonalVector((self.d, self.c, oct))
+    
+    def conditional_qualify_octave(self, oct: int=0):
+        """Returns a TonalVector with an octave designation set to `oct`,
+        but does not change an existing octave designation if present."""
+        if len(self) == 3:
+            return self
+        return TonalVector((self.d, self.c, oct))
+
+    def unqualify_octave(self):
+        """Returns a TonalVector without an octave designation.
+        
+        Example
+        -------
+        
+        >>> TonalVector((1, 2, 3))
+        TonalVector((1, 2))"""
+
+        return TonalVector((self.d, self.c))
+
+
     ### Represent as a pitch ###
 
     class Pitch(PitchRepresentation):

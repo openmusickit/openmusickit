@@ -20,7 +20,8 @@ class ArticulationVector(BaseModel):
     `brightness`       # [-1, 1] Perceptual treble energy (sparkle, edge, overtone strength)
     `noise`            # [-1, 1] Degree of noisiness, buzz, or inharmonicity
     `air`              # [-1, 1] Airiness, breathiness, or ethereality.
-    `shimmer`          # [-1, 1] Vibrato, tremolo. 
+    `vibrato_speed`    # [-1, 1] Vibrato, tremolo, or shimmer speed.
+    `vibrato_width`    # [-1, 1] Vibrato, tremolo, or shimmer pitch width.
     `inflection`       # [-1, 1] Perceived pitch height.
     `scoop`            # [-1, 1] Pitchbend during attack: down (-1), static (0), up (+1)
     `wetness`          # [-1, 1] Pitch bend during decay: down (-1), static (0), up (+1)
@@ -41,7 +42,8 @@ class ArticulationVector(BaseModel):
     brightness: float = Field(0, ge=-1, le=1)
     noise: float = Field(0, ge=-1, le=1)
     air: float = Field(0, ge=-1, le=1)
-    shimmer: float = Field(0, ge=-1, le=1)
+    vibrato_speed: float = Field(0, ge=-1, le=1)
+    vibrato_width: float = Field(0, ge=-1, le=1)
     inflection: float = Field(0, ge=-1, le=1)
     scoop: float = Field(0, ge=-1, le=1)
     wetness: float = Field(0, ge=-1, le=1)
@@ -60,7 +62,8 @@ class ArticulationVector(BaseModel):
         yield self.brightness
         yield self.noise
         yield self.air
-        yield self.shimmer
+        yield self.vibrato_speed
+        yield self.vibrato_width
         yield self.inflection
         yield self.scoop
         yield self.wetness
