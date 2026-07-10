@@ -14,9 +14,13 @@ class ToneCollection(set):
     def combinations(self, k):
         return [ToneCollection(c) for c in combinations(self, k)]
 
+# fix reverse to start with root tone
 class ToneSequence(list):
     """An ordered collection of non-repeated tones,
     with an optional name and optional reversed form and name.
+
+    Could be used as is, but more likely
+    should be subclassed for structures like scales, modes, tone rows, ragas, etc.
     
     DO NOT include the octave tone. This will break things.
     If you need a ToneSequence that specifies an octave tone,

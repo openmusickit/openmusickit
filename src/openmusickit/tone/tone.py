@@ -11,7 +11,7 @@ class TonalSystem:
     - Subclass Tone along with PitchRepresentation
     - Subclass Interval along with IntervalRepresentation
     - Optionally, create a `symbols` module that instantiates and assigns
-      commonly used Tones and Intervals to meaningful names variables.
+      commonly used Tones and Intervals to meaningfully named variables.
 
     To implement a complete musical system,
     you might also create:

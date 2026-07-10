@@ -26,7 +26,7 @@ class SilentTone(Tone):
     ```
 
     When vectorized for an ML model or other analysis tool,
-    a rest should be the same size at the TonalVector.
+    a rest should be the same size as the TonalVector.
 
     So, a rest in the same score:
 
