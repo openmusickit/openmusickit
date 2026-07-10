@@ -1,5 +1,5 @@
 from test_fixtures import tonal_tuples, tonal_oct_tuples
-from openmusickit.tones import tonal_arithmetic as ta
+from openmusickit.systems.tonal.wsmn import tonal_arithmetic as ta
 
 def test_test(tonal_tuples):
     assert len(tonal_tuples) == 35
@@ -82,7 +82,7 @@ def test_abs_int_diff(tonal_tuples):
 
 #### Testing internal functions ####
 
-from openmusickit.tones.tonal_arithmetic import _tonal_modulo, _negative_tuple
+from openmusickit.systems.tonal.wsmn.tonal_arithmetic import _tonal_modulo, _negative_tuple
 
 def test_tonal_modulo(tonal_tuples):
     for x in tonal_tuples:

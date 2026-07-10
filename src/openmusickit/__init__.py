@@ -1,10 +1,9 @@
 """Open Music Kit: Music encoding/decoding tools for computational analysis and machine learning."""
 
-from .tones.tonal_vector import TonalVector
-
-from . import tones
+"""
+Import everything and make it available with 
 
 __all__ = [
-    "TonalVector",
-    "tones"
 ]
+
+"""
