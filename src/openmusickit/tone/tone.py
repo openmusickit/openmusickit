@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from openmusickit.meta.meta import FrozenMeta
+from openmusickit.utils.meta import FrozenMeta
 
 class TonalSystem:
     """A named system of tones, pitches, and intervals.

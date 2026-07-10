@@ -9,7 +9,7 @@ from .constants import D_LEN, C_LEN, MS, AC, Accidental
 
 
 @WSMN.register_tone_type()
-class TonalVector(tuple, Tone, Interval):
+class TonalVector(tuple):
     """A tuple of form (d_iatonic, c_hromatic, (o_ctave)),
     representing either a pitch or interval (or both).
     TonalVector implements tonal arithmetic with __dunder__ methods,
@@ -22,7 +22,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((0,0)) is TonalVector(0,0)
         True
 
-        >>> TonalVector((0,0))._d = 1
+        >>> TonalVector((0,0)).d = 1
         Traceback (most recent call last):
         ...
         AttributeError: ...
@@ -68,6 +68,7 @@ class TonalVector(tuple, Tone, Interval):
         if hasattr(self, '__initialized'):
             return
 
+        """
         self.d = self[0] # diatonic value
         self.c = self[1] # chromatic value
 
@@ -80,11 +81,42 @@ class TonalVector(tuple, Tone, Interval):
         except IndexError:
             self.o = None
             self._has_octave = False
-
+        """
+            
         self.pitch = self.Pitch(self)
         self.interval = self.Interval(self)
 
         self.__initialized = True
+
+    ## Basic property interface
+
+    @property
+    def d(self) -> int:
+        return self[0]
+    
+    @property
+    def c(self) -> int:
+        return self[1]
+    
+    @property
+    def o(self) -> int:
+        try:
+            return self[2]
+        except:
+            raise AttributeError("This TonalVector does not have an octave designation.")
+        
+    @property
+    def _diatone(self) -> dict:
+        return MS[self.d]
+    
+    @property
+    def _has_octave(self) -> bool:
+        if len(self) == 2:
+            return False
+        if len(self) == 3:
+            return True
+        raise ValueError("Somehow, unexpectedly, this TonalVector has the wrong size.")
+
 
     @classmethod
     def abstract_vector_len(cls):
@@ -386,8 +418,9 @@ class TonalVector(tuple, Tone, Interval):
         Example
         -------
         
-        >>> TonalVector((1, 2, 3))
-        TonalVector((1, 2))"""
+        >>> TonalVector.unqualify_octave(TonalVector((1, 2, 3)))
+        TonalVector((1, 2))
+        """
 
         return TonalVector((self.d, self.c))
 
@@ -402,7 +435,7 @@ class TonalVector(tuple, Tone, Interval):
         -------
 
         >>> type(TonalVector((0,0)).pitch)
-        <class 'openmusickit.tones.tonal_vector.TonalVector.Pitch'>
+        <class 'wsmn.tonal_vector.TonalVector.Pitch'>
         """
         
         def __init__(self, vector: TonalVector):
@@ -688,10 +721,11 @@ class TonalVector(tuple, Tone, Interval):
             'Csharp1'
 
             """ 
-            if self._v.o == None:
-                o = ""
-            else:
+
+            try:
                 o = str(self._v.o)
+            except AttributeError:
+                o = ""
 
             if self._modifier_value == 0:
                 mod_text = ""
@@ -736,13 +770,14 @@ class TonalVector(tuple, Tone, Interval):
                 self.o = vector.o or 0
             except AttributeError:
                 self.o = 0
+            
+
+            if self.o > 0:
+                self.o = "".join(["+", str(self.o)])
+            elif self.o == 0:
+                self.o = ""
             else:
-                if self.o > 0:
-                    self.o = "".join(["+", str(self.o)])
-                elif self.o == 0:
-                    self.o = ""
-                else:
-                    self.o = str(self.o)
+                self.o = str(self.o)
 
         @property
         def abbr(self):
@@ -757,6 +792,8 @@ class TonalVector(tuple, Tone, Interval):
             >>> TonalVector((3, 6, 1)).interval.abbr
             'aug4+1'
             """
+
+
             return "".join([self.quality.abbr, str(self.number), self.o])
 
         def __repr__(self):
