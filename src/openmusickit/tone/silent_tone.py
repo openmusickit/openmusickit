@@ -20,7 +20,7 @@ class SilentTone(Tone):
     For example, the notes in a standard Western score
     are a combination of a three-member TonalVector and a duration:
     
-    ```
+    ```python
     # quarter note on middle c
     Note(TonalVector((0,0,0)), Duration(1,4))
     ```
@@ -30,7 +30,7 @@ class SilentTone(Tone):
 
     So, a rest in the same score:
 
-    ```
+    ```python
     # quarter rest in WSMN
     Note(SilentTone(3), Duration(1,4))
 
