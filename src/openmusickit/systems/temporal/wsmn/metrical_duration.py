@@ -37,18 +37,19 @@ class MeteredDuration(Duration):
         
         Examples
         --------
+        
+        ```
+        quarter_note = MeteredDuration(1, 4)
 
-        >>> quarter_note = MeteredDuration(1, 4)
-
-        >>> dotted_half_note = MeteredDuration(1, 2, 1)
-        >>> also_dotted_half = MeteredDuration(3, 4)
+        dotted_half_note = MeteredDuration(1, 2, 1)
+        also_dotted_half = MeteredDuration(3, 4)
             
-        >>> triplet_ratio = TemporalRatio(
-        ...     TemporalUnit(3, quarter_note),
-        ...     TemporalUnit(2, quarter_note)
-        ... )
-        ... quarter_note_in_triplet = MeteredDuration(1, 4, tr=triplet_ratio)
-
+        triplet_ratio = TemporalRatio(
+            TemporalUnit(3, quarter_note),
+            TemporalUnit(2, quarter_note)
+        )
+        quarter_note_in_triplet = MeteredDuration(1, 4, tr=triplet_ratio)
+        ```
         
         Parameters
         ----------
@@ -96,7 +97,7 @@ class MeteredDuration(Duration):
             raise ValueError("A duration cannot have negative dots.")
 
         # check not dotting an already dotted duration
-        if dots > 0 and n > 1:
+        if dots > 0 and n > 1 and not _is_a_breve(n, d):
             raise ValueError("Use a nominal value + dots, or an actual value without dots, never both.")
         
         
@@ -129,10 +130,14 @@ class MeteredDuration(Duration):
     def dots(self):
         return self._dots
     
+    @dots.setter
+    def dots(self, d):
+        self._dots = d
+    
     @property
     def rational_length(self):
         n, d = self.real_note_duration
-        if TemporalRatio is None:
+        if self._tr is None:
             return F(n, d)
         return F(n, d) * self._tr.r
     
@@ -189,6 +194,11 @@ class MeteredDuration(Duration):
 
         return MeteredDuration(f.numerator, f.denominator, self.dots, repr(self._tr))
             
+    def __eq__(self, other) -> bool:
+        if self.rational_length == other.rational_length:
+            return True
+        return False
+
 
     
     def __repr__(self):

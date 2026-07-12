@@ -84,12 +84,12 @@ class Tone(ABC, FrozenMeta):
     as they represent abstract values ('C# above middle C'), 
     rather than concrete instance of a note in a score."""
 
-    TONAL_SYSTEM: TonalSystem
+    #TONAL_SYSTEM: TonalSystem
 
     def __init_subclass__(cls):
         super().__init_subclass__()
-        if not hasattr(cls, 'TONAL_SYSTEM'):
-            raise TypeError(f"{cls.__name__} must define 'TONAL_SYSTEM'")
+        #if not hasattr(cls, 'TONAL_SYSTEM'):
+        #    raise TypeError(f"{cls.__name__} must define 'TONAL_SYSTEM'")
 
     @classmethod
     def from_string(cls, s) -> Tone:
