@@ -31,3 +31,13 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+addopts = ["--doctest-modules"]
+testpaths = ["tests", "src"]
+python_files = ["test_*.py", "*_test.py"]
