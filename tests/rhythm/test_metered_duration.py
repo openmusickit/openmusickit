@@ -45,7 +45,10 @@ def test_basic_tuple_duration_creation():
 
 def test_standard_multiples():
     """Test that 2 16ths equals an 8th, 2 8ths equal a quarter, etc."""
-    pass
+    for d in standard_duration_denominators:
+        single_duration = md.MeteredDuration(1, d)
+        half_duration = md.MeteredDuration(1, d*2)
+        assert single_duration.rational_length == half_duration.rational_length * 2
 
 def test_duration_addition_commutative():
     """Test quarter + 8th is same as 8th plus quarter, etc"""
