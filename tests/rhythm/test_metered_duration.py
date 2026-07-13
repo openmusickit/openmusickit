@@ -15,16 +15,19 @@ def test_standard_duration_creation():
         print(dur)
 
 def test_dotted_duration_creation():
-    """Test that every standard note duration can be created with one or two dots, without error,
+    """Test that every standard note duration can be created with up to five dots, without error,
     and that the two ways of creating a dotted duration are equivalent."""
     for d in standard_duration_denominators:
-        dur_one_dot_a = md.MeteredDuration(1, d, dots = 1)
-        dur_one_dot_b = md.MeteredDuration(3, d*2)
-        assert dur_one_dot_a == dur_one_dot_b
+        for n_dots in range(1,6):
 
-        dur_two_dot_a = md.MeteredDuration(1, d, dots = 2)
-        dur_two_dot_b = md.MeteredDuration(7, d*4)
-        assert dur_two_dot_a == dur_two_dot_b
+            dotted_dur_nominal = md.MeteredDuration(1, d, dots = n_dots)
+
+            numerator = (2**(n_dots+1))-1
+            denominator = d * (2**n_dots)
+
+            dotted_dur_actual = md.MeteredDuration(numerator, denominator)
+
+            assert dotted_dur_nominal == dotted_dur_actual
 
 
 def test_basic_tuple_duration_creation():
@@ -43,11 +46,6 @@ def test_basic_tuple_duration_creation():
 def test_standard_multiples():
     """Test that 2 16ths equals an 8th, 2 8ths equal a quarter, etc."""
     pass
-
-def test_standard_dots():
-    """Test that dotted quarter is same length as 3 8ths, etc."""
-    pass
-
 
 def test_duration_addition_commutative():
     """Test quarter + 8th is same as 8th plus quarter, etc"""
