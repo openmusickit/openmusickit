@@ -1,6 +1,6 @@
 from openmusickit.systems.temporal.wsmn import metrical_duration as md
 from openmusickit.systems.temporal.wsmn import time_signature as ts
-from openmusickit.time.duration import TemporalUnit, TemporalRatio
+from openmusickit.time.duration import TemporalUnit, TemporalRatio, CompoundTemporalUnit
 
 standard_duration_denominators = [1, 2, 4, 8, 16, 32, 64]
 reasonable_tuple_ratios = [(3, 2), (5, 4), (7, 6), (11, 10)]
@@ -49,10 +49,25 @@ def test_standard_multiples():
         single_duration = md.MeteredDuration(1, d)
         half_duration = md.MeteredDuration(1, d*2)
         assert single_duration.rational_length == half_duration.rational_length * 2
+        
+        one_single_duration = TemporalUnit(1, single_duration)
+        two_half_durations = TemporalUnit(2, half_duration)
+        assert one_single_duration.rational_length == two_half_durations.rational_length
 
-def test_duration_addition_commutative():
+def test_compound_temporal_units_and_duration_addition_commutative():
     """Test quarter + 8th is same as 8th plus quarter, etc"""
-    pass
+    for d1 in standard_duration_denominators:
+        for d2 in standard_duration_denominators:
+            duration_one = md.MeteredDuration(1, d1)
+            duration_two = md.MeteredDuration(1, d2)
+
+            temporal_unit_one = TemporalUnit(1, duration_one)
+            temporal_unit_two = TemporalUnit(1, duration_two)
+
+            compound_temporal_unit_a = CompoundTemporalUnit([temporal_unit_one, temporal_unit_two])
+            compound_temporal_unit_b = CompoundTemporalUnit([temporal_unit_two, temporal_unit_one])
+
+            assert compound_temporal_unit_a.rational_length == compound_temporal_unit_b.rational_length
 
 def test_duration_addition_associative():
     """Test (8th + 8th) + 8th is same as 8th + (8th + 8th), etc"""

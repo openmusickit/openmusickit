@@ -5,6 +5,7 @@ from fractions import Fraction
 from functools import singledispatchmethod
 from numbers import Real
 from typing import List, Iterable
+from .errors import ScalingError
 
 
 class TemporalSystem:
@@ -35,9 +36,18 @@ class TemporalElement(ABC):
     #    raise NotImplementedError
     
     @abstractmethod
-    def scale(self, scalar: Real):
-        """Multiply the Element by a scalar, according to the specific rules of the TemporalSystem.
-        Should return a new TemporalElement of the same type."""
+    def scale(self, scalar: int|Fraction):
+        """Return a TemporalElement scaled by a scalar according to its TemporalSystem.
+
+        Implementations should return a new TemporalElement of the same type.
+
+        Raises:
+            ScalingError: If the scaled value is musically valid in the TemporalSystem
+                but cannot be represented as a single TemporalElement of this type.
+                For example, a WSMN MeteredDuration may only support scaling by powers of two;
+                other scalar values may require a composite representation,
+                such as tied durations.
+    """
         raise NotImplementedError
 
 class Duration(TemporalElement):
@@ -156,7 +166,7 @@ class CompoundTemporalUnit(TemporalElement):
 
     @property
     def rational_length(self):
-        return sum([tu.n * (tu.d.rational_length) for tu in self._units])
+        return sum([tu.count * (tu.base.rational_length) for tu in self._units])
     
     def first_out_of_bounds(self, series: Iterable[Duration]):
         """Returns the index of the first items in `series`
@@ -170,6 +180,12 @@ class CompoundTemporalUnit(TemporalElement):
                 return i
         return None
     
+    def scale(self, scalar):
+        try:
+            new_units = [tu.scale(scalar) for tu in self.units]
+        except ScalingError as e:
+            raise ScalingError(f"One or more members cannot complete the requested scaling operation: {e}")
+        return CompoundTemporalUnit(new_units)
     
 
 
