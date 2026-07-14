@@ -95,8 +95,10 @@ def test_duration_scaling():
     """Test 8th.scaled(2) is quarter, etc."""
     pass
 
-def test_weird_dots():
-    """Test multiple dots (3-5) for correct duration."""
+def test_temporal_unit_scaling():
+    pass
+
+def test_compound_temporal_unit_scaling():
     pass
 
 def test_tuplets():
@@ -105,6 +107,9 @@ def test_tuplets():
 
 def test_common_time_signature_creation():
     """Test that common time signatures can be created"""
+
+def test_time_signature_scaling():
+    pass
 
 def test_common_time_signature_filling():
     """Test that 4/4 is same length as 4 quarters, or eight 8ths, etc.
