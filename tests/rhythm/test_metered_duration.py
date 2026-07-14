@@ -69,9 +69,27 @@ def test_compound_temporal_units_and_duration_addition_commutative():
 
             assert compound_temporal_unit_a.rational_length == compound_temporal_unit_b.rational_length
 
-def test_duration_addition_associative():
-    """Test (8th + 8th) + 8th is same as 8th + (8th + 8th), etc"""
-    pass
+def test_compound_temporal_units_with_duration_addition_associative():
+    for d1 in standard_duration_denominators:
+        for d2 in standard_duration_denominators:
+            duration_one = md.MeteredDuration(1, d1)
+            duration_two = md.MeteredDuration(1, d2)
+            duration_three = md.MeteredDuration(3, d2) # dotted
+
+            temporal_unit_one = TemporalUnit(1, duration_one)
+            temporal_unit_two = TemporalUnit(2, duration_two)
+            temporal_unit_three = TemporalUnit(3, duration_three)
+
+            compound_temporal_unit_a = CompoundTemporalUnit([temporal_unit_one, temporal_unit_two])
+            compound_temporal_unit_b = CompoundTemporalUnit([temporal_unit_two, temporal_unit_three])
+
+            assert (
+                        compound_temporal_unit_a.rational_length + 
+                        temporal_unit_three.rational_length
+                    ) == ( 
+                        compound_temporal_unit_b.rational_length +
+                        temporal_unit_one.rational_length
+                    )
 
 def test_duration_scaling():
     """Test 8th.scaled(2) is quarter, etc."""
