@@ -92,8 +92,14 @@ def test_compound_temporal_units_with_duration_addition_associative():
                     )
 
 def test_duration_scaling():
-    """Test 8th.scaled(2) is quarter, etc."""
-    pass
+    """Test 8th.scale(2) is quarter, etc."""
+    for d in standard_duration_denominators:
+        assert md.MeteredDuration(1, d*2).scale(2) == md.MeteredDuration(1, d)
+
+    for d in standard_duration_denominators:
+        for n_dots in range(5):
+            assert md.MeteredDuration(1, d*2, dots=n_dots).scale(2) == md.MeteredDuration(1, d, dots=n_dots)
+
 
 def test_temporal_unit_scaling():
     pass
@@ -107,6 +113,7 @@ def test_tuplets():
 
 def test_common_time_signature_creation():
     """Test that common time signatures can be created"""
+    pass
 
 def test_time_signature_scaling():
     pass
@@ -118,6 +125,10 @@ def test_common_time_signature_filling():
 
 def test_time_signature_remainder():
     """test that a time signature and several durations result in the correct remainder"""
+    pass
+
+def test_clock_time_simple():
+    """Test that clock time works as expected."""
     pass
 
 def test_real_time_ratio_simple():

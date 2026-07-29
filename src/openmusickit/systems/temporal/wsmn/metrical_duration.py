@@ -3,6 +3,7 @@ from fractions import Fraction as F
 from numbers import Rational
 
 from openmusickit.time.duration import Duration, TemporalElement, TemporalRatio
+from openmusickit.time.errors import ScalingError
 
 class MeteredDuration(Duration):
     """The duration of notes, rests, or other temporal musical items
@@ -108,7 +109,7 @@ class MeteredDuration(Duration):
             self._d = d
             self._dots = dots
 
-        self._tr = tr
+        self._tr = tr or None
 
     @property
     def real_n(self):
@@ -186,13 +187,14 @@ class MeteredDuration(Duration):
     def scale(self, scalar: int | F) -> MeteredDuration:
         """Returns a MeteredDuration augmented of diminished by a power of two."""
         if not _is_power_of_two(scalar):
-            raise ValueError("You can only scale a MeteredDuration by a power of 2.\n Try creating a new Duration from scratch.")
-            # We could do 3 and 1/3 as well, but they wouldn't be valid for all values of self.
+            raise ScalingError("You can only scale a MeteredDuration by a power of 2.\n Try creating a new Duration from scratch.")
+            # TODO: Handle scaling for non-mulitples of 2 (make dots, make tuplets)
+            # TODO: Handle scaling for tuplets correctly (adjust temporal ratios)
 
         # scale the numerator and reduce the fraction
         f = F((self.n * scalar), self.d)
 
-        return MeteredDuration(f.numerator, f.denominator, self.dots, repr(self._tr))
+        return MeteredDuration(f.numerator, f.denominator, self.dots, self._tr)
             
     def __eq__(self, other) -> bool:
         if self.rational_length == other.rational_length:
