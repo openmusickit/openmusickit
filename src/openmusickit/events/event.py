@@ -4,7 +4,7 @@ from typing import Any, ClassVar
 
 from openmusickit.tone.tone import Tone
 from openmusickit.time.duration import Duration
-from openmusickit.harmony.tone_collection import ToneCollection
+from openmusickit.tone.tone_collection import ToneCollection
 from openmusickit.utils.id import OmkId
 
 
@@ -12,15 +12,18 @@ from openmusickit.utils.id import OmkId
 
 @dataclass
 class MusicalEvent:
-    """A note, chord, gesture or other discreet musical event; 
+    """A note, chord, gesture or other discreet musical event,
+    actually written into a score or other representation of a piece of music; 
     the atomic unit of most types of music.
 
     Examples of a MusicalEvent:
 
      - A single note in a score.
+     - A rest. (Use SilentTone as the `tonal_content`.)
      - A chord or cluster of notes played together by a single performer
        on a single intrument (such as on a piano),
        which share duration and articulation.
+     - A bass note and its figures in a figured bass line.
      - A single unpitched rhythmic notation,
        such as would be found in a comping chart.
      - A durationless pitch in a melodic or harmonic sketch.
@@ -32,6 +35,8 @@ class MusicalEvent:
     
     A MusicalEvent does not need to be fully realized
     (that is, it can be "missing" `tonal_content` and/or `duration`).
+
+    ## In graph-based score representations
 
     Standard articulations and other types of note annotations
     are not stored as part of the event, but are attached to it as separate nodes.
@@ -45,6 +50,23 @@ class MusicalEvent:
 
     For scores imported from another format,
     provenance information is stored in `metadata`.
+
+    Generally, information which connects the `MusicalEvent` to other nodes
+    (for example, "copied from" or "realizes")
+    should not be stored in `metadata`, but should be connection edges.
+
+    (In other words,
+    any data about the event which *can* be represented as part of the graph,
+    *should* be represented as part of the graph.)
+
+    ## In sequence based score representations
+
+    OMK provides a sequence-based score representation
+    for simple musical examples and as an intermediate exchange format.
+
+    Lyrics, articulations, annotations, and similar objects
+    which would normally be additional nodes in a graph representation
+    should be stored as meta-data on the event.
     
     """
     tonal_content: Tone | ToneCollection | None = None
@@ -68,6 +90,19 @@ class MusicalEvent:
         *,
         component: str,
     ) -> None:
+        """Registers a transformation method on `tonal_content` or `duration`.
+        
+        Temporal transformations (such as scaling, diminution, augmentation) and
+        tonal tranformations (such as transposition and inversion)
+        can be registered against MusicalEvent.
+
+        When called, these transformations replace the `tonal_content` or `duration`
+        with the return value of the same call to the component.
+
+        (For this reason, Tones and Durations in all tonal and temporal systems
+        should be immutable values, and any transform methods
+        should return new instances.)
+        """
         if name in cls._transforms:
             raise ValueError(
                 f"Transform {name!r} is already registered"
