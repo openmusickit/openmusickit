@@ -2,6 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
+from dataclasses import dataclass, field
+from typing import Any
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,3 +53,4 @@ class OmkId:
     
     def __eq__(self, other: OmkId) -> bool:
         return str(self) == str(other)
+    

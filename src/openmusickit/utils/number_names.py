@@ -23,5 +23,5 @@ fractionals = {
     16 : "sixteenth",
     32 : "thirty-second",
     64 : "sixty-fourth",
-    127 : "128th"
+    128 : "128th"
 }

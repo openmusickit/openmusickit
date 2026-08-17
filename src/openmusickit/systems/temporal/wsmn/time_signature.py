@@ -1,5 +1,5 @@
 from typing import Tuple, Iterable
-from openmusickit.time.duration import TemporalUnit, CompoundTemporalUnit
+from openmusickit.data_types.time.duration import TemporalUnit, CompoundTemporalUnit
 
 class TimeSignature(CompoundTemporalUnit):
 

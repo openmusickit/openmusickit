@@ -2,16 +2,16 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
-from openmusickit.tone.tone import Tone
-from openmusickit.time.duration import Duration
-from openmusickit.tone.tone_collection import ToneCollection
-from openmusickit.utils.id import OmkId
+from openmusickit.data_types.tone.tone import Tone
+from openmusickit.data_types.time.duration import Duration
+from openmusickit.data_types.tone.tone_collection import ToneCollection
+from openmusickit.utils.omk_object import OmkObject
 
 
 
 
 @dataclass
-class MusicalEvent:
+class MusicalEvent(OmkObject):
     """A note, chord, gesture or other discreet musical event,
     actually written into a score or other representation of a piece of music; 
     the atomic unit of most types of music.
@@ -72,15 +72,9 @@ class MusicalEvent:
     tonal_content: Tone | ToneCollection | None = None
     duration: Duration | None = None
     metadata: dict = dict()
-    __id: OmkId = field(default_factory = OmkId.new)
+
 
     _transforms: ClassVar[dict[str, str]] = {}
-
-    @property
-    def id(self):
-        """The stable identity of the musical event, across sessions and storage."""
-        return self.__id
-
 
 
     @classmethod

@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Iterable
-from openmusickit.harmony.tone_collection import ToneCollection, ToneSequence
+from openmusickit.data_types.tone.tone_collection import ToneCollection, ToneSequence
 from openmusickit.utils.number_names import ordinals
 from .tonal_vector import TonalVector
 
