@@ -1,25 +1,22 @@
 from __future__ import annotations
 from itertools import combinations
 from typing import Iterable, List
-from openmusickit.tone.tone import Tone
+from .tone import Tone
 
-class ToneCollection(set):
+class ToneCollection(frozenset):
     """An unordered collection of tones, with an optional root and optional name.
     
     Note that `name` can be a formattable string including `{root}`,
     which allows chord names to update automatically in the case of transposition."""
 
-    class ToneCollection(frozenset):
     def __new__(
         cls,
         tones: Iterable[Tone] = (),
         root: Tone | None = None,
-        bass: Tone | None = None,
         name: str | None = None,
     ):
         obj = super().__new__(cls, tones)
         obj.root = root
-        obj.bass = bass
         obj._name_template = name
         return obj
 

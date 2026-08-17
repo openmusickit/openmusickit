@@ -2,8 +2,8 @@ from __future__ import annotations
 from fractions import Fraction as F
 from numbers import Rational
 
-from openmusickit.time.duration import Duration, TemporalElement, TemporalRatio
-from openmusickit.time.errors import ScalingError
+from openmusickit.data_types.time.duration import Duration, TemporalElement, TemporalRatio
+from openmusickit.data_types.time.errors import ScalingError
 
 class MeteredDuration(Duration):
     """The duration of notes, rests, or other temporal musical items

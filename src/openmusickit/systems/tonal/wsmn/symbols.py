@@ -28,7 +28,7 @@ Dx = a2 = TonalVector((1,3))
 
 Eb = m3 = TonalVector((2,3))
 E  = M3 = TonalVector((2,4))
-Ex = a2 = TonalVector((2,5))
+Ex = a3 = TonalVector((2,5))
 
 Fb = d4 = TonalVector((3,4))
 F  = P4 = TonalVector((3,5))
@@ -36,13 +36,13 @@ Fx = a4 = TonalVector((3,6))
 
 Gb = d5 = TonalVector((4,6))
 G  = P5 = TonalVector((4,7))
-Gx = a4 = TonalVector((4,8))
+Gx = a5 = TonalVector((4,8))
 
 Ab = m6 = TonalVector((5,8))
 A  = M6 = TonalVector((5,9))
 Ax = a6 = TonalVector((5,10))
 
-Bb = m7 = TonalVector(6,10)
-B  = M7 = TonalVector(6,11)
-Bx = a7 = TonalVector(6,0)
+Bb = m7 = TonalVector((6,10))
+B  = M7 = TonalVector((6,11))
+Bx = a7 = TonalVector((6,0))
 
