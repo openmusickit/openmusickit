@@ -12,7 +12,7 @@ from openmusickit.utils.omk_object import OmkObject
 
 @dataclass
 class MusicalEvent(OmkObject):
-    """A note, chord, gesture or other discreet musical event,
+    """A note, chord, gesture or other discrete musical event,
     actually written into a score or other representation of a piece of music; 
     the atomic unit of most types of music.
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-from .tone import TonalSystem, Tone
+from .tone import Tone
 
 @dataclass(frozen=True)
 class SilentTone(Tone):
