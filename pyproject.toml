@@ -9,7 +9,7 @@ description = "Open Music Kit: Music encoding/decoding tools for computational a
 authors = [
   { name = "Adam Michael Wood", email = "adam.michael.wood@gmail.com" }
 ]
-license = { text = "Apache-2.0" }
+license = { text = "AGPL-3.0" }
 readme = "README.md"
 requires-python = ">=3.12"
 
