@@ -6,13 +6,18 @@ Open Music Kit
    :caption: Contents:
 
 Open Music Kit (OMK) is a symbolic music representation library
-that provides tools for encoding symbolic music information (scores, notation)
-and operations on that information (transpositions, metrical elongation)
-in mathematically meaningful ways that are 
-algebraically isomorphic to the musical concepts they represent.
+that provides tools for encoding symbolic music information (scores, notation).
 
-OMK represents atomic musical entities (pitches, durations) as vectors,
-and musical structures (chords, melodies, scores) as graphs.
+OMK represents musical components
+(pitches, durations, lyrics, chords, articulations)
+as nodes in a graph.
+
+When possible, OMK represents musical values (pitches, durations) as vectors
+which are mathematically isomorphic to the musical concepts they represent.
+Operations such as transposition and metrical elongation are then algebraically consistent and meaningful.
+When there is not a single, mathematically meaningful way to represent musical concepts as vectors,
+OMK provides tools for diverse approaches to vectorization.
+
 
 Universal Music Encoding
 ------------------------
@@ -58,8 +63,6 @@ The foundational data model includes:
 - `Interval`, the distance between two tones
 - `TemporalElement`, a measurable period of musical time 
 - `TemporalRatio`, a relationship between two equal but differently-subdivided `TemporalElement`s
-- `PercussionTone`, a general-purpose percussion vectorization that encodes
-   objective (measurable) and subjective (judgement-based) sound qualities.
 - `Note`, a `Tone` with a `Duration`
 - `Score`, the graph-based datamodel for musical structure
 

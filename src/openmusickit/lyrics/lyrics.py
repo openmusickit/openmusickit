@@ -4,6 +4,7 @@ from typing import Iterable
 
 from .errors import LyricConsistencyError
 from openmusickit.utils.id import OmkId
+from openmusickit.utils.omk_object import OmkObject
 
 
 class LexicalStress(Enum):
@@ -23,8 +24,10 @@ class SyllablePlacement(Enum):
     def is_ending(self) -> bool:
         return self in (SyllablePlacement.END, SyllablePlacement.WHOLE)
 
-@dataclass
-class LyricSyllable:
+# TODO: Lyrics need to be an event, as they occur in sequence.
+
+@dataclass(kw_only=True)
+class LyricSyllable(OmkObject):
     """A single syllable of lyric text.
     
     The syllable string should not include hyphens."""
@@ -34,8 +37,6 @@ class LyricSyllable:
     placement: SyllablePlacement | None = SyllablePlacement.WHOLE
     lexical_stress: LexicalStress | None = None
     language: str | None = None # Two letter BCP 47 language code.
-    __id: OmkId = field(default_factory = OmkId.new)
-    __meta: dict = {}
 
     def __post__init__(self):
         """Validates syllable placement/location is consistent."""

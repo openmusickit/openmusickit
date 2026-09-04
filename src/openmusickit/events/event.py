@@ -7,11 +7,13 @@ from openmusickit.data_types.time.duration import Duration
 from openmusickit.data_types.tone.tone_collection import ToneCollection
 from openmusickit.utils.omk_object import OmkObject
 
-
+# move this
+class SequentialObject(OmkObject):
+    pass
 
 
 @dataclass
-class MusicalEvent(OmkObject):
+class MusicalEvent(SequentialObject):
     """A note, chord, gesture or other discrete musical event,
     actually written into a score or other representation of a piece of music; 
     the atomic unit of most types of music.
@@ -71,7 +73,6 @@ class MusicalEvent(OmkObject):
     """
     tonal_content: Tone | ToneCollection | None = None
     duration: Duration | None = None
-    metadata: dict = dict()
 
 
     _transforms: ClassVar[dict[str, str]] = {}
