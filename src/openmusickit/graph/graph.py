@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from .graph_adapter import GraphAdapter, RustworkxAdapter
+from .graph_adapter import GraphAdapter
+from .rx_adapter import RustworkxAdapter
 from .edge import EdgeType, OmkEdge
 from openmusickit.utils.id import OmkId
 from openmusickit.utils.omk_object import OmkObject
@@ -14,7 +15,7 @@ class GraphMeta:
 class OmkGraph:
     """A graph representation of music."""
 
-    def __init__(self, meta: GraphMeta, graph_engine: GraphAdapter=RustworkxAdapter):
+    def __init__(self, meta: GraphMeta, graph_engine: GraphAdapter=RustworkxAdapter()):
         self._meta = meta
         self._graph = graph_engine
         self._index = dict()
@@ -22,11 +23,11 @@ class OmkGraph:
     # Load and import
 
     @classmethod
-    def load_from_json(cls, js_graph, graph_engine: GraphAdapter=RustworkxAdapter) -> OmkGraph:
+    def load_from_json(cls, js_graph, graph_engine: GraphAdapter=RustworkxAdapter()) -> OmkGraph:
         """Returns an OmkGraph built from a JSON serialization."""
         pass
 
-    def import_json_graph(cls, js_graph) -> None:
+    def import_json_graph(self, js_graph) -> None:
         """Adds the contents of js_graph to the current graph.
         Do not assume metadata from the source graph is retained."""
         pass

@@ -4,7 +4,6 @@ from typing import Callable, Iterable, Iterator, Optional
 from openmusickit.utils.id import OmkId
 from openmusickit.utils.omk_object import OmkObject
 from openmusickit.graph.edge import OmkEdge, EdgeType
-from openmusickit.graph.graph import OmkGraph
 
 class GraphAdapter(ABC):
     """Abstract base class providing a unified API to any graph engine."""
@@ -173,26 +172,9 @@ class GraphAdapter(ABC):
         """Return the number of edges originating from node."""
         raise NotImplementedError
 
-    # Derived graphs
-    @abstractmethod
-    def subgraph(self, nodes: Iterable[OmkObject]) -> OmkGraph:
-        """Return a new graph containing only the given nodes and the edges between them."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def edge_subgraph(self, edges: Iterable[OmkEdge]) -> OmkGraph:
-        """Return a new graph containing only the given edges and their endpoint nodes."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def copy(self) -> OmkGraph:
-        """Return a copy of this graph."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def merge(self, other: OmkGraph) -> OmkGraph:
-        """Return a new graph combining this graph's nodes/edges with those of other."""
-        raise NotImplementedError
+    # NOTE: subgraph/edge_subgraph/copy/merge previously lived here but were
+    # removed pending a redesign that moves derived-graph construction to
+    # OmkGraph itself, built from lower-level adapter primitives.
 
 
 

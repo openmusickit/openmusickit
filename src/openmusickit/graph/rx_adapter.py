@@ -1,4 +1,7 @@
+from typing import Callable, Iterable, Iterator, Optional
+
 from openmusickit.graph.graph_adapter import GraphAdapter
+from openmusickit.graph.edge import OmkEdge, EdgeType
 from openmusickit.utils.id import OmkId
 from openmusickit.utils.omk_object import OmkObject
 from bidict import bidict
@@ -43,91 +46,243 @@ class RustworkxAdapter(GraphAdapter):
     def _get_node_by_rxid(self, rxid: int) -> OmkObject:
         return self.graph.get_node_data(rxid)
 
-    def add_node(self, node):
-        raise NotImplementedError
+    def _register_edge(self, edge: OmkEdge, rxid: int) -> None:
+        """Registers an edge and its Rustworkx integer id to self._edge_index."""
+        self._edge_index[str(edge._id)] = rxid
 
-    def add_edge(self, source, target, edge):
-        raise NotImplementedError
+    def _unregister_edge(self, edge: OmkEdge|OmkId|str) -> None:
+        del self._edge_index[str(edge._id if hasattr(edge, "_id") else edge)]
 
-    def remove_node(self, node):
-        raise NotImplementedError
+    def _edge_rxid(self, edge: OmkEdge|OmkId|str) -> int:
+        """Returns the Rustworkx integer id of the OmkEdge."""
+        return self._edge_index[str(edge._id if hasattr(edge, "_id") else edge)]
 
-    def remove_edge(self, edge):
-        raise NotImplementedError
+    def _get_edge_by_rxid(self, rxid: int) -> OmkEdge:
+        return self.graph.get_edge_data_by_index(rxid)
+
+    def add_node(self, node: OmkObject) -> None:
+        """Add a node to the graph.
+
+        Does nothing if the node (by OmkId) is already present."""
+        if str(node._id) in self._node_index:
+            return
+        rxid = self.graph.add_node(node)
+        self._register_node(node, rxid)
+
+    def add_edge(self, source: OmkObject, target: OmkObject, edge: OmkEdge) -> None:
+        """Add an edge from source to target to the graph."""
+        rxid = self.graph.add_edge(self._rxid(source), self._rxid(target), edge)
+        self._register_edge(edge, rxid)
+
+    def remove_node(self, node: OmkObject) -> None:
+        """Remove a node (and its incident edges) from the graph."""
+        rxid = self._rxid(node)
+        for edge_rxid in self.graph.incident_edges(rxid, all_edges=True):
+            self._unregister_edge(self._get_edge_by_rxid(edge_rxid))
+        self.graph.remove_node(rxid)
+        self._unregister_node(node)
+
+    def remove_edge(self, edge: OmkEdge) -> None:
+        """Remove an edge from the graph."""
+        rxid = self._edge_rxid(edge)
+        self.graph.remove_edge_from_index(rxid)
+        self._unregister_edge(edge)
 
     def get_node(self, node_id: OmkId|str) -> OmkObject:
+        """Return the node with the given OmkId."""
         return self.graph.get_node_data(self._rxid(node_id))
     
-    def get_edge(self, source, target, edge_type):
-        raise NotImplementedError
+    def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:
+        """Return the edge of the given type from source to target."""
+        for edge in self.graph.get_all_edge_data(self._rxid(source), self._rxid(target)):
+            if edge.type == edge_type:
+                return edge
+        raise rx.NoEdgeBetweenNodes(
+            f"No edge of type {edge_type!r} between {source!r} and {target!r}."
+        )
 
-    def get_edges(self, source, target):
-        raise NotImplementedError
+    def get_edges(self, source: OmkObject, target: OmkObject)-> tuple[list[OmkEdge]]:
+        """Returns all edges between source and target, in two lists:
+            return_tuple[0] --> edges from source to target
+            return_tuple[1] --> edges from target to source
+        """
+        source_rxid = self._rxid(source)
+        target_rxid = self._rxid(target)
+        try:
+            forward = self.graph.get_all_edge_data(source_rxid, target_rxid)
+        except rx.NoEdgeBetweenNodes:
+            forward = []
+        try:
+            backward = self.graph.get_all_edge_data(target_rxid, source_rxid)
+        except rx.NoEdgeBetweenNodes:
+            backward = []
+        return (forward, backward)
 
-    def filter_edges(self, filter_function):
-        raise NotImplementedError
+    def filter_edges(self, filter_function: Callable[[OmkEdge], bool]) -> list[OmkEdge]:
+        """Returns a list of all edges for which filter_function(edge) returns True."""
+        return [self._get_edge_by_rxid(rxid) for rxid in self.graph.filter_edges(filter_function)]
 
-    def filter_nodes(self, filter_function):
-        raise NotImplementedError
+    def filter_nodes(self, filter_function: Callable[[OmkObject], bool]) -> list[OmkObject]:
+        """Returns a list of all nodes for which filter_function(node) returns True."""
+        return [self._get_node_by_rxid(rxid) for rxid in self.graph.filter_nodes(filter_function)]
 
-    def has_node(self, node):
-        raise NotImplementedError
+    def has_node(self, node: OmkObject) -> bool:
+        """Return True if node is present in the graph."""
+        return str(node._id) in self._node_index
 
-    def has_edge(self, source, target, edge_type = None):
-        raise NotImplementedError
+    def has_edge(self, source: OmkObject, target: OmkObject, edge_type: Optional[EdgeType] = None) -> bool:
+        """Return True if an edge (optionally of the given type) exists from source to target."""
+        source_rxid = self._rxid(source)
+        target_rxid = self._rxid(target)
+        if edge_type is None:
+            return self.graph.has_edge(source_rxid, target_rxid)
+        try:
+            edges = self.graph.get_all_edge_data(source_rxid, target_rxid)
+        except rx.NoEdgeBetweenNodes:
+            return False
+        return any(edge.type == edge_type for edge in edges)
 
-    def num_nodes(self):
-        raise NotImplementedError
+    def num_nodes(self) -> int:
+        """Return the total number of nodes in the graph."""
+        return self.graph.num_nodes()
 
-    def num_edges(self):
-        raise NotImplementedError
+    def num_edges(self) -> int:
+        """Return the total number of edges in the graph."""
+        return self.graph.num_edges()
 
-    def nodes(self, node_type = None, predicate = None):
-        raise NotImplementedError
+    def nodes(
+        self,
+        node_type: Optional[type[OmkObject]] = None,
+        predicate: Optional[Callable[[OmkObject], bool]] = None,
+    ) -> Iterator[OmkObject]:
+        """Iterate over nodes, optionally filtered by node_type and/or predicate."""
+        for node in self.graph.nodes():
+            if node_type is not None and not isinstance(node, node_type):
+                continue
+            if predicate is not None and not predicate(node):
+                continue
+            yield node
 
-    def edges(self, edge_type = None, predicate = None):
-        raise NotImplementedError
+    def edges(
+        self,
+        edge_type: Optional[EdgeType] = None,
+        predicate: Optional[Callable[[OmkEdge], bool]] = None,
+    ) -> Iterator[OmkEdge]:
+        """Iterate over edges, optionally filtered by edge_type and/or predicate."""
+        for edge in self.graph.edges():
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            if predicate is not None and not predicate(edge):
+                continue
+            yield edge
 
-    def edges_between(self, source, target, edge_type = None):
-        raise NotImplementedError
+    def edges_between(
+        self,
+        source: OmkObject,
+        target: OmkObject,
+        edge_type: Optional[EdgeType] = None,
+    ) -> Iterator[OmkEdge]:
+        """Iterate over edges from source to target, optionally filtered by edge_type."""
+        try:
+            edges = self.graph.get_all_edge_data(self._rxid(source), self._rxid(target))
+        except rx.NoEdgeBetweenNodes:
+            return
+        for edge in edges:
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            yield edge
 
-    def successors(self, node, node_type = None, edge_type = None, predicate = None):
-        raise NotImplementedError
+    def successors(
+        self,
+        node: OmkObject,
+        node_type: Optional[type[OmkObject]] = None,
+        edge_type: Optional[EdgeType] = None,
+        predicate: Optional[Callable[[OmkObject], bool]] = None,
+    ) -> Iterator[OmkObject]:
+        """Iterate over nodes reachable from node via an outgoing edge, optionally filtered."""
+        for _, target_rxid, edge in self.graph.out_edges(self._rxid(node)):
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            successor = self._get_node_by_rxid(target_rxid)
+            if node_type is not None and not isinstance(successor, node_type):
+                continue
+            if predicate is not None and not predicate(successor):
+                continue
+            yield successor
 
-    def predecessors(self, node, node_type = None, edge_type = None, predicate = None):
-        raise NotImplementedError
+    def predecessors(
+        self,
+        node: OmkObject,
+        node_type: Optional[type[OmkObject]] = None,
+        edge_type: Optional[EdgeType] = None,
+        predicate: Optional[Callable[[OmkObject], bool]] = None,
+    ) -> Iterator[OmkObject]:
+        """Iterate over nodes that have an outgoing edge to node, optionally filtered."""
+        for source_rxid, _, edge in self.graph.in_edges(self._rxid(node)):
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            predecessor = self._get_node_by_rxid(source_rxid)
+            if node_type is not None and not isinstance(predecessor, node_type):
+                continue
+            if predicate is not None and not predicate(predecessor):
+                continue
+            yield predecessor
 
-    def neighbors(self, node, node_type = None, edge_type = None, predicate = None):
-        raise NotImplementedError
+    def neighbors(
+        self,
+        node: OmkObject,
+        node_type: Optional[type[OmkObject]] = None,
+        edge_type: Optional[EdgeType] = None,
+        predicate: Optional[Callable[[OmkObject], bool]] = None,
+    ) -> Iterator[OmkObject]:
+        """Iterate over all nodes adjacent to node (predecessors and successors), optionally filtered."""
+        seen: set[str] = set()
+        for neighbor in self.predecessors(node, node_type, edge_type, predicate):
+            seen.add(str(neighbor._id))
+            yield neighbor
+        for neighbor in self.successors(node, node_type, edge_type, predicate):
+            if str(neighbor._id) in seen:
+                continue
+            yield neighbor
 
-    def out_edges(self, node, edge_type = None):
-        raise NotImplementedError
+    def out_edges(self, node: OmkObject, edge_type: Optional[EdgeType] = None) -> Iterator[OmkEdge]:
+        """Iterate over edges originating from node, optionally filtered by edge_type."""
+        for _, _, edge in self.graph.out_edges(self._rxid(node)):
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            yield edge
 
-    def in_edges(self, node, edge_type = None):
-        raise NotImplementedError
+    def in_edges(self, node: OmkObject, edge_type: Optional[EdgeType] = None) -> Iterator[OmkEdge]:
+        """Iterate over edges terminating at node, optionally filtered by edge_type."""
+        for _, _, edge in self.graph.in_edges(self._rxid(node)):
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            yield edge
 
-    def incident_edges(self, node, edge_type = None):
-        raise NotImplementedError
+    def incident_edges(self, node: OmkObject, edge_type: Optional[EdgeType] = None) -> Iterator[OmkEdge]:
+        """Iterate over all edges touching node (incoming and outgoing), optionally filtered by edge_type."""
+        rxid = self._rxid(node)
+        for edge_rxid in self.graph.incident_edges(rxid, all_edges=True):
+            edge = self._get_edge_by_rxid(edge_rxid)
+            if edge_type is not None and edge.type != edge_type:
+                continue
+            yield edge
 
-    def degree(self, node):
-        raise NotImplementedError
+    def degree(self, node: OmkObject) -> int:
+        """Return the total number of edges incident to node."""
+        rxid = self._rxid(node)
+        return self.graph.in_degree(rxid) + self.graph.out_degree(rxid)
 
-    def in_degree(self, node):
-        raise NotImplementedError
+    def in_degree(self, node: OmkObject) -> int:
+        """Return the number of edges terminating at node."""
+        return self.graph.in_degree(self._rxid(node))
 
-    def out_degree(self, node):
-        raise NotImplementedError
+    def out_degree(self, node: OmkObject) -> int:
+        """Return the number of edges originating from node."""
+        return self.graph.out_degree(self._rxid(node))
 
-    def subgraph(self, nodes):
-        raise NotImplementedError
-
-    def edge_subgraph(self, edges):
-        raise NotImplementedError
-
-    def copy(self):
-        raise NotImplementedError
-
-    def merge(self, other):
-        raise NotImplementedError
+    # NOTE: subgraph/edge_subgraph/copy/merge previously lived here but were
+    # removed pending a redesign that moves derived-graph construction to
+    # OmkGraph itself, built from lower-level adapter primitives.
 
 
