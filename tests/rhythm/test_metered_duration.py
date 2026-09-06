@@ -1,6 +1,6 @@
-from openmusickit.systems.temporal.wsmn import metrical_duration as md
-from openmusickit.systems.temporal.wsmn import time_signature as ts
-from openmusickit.data_types.time.duration import TemporalUnit, TemporalRatio, CompoundTemporalUnit
+from openmusickit.systems.wsmn.temporal import metrical_duration as md
+from openmusickit.systems.wsmn.temporal import time_signature as ts
+from openmusickit.values.time.duration import TemporalUnit, TemporalRatio, CompoundTemporalUnit
 
 standard_duration_denominators = [1, 2, 4, 8, 16, 32, 64]
 reasonable_tuple_ratios = [(3, 2), (5, 4), (7, 6), (11, 10)]

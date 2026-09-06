@@ -2,10 +2,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
-from openmusickit.data_types.tone.tone import Tone
-from openmusickit.data_types.time.duration import Duration
-from openmusickit.data_types.tone.tone_collection import ToneCollection
-from openmusickit.utils.omk_object import OmkObject
+from openmusickit.values.tone.tone import Tone
+from openmusickit.values.time.duration import Duration
+from openmusickit.values.tone.tone_collection import ToneCollection
+from openmusickit.objects.omk_object import OmkObject
 
 # move this
 class SequentialObject(OmkObject):

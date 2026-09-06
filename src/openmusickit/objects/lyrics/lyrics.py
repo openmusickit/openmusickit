@@ -4,7 +4,7 @@ from typing import Iterable
 
 from .errors import LyricConsistencyError
 from openmusickit.utils.id import OmkId
-from openmusickit.utils.omk_object import OmkObject
+from openmusickit.objects.omk_object import OmkObject
 
 
 class LexicalStress(Enum):

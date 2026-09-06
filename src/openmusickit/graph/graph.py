@@ -4,9 +4,9 @@ from .graph_adapter import GraphAdapter
 from .rx_adapter import RustworkxAdapter
 from .edge import EdgeType, OmkEdge
 from openmusickit.utils.id import OmkId
-from openmusickit.utils.omk_object import OmkObject
-from openmusickit.events.event import SequentialObject, MusicalEvent
-from openmusickit.lyrics.lyrics import LyricSyllable, LyricSequence 
+from openmusickit.objects.omk_object import OmkObject
+from openmusickit.objects.events.event import SequentialObject, MusicalEvent
+from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence 
 
 
 class GraphMeta:
