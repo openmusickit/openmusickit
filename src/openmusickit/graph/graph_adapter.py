@@ -15,7 +15,9 @@ class GraphAdapter(ABC):
 
     @abstractmethod
     def add_edge(self, source: OmkObject, target: OmkObject, edge: OmkEdge) -> None:
-        """Add an edge from source to target to the graph."""
+        """Add an edge from source to target to the graph.
+        
+        Raises an exception if there is already an edge of the same type between source and target."""
         raise NotImplementedError
 
     @abstractmethod
@@ -54,6 +56,21 @@ class GraphAdapter(ABC):
     @abstractmethod
     def filter_nodes(self, filter_function: Callable[[OmkObject], bool]) -> list[OmkObject]:
         """Returns a list of all nodes for which filter_function(node) returns True."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_edge_endpoints(self, edge: OmkEdge) -> tuple[OmkObject, OmkObject]:
+        """Return the source and target nodes of the given edge as a tuple (source, target)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_source_of_edge(self, edge: OmkEdge) -> OmkObject:
+        """Return the source node of the given edge."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_target_of_edge(self, edge: OmkEdge) -> OmkObject:
+        """Return the target node of the given edge."""
         raise NotImplementedError
 
 
@@ -128,6 +145,16 @@ class GraphAdapter(ABC):
         predicate: Optional[Callable[[OmkObject], bool]] = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes that have an outgoing edge to node, optionally filtered."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_next(self, node: OmkObject) -> Optional[OmkObject]:
+        """Return the next node connected by an edge of type NEXT from the given node, if it exists."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_previous(self, node: OmkObject) -> Optional[OmkObject]:
+        """Return the previous node connected by an edge of type NEXT to the given node, if it exists."""
         raise NotImplementedError
 
     @abstractmethod
