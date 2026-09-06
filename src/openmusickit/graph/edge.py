@@ -8,6 +8,7 @@ class EdgeType(StrEnum):
     IMPLEMENTS = auto()
     REALIZES = auto()
     ANNOTATES = auto()
+    ARTICULATION = auto()
     LYRIC = auto()
     ACCOMPANIES = auto()
     HARMONIZES = auto()
@@ -17,6 +18,8 @@ class EdgeType(StrEnum):
     CONTAINS = auto()
     REFERENCES = auto()
     USER_DEFINED = auto()
+    STARTS_AT = auto()
+    ENDS_AT = auto()
 
 @dataclass(slots=True)
 class OmkEdge:
