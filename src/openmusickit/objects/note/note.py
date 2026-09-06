@@ -1,9 +1,9 @@
 from typing import Callable, Type, Any
 
-from openmusickit.data_types.tone.tone import TonalSystem, Tone
-from openmusickit.data_types.tone.silent_tone import SilentTone
-from openmusickit.data_types.tone.interval import Interval
-from openmusickit.data_types.time.duration import Duration
+from openmusickit.values.tone.tone import TonalSystem, Tone
+from openmusickit.values.tone.silent_tone import SilentTone
+from openmusickit.values.tone.interval import Interval
+from openmusickit.values.time.duration import Duration
 
 class Note:
     """A Tone and a Duration."""

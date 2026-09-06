@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Iterable, Iterator, Optional
 
 from openmusickit.utils.id import OmkId
-from openmusickit.utils.omk_object import OmkObject
+from openmusickit.objects.omk_object import OmkObject
 from openmusickit.graph.edge import OmkEdge, EdgeType
 
 class GraphAdapter(ABC):

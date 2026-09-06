@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from openmusickit.data_types.tone.tone import TonalSystem, Tone, PitchRepresentation
-from openmusickit.data_types.tone.interval import Interval, IntervalRepresentation
+from openmusickit.values.tone.tone import TonalSystem, Tone, PitchRepresentation
+from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from .wsmn import WSMN
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq

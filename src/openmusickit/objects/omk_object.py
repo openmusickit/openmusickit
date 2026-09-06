@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from .id import OmkId
+from openmusickit.utils.id import OmkId
 
 @dataclass(kw_only=True)
 class OmkObject:
