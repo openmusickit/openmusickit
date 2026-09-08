@@ -60,6 +60,9 @@ class OmkGraph:
     def get_edges(self, from_obj: OmkObject, to_obj: OmkObject) -> list[OmkEdge]:
         return self._graph.get_edges(from_obj, to_obj)
 
+    def get_edges_by_type(self, edge_type: EdgeType) -> list[OmkEdge]:
+        return [edge for edge in self._graph.edges(edge_type)]
+
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
         edge = OmkEdge(edge_type)
         self._graph.add_edge(from_obj, to_obj, edge)
@@ -71,9 +74,10 @@ class OmkGraph:
     # Sequential Data
 
     def add_next(self, current: SequentialObject, next: SequentialObject) -> None:
-        """Places a sequential object after another SequentialObject.
+        """Places a SequentialObject after another SequentialObject.
         
-        It makes no difference if the object was already part of the graph."""
+        Current node must be on the graph before adding a next node.
+        Next node can be on the graph or not."""
         self.add_node(next)
         self.add_edge(current, next, EdgeType.NEXT)
 
@@ -104,6 +108,9 @@ class OmkGraph:
 
     def insert_line_from_list(self, line: list[SequentialObject], prev: SequentialObject, next: SequentialObject) -> None:
         """Create a new linear subgraph from a list of objects and insert it between prev and next."""
+        edge = self.get_edge(prev, next, EdgeType.NEXT)
+        if edge is not None:
+            self.remove_edge(edge)
         if not line:
             return
         self.add_next(prev, line[0])
@@ -114,13 +121,13 @@ class OmkGraph:
 
     # Annotations (articulations, memos, analysis)
 
-    def add_articulation(self, obj: OmkObject, articulation: OmkObject) -> None:
+    def add_articulation(self, articulation: OmkObject, obj: OmkObject) -> None:
         self.add_node(articulation)
-        self.add_edge(obj, articulation, EdgeType.ARTICULATION)
+        self.add_edge(articulation, obj, EdgeType.ARTICULATION)
 
-    def add_annotation(self, obj: OmkObject, annotation: OmkObject) -> None:
+    def add_annotation(self, annotation: OmkObject, obj: OmkObject) -> None:
         self.add_node(annotation)
-        self.add_edge(obj, annotation, EdgeType.ANNOTATION)
+        self.add_edge(annotation, obj, EdgeType.ANNOTATION)
 
 
     # Spanners (slurs, crescendos, phrasing)

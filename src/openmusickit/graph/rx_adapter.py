@@ -198,7 +198,7 @@ class RustworkxAdapter(GraphAdapter):
 
     def edges(
         self,
-        edge_type: Optional[EdgeType] = None,
+        edge_type: EdgeType | None = None,
         predicate: Optional[Callable[[OmkEdge], bool]] = None,
     ) -> Iterator[OmkEdge]:
         """Iterate over edges, optionally filtered by edge_type and/or predicate."""

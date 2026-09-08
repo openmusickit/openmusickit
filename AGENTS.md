@@ -10,6 +10,23 @@ These projects value thoughtful design, explicit reasoning, readable Python, sma
 
 ---
 
+# Tooling: always use `uv`
+
+This repository's environment is managed by `uv`, not bare `python`/`pip`/`pytest`.
+
+Never invoke `python3`, `pip`, or `pytest` directly, and never assume a system or globally-installed
+interpreter has the right dependencies. Always go through `uv`, for example:
+
+* `uv run python -c "..."` instead of `python3 -c "..."`
+* `uv run pytest` instead of `pytest`
+* `uv add <package>` instead of `pip install <package>` (and only after checking with the developer, per the Dependencies section below)
+* `uv sync` to install/update the environment from `pyproject.toml` / `uv.lock`
+
+If a command fails because a dependency "isn't installed," check whether you bypassed `uv` before
+concluding there is a real problem.
+
+---
+
 # Prime directive: stay in scope
 
 Implement the requested change.
