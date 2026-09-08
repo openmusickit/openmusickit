@@ -6,12 +6,11 @@ the `TonalVector` class—a core abstraction that encodes both pitches and inter
 as direction-aware vectors suitable for algorithmic and music-theoretical analysis.
 """
 
-"""
-from . import tone
-from . import silent_tone
+from . import interval, silent_tone, tone, tone_collection
 
 __all__ = [
+    "interval",
+    "silent_tone",
     "tone",
-    "silent_tone"
+    "tone_collection",
 ]
-"""
