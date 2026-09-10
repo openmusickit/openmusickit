@@ -1,7 +1,7 @@
 from typing import Callable, Iterable, Iterator, Optional
 
 from openmusickit.graph.graph_adapter import GraphAdapter
-from openmusickit.graph.edge import OmkEdge, EdgeType
+from openmusickit.graph.edges.edge import OmkEdge, EdgeType
 from openmusickit.utils.id import OmkId
 from openmusickit.objects.omk_object import OmkObject
 from bidict import bidict

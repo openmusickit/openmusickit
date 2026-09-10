@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from .graph_adapter import GraphAdapter
 from .rx_adapter import RustworkxAdapter
-from .edge import EdgeType, OmkEdge
+from .edges.edge import EdgeType, OmkEdge
 from openmusickit.utils.id import OmkId
-from openmusickit.objects.omk_object import OmkObject
-from openmusickit.objects.events.event import SequentialObject, MusicalEvent
+from openmusickit.objects.omk_object import OmkObject, SequentialObject
+from openmusickit.objects.events.event import MusicalEvent
 from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence 
 
 

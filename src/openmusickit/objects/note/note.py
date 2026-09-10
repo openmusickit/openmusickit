@@ -1,60 +1,70 @@
-from typing import Callable, Type, Any
+from dataclasses import dataclass
+from typing import Callable
 
-from openmusickit.values.tone.tone import TonalSystem, Tone
+from openmusickit.values.tone.tone import Tone
 from openmusickit.values.tone.silent_tone import SilentTone
 from openmusickit.values.tone.interval import Interval
 from openmusickit.values.time.duration import Duration
+from openmusickit.objects.omk_object import SequentialObject
 
-class Note:
-    """A Tone and a Duration."""
 
-    def __init__(self, tone: Tone, duration: Duration):
-
-        self._t = tone
-        self._d = duration
-
-    @property
-    def tone(self):
-        return self._t
-
-    @property
-    def pitch(self):
-        return self._t.pitch
+@dataclass(kw_only=True)
+class NoteEvent(SequentialObject):
+    """A MultiNote is a SequentialObject that contains zero or more Tones played simultaneously within a single voice, line, or part.
     
-    @property
-    def duration(self):
-        return self._d
+    A NoteEvent with zero tones is not considered a rest, but rather a duration with unspecified tonal content ---
+    either because the tonal content doesn't need to be specified (for example, a comping chart),
+    or because it has not yet been specified (for example, in a sketch or draft).
     
-    def set_tone(self, tone: Tone):
-        """Set a new tone directly."""
-        self._t = tone
+    A Rest is represented as a NoteEvent with a SilentTone.
+    Unpitched percussion notes are represented a NoteEvents with an UnpitchedTone. """
+    tones: set[Tone]
 
-    def alter_tone(self, operation: Callable[[Tone, Tone | Interval], Tone], operand: Tone | Interval):
-        """Set a new tone based on the current tone"""
+    def __post_init__(self):
+        if SilentTone in self.tones and len(self.tones) > 1:
+            raise ValueError("A NoteEvent cannot contain a SilentTone and other tones simultaneously.")
 
-        # Pass over rests.
-        if type(self._t) is SilentTone:
-            return
+    def add_tone(self, tone: Tone):
+        self.tones.add(tone)
+        if SilentTone in self.tones and len(self.tones) > 1:
+            self.tones.remove(SilentTone)
 
-        new_tone = operation(self._t, operand)
-        self.set_tone(new_tone)
+    def remove_tone(self, tone: Tone):
+        self.tones.remove(tone)
 
-    def set_duration(self, duration: Duration):
-        self._d = duration
+    def clear_tones(self):
+        self.tones.clear()
 
-    def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any):
-        new_duration = operation(self._d, operand)
-        self.set_duration(new_duration)
+    def make_rest(self):
+        self.tones.clear()
+        self.tones.add(SilentTone())
+
+    def swap_tone(self, old_tone: Tone, new_tone: Tone):
+        self.remove_tone(old_tone)
+        self.add_tone(new_tone)
+
+    def alter_tones(self, operation: Callable[[Tone, Tone | Interval], Tone], operand: Tone | Interval):
+        """Alter all tones using the provided operation and operand."""
+        new_notes = set()
+        for tone in self.tones:
+            if type(tone) is SilentTone:
+                new_notes.add(tone)
+            else:
+                new_tone = operation(tone, operand)
+                new_notes.add(new_tone)
+        self.tones = new_notes
 
     def __repr__(self):
-        if type(self._t) is SilentTone:
-            return f"Rest({self._d.__repr__()}, {self._t._size})"
-        return f"Note({self._t.__repr__()}, {self._d.__repr__()})"
+        if SilentTone in self.tones:
+            return f"Rest(duration={self.duration})"
+        tone_names = [tone.name for tone in self.tones]
+        return f"NoteEvent(tones={tone_names}, duration={self.duration})"
     
-def Rest(duration: Duration, context: TonalSystem|Type[Tone]|Tone|int):
-    """Utility function that generates a Note with a Silent Tone.
-    Context is any object that identifies the TonalSystem of the surrounding notes."""
-    return Note(SilentTone(context), duration)
+
+def Rest(duration: Duration) -> NoteEvent:
+    """Utility function that generates a Note with a Silent Tone."""
+    
+    return NoteEvent(tones={SilentTone()}, duration=duration)
 
     
         
