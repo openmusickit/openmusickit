@@ -3,7 +3,7 @@ from typing import Callable, Iterable, Iterator, Optional
 
 from openmusickit.utils.id import OmkId
 from openmusickit.objects.omk_object import OmkObject
-from openmusickit.graph.edge import OmkEdge, EdgeType
+from openmusickit.graph.edges.edge import OmkEdge, EdgeType
 
 class GraphAdapter(ABC):
     """Abstract base class providing a unified API to any graph engine."""

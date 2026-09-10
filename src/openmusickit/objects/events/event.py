@@ -5,11 +5,7 @@ from typing import Any, ClassVar
 from openmusickit.values.tone.tone import Tone
 from openmusickit.values.time.duration import Duration
 from openmusickit.values.tone.tone_collection import ToneCollection
-from openmusickit.objects.omk_object import OmkObject
-
-# move this
-class SequentialObject(OmkObject):
-    pass
+from openmusickit.objects.omk_object import OmkObject, SequentialObject
 
 
 @dataclass

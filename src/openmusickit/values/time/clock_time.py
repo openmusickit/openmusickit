@@ -15,6 +15,22 @@ class ClockDuration(Duration):
     def scale(self, scalar):
         return ClockDuration(self._microseconds * scalar)
 
+    def __add__(self, other):
+        if not isinstance(other, ClockDuration):
+            return NotImplemented
+        return ClockDuration(self._microseconds + other._microseconds)
+
+    def __sub__(self, other):
+        if not isinstance(other, ClockDuration):
+            return NotImplemented
+        return ClockDuration(self._microseconds - other._microseconds)
+
+    def __mul__(self, scalar):
+        return ClockDuration(self._microseconds * scalar)
+
+    def __truediv__(self, scalar):
+        return ClockDuration(self._microseconds / scalar)
+
     @property
     def temporal_system(self):
         return "RealTime"

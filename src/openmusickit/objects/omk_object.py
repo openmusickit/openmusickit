@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
+
+from openmusickit.values.time.duration import Duration
 
 from openmusickit.utils.id import OmkId
 
@@ -21,3 +23,13 @@ class OmkObject:
     @property
     def meta(self) -> dict[str, Any]:
         return self._meta
+
+
+@dataclass(kw_only=True)
+class SequentialObject(OmkObject):
+    duration: Duration
+
+
+    def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any):
+        new_duration = operation(self.duration, operand)
+        self.duration = new_duration
