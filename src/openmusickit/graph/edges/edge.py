@@ -2,7 +2,7 @@ from enum import StrEnum, auto
 from dataclasses import dataclass, field
 
 from openmusickit.utils.id import OmkId
-from openmusickit.values.time.duration import Duration
+from openmusickit.values.time.duration import Duration, ZeroDuration
 
 class EdgeType(StrEnum):
     NEXT = auto()
@@ -65,14 +65,14 @@ class Next(OmkEdge):
 
     def nudge(self, direction: NudgeDirection, amount: Duration) -> None:
         """Nudges the displacement of this Next edge in the specified direction by the specified amount."""
-        if type(amount) != type(self.displacement):
+        if type(amount) != type(self.displacement) and self.displacement is not None:
             raise TypeError(
                 f"""Current displacement type ({type(self.displacement)}) does not match nudge amount type ({type(amount)}).
                 Try reconciling duration types with a TemporalRatio."""
                 )
 
         if self.displacement is None:
-            self.displacement = Duration(0)
+            self.displacement = ZeroDuration()
         if direction == NudgeDirection.FORWARD:
             self.displacement += amount
         elif direction == NudgeDirection.BACKWARD:

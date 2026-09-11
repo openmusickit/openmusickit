@@ -66,6 +66,9 @@ class ChordType(ToneCollection):
         bass = self.bass + tv
 
         return Chord(root, tones, bass)
+
+    def __div__(self, tv: TonalVector):
+        return self.inversion(tv)
     
 class Chord(ToneCollection):
     
