@@ -60,6 +60,27 @@ class Duration(TemporalElement):
     WSMN only requires a single note duration type to cover standard note durations.
     Some temporal systems will may need many different Duration types.
     """
+    pass
+
+class ZeroDuration(Duration):
+    """A Duration of zero length (instantaneous)."""
+    
+    @property
+    def rational_length(self) -> Fraction:
+        return Fraction(0, 1)
+    
+    def scale(self, scalar: int|Fraction):
+        return self
+
+    def __add__(self, other: Duration):
+        if not isinstance(other, Duration):
+            raise TypeError(f"Cannot add {type(other)} to a Duration.")
+        return other
+
+    def __sub__(self, other: Duration):
+        if not isinstance(other, Duration):
+            raise TypeError(f"Cannot subtract {type(other)} from a Duration.")
+        return -other
 
 
 class TemporalUnit(TemporalElement):
