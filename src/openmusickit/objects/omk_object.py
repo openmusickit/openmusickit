@@ -27,7 +27,7 @@ class OmkObject:
 
 @dataclass(kw_only=True)
 class SequentialObject(OmkObject):
-    duration: Duration
+    duration: Duration | None = None
 
 
     def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any):
