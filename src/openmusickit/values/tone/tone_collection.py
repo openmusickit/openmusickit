@@ -3,22 +3,31 @@ from itertools import combinations
 from typing import Iterable, List
 from .tone import Tone
 
-class ToneCollection(frozenset):
-    """An unordered collection of tones, with an optional root and optional name.
-    
-    Note that `name` can be a formattable string including `{root}`,
-    which allows chord names to update automatically in the case of transposition."""
+class ToneCollection:
+    """An ordered collection of tones, with an optional root and optional name.
 
-    def __new__(
-        cls,
+    Tone order is preserved and is musically significant: for example, it is
+    what distinguishes a chord with an added 2nd from one with an added 9th,
+    even though both consist of the same pitch classes.
+
+    Note that `name` can be a formattable string including `{root}`,
+    which allows chord names to update automatically in the case of transposition.
+
+    Equality and hashing are based on tones and root only (not `name`),
+    so two ToneCollections built from the same tones and root compare equal
+    even if they were given different names -- but they remain distinct
+    objects (`is` is unaffected).
+    """
+
+    def __init__(
+        self,
         tones: Iterable[Tone] = (),
         root: Tone | None = None,
         name: str | None = None,
     ):
-        obj = super().__new__(cls, tones)
-        obj.root = root
-        obj._name_template = name
-        return obj
+        self._tones = tuple(tones)
+        self.root = root
+        self._name_template = name
 
     @property
     def name(self) -> str | None:
@@ -27,74 +36,77 @@ class ToneCollection(frozenset):
 
         return self._name_template.format(root=self.root)
 
+    def __iter__(self):
+        return iter(self._tones)
+
+    def __len__(self):
+        return len(self._tones)
+
+    def __getitem__(self, index):
+        return self._tones[index]
+
+    def __contains__(self, tone) -> bool:
+        return tone in self._tones
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, ToneCollection):
+            return NotImplemented
+        return self._tones == other._tones and self.root == other.root
+
+    def __hash__(self) -> int:
+        return hash((self._tones, self.root))
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({list(self._tones)!r}, root={self.root!r})"
+
     def combinations(self, k) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of k members."""
-        return [ToneCollection(c) for c in combinations(self, k)]
+        return [ToneCollection(c) for c in combinations(self._tones, k)]
     
     def all_combinations(self) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of length `2` through `len(self)-1`."""
         combos = []
         for k in range(2, len(self)):
-            for c in combinations(self, k):
+            for c in combinations(self._tones, k):
                 combos.append(ToneCollection(c))
         return combos
 
-    def __getattr__(self, name):
-        """Delegates method calls to the members of the collection (and its root),
-        returning a new ToneCollection.
+    def map_tones(self, method_name: str, *args, **kwargs) -> ToneCollection:
+        """Calls `method_name` on every tone in the collection (and on `root`,
+        if set), returning a new ToneCollection built from the results.
+
         Used for tonal transformations such as transposition and inversion.
-
-        This is only invoked for attributes that are not found through normal
-        means (i.e. not defined on ToneCollection, set, or an instance's own
-        __dict__). It assumes `name` refers to a method defined on the Tone
-        members of this collection, and returns a wrapper function that,
-        when called:
-
-        - Calls the method (with whatever args/kwargs are passed) on every
-          member of the set, collecting the results into a new iterable.
-        - Calls the method on `self.root` (if a root is set), collecting
-          the result as the new root.
-        - Returns a new ToneCollection built from those results, sharing
-          the original collection's `name_template`.
 
         The original ToneCollection is left unmodified.
 
         Raises:
-            AttributeError: if a member (or the root) does not implement
-                `name`.
+            AttributeError: if a tone (or the root) does not implement
+                `method_name`.
         """
 
-        # Avoid interfering with dunder/special attribute lookups
-        # (e.g. pickling, copying, repr helpers, etc.)
-        if name.startswith('__') and name.endswith('__'):
-            raise AttributeError(name)
+        new_tones = []
+        for member in self._tones:
+            try:
+                member_method = getattr(member, method_name)
+            except AttributeError as e:
+                raise AttributeError(
+                    f"ToneCollection member {member} does not have method "
+                    f"{method_name}, and raised an error: {e}"
+                ) from e
+            new_tones.append(member_method(*args, **kwargs))
 
-        def method(*args, **kwargs):
-            new_tones = []
-            for member in self:
-                try:
-                    member_method = getattr(member, name)
-                except AttributeError as e:
-                    raise AttributeError(
-                        f"ToneCollection member {member} does not have method "
-                        f"{name}, and raised an error: {e}"
-                    ) from e
-                new_tones.append(member_method(*args, **kwargs))
+        new_root = None
+        if self.root is not None:
+            try:
+                root_method = getattr(self.root, method_name)
+            except AttributeError as e:
+                raise AttributeError(
+                    f"ToneCollection root {self.root} does not have method "
+                    f"{method_name}, and raised an error: {e}"
+                ) from e
+            new_root = root_method(*args, **kwargs)
 
-            new_root = None
-            if self.root is not None:
-                try:
-                    root_method = getattr(self.root, name)
-                except AttributeError as e:
-                    raise AttributeError(
-                        f"ToneCollection root {self.root} does not have method "
-                        f"{name}, and raised an error: {e}"
-                    ) from e
-                new_root = root_method(*args, **kwargs)
-
-            return ToneCollection(new_tones, new_root, self._name_template)
-
-        return method
+        return ToneCollection(new_tones, new_root, self._name_template)
 
 
 # fix reverse to start with root tone
@@ -110,21 +122,26 @@ class ToneSequence(list):
     If you need a ToneSequence that specifies an octave tone,
     subclass this and re-implement `__getitem__` and probably `chords`."""
 
-    def __init__(self, tones: List[Tone], rev: List[Tone]=None, name: str=None, rev_name=None):
+    def __init__(self, tones: List[Tone], rev: List[Tone]=None, name: str=None,
+                 rev_name=None, _reverse_of: "ToneSequence"=None):
         super().__init__(tones)
         self.name = name
-        
+
         if rev_name is None:
             if name:
                 rev_name = name + "-reversed"
             else:
                 rev_name = None
 
-        if rev:
-            self.reversed = ToneSequence(rev, name=rev_name)
-        else:
-            self.reversed = ToneSequence(list(reversed(tones)), name=rev_name)
-        self.reversed.reversed = self
+        if _reverse_of is not None:
+            # We are being constructed as the `reversed` counterpart of
+            # `_reverse_of`. Point back at it rather than building another
+            # reversed sequence, which would recurse forever.
+            self.reversed = _reverse_of
+            return
+
+        reversed_tones = rev if rev is not None else list(reversed(tones))
+        self.reversed = ToneSequence(reversed_tones, name=rev_name, _reverse_of=self)
     
     def combinations(self, k):
         return [ToneCollection(c) for c in combinations(self, k)]

@@ -15,72 +15,65 @@ class Quality(Enum):
     HDM = "half diminished"
 
 class ChordType(ToneCollection):
-    """Chord definition using TonalVectors as intervals from root (0,0).
-    Include an octave designations if you want arpeggios and inversions
-    to work as expected for extensions (9, 11, 13)"""
+    """Chord definition, as an ordered collection of TonalVectors representing
+    intervals from the root (0,0).
+
+    Tone order is significant: it distinguishes chords that share the same
+    pitch classes but are conventionally named/voiced differently
+    (for example, an added 2nd vs. an added 9th)."""
 
     def __init__(self, tones: Iterable[TonalVector],
                  name: str, bass: TonalVector=None, quality: Quality=None):
-        
-        tones = [tv.conditional_qualify_octave() for tv in tones]
-        
-        if TonalVector(0, 0, 0) not in tones:
+
+        tones = tuple(tones)
+        if TonalVector(0, 0) not in tones:
             raise ValueError("Include `TonalVector(0,0)` as root of chord type.")
 
-        super().__init__(tones, root=TonalVector(0,0), name=name)
+        super().__init__(tones, root=TonalVector(0, 0), name=name)
 
         self.bass = bass or self.root
         self.quality = quality
 
-    def arpegiate(self):
-        s = self - set(self.bass)
-        arp = [self.bass] + sorted(list(s))
-        return ToneSequence(arp)
-    
+    def arpegiate(self) -> ToneSequence:
+        """Returns the chord's tones as a ToneSequence, bass tone first."""
+        rest = [t for t in self if t != self.bass]
+        return ToneSequence([self.bass] + rest)
+
     # FIX naming
-    def inversion(self, inv: int|TonalVector, name: str=None):
-        
+    def inversion(self, inv: int|TonalVector, name: str=None) -> "ChordType":
+        """Returns a ChordType with the same tones, but a different bass tone."""
+
         if isinstance(inv, TonalVector):
             bass = inv
+            name = name or (self.name and self.name + f" - {ordinals[list(self).index(bass)]} inversion")
+        elif isinstance(inv, int):
             try:
-                name = name or (self.name + f" - {ordinals[inv]} inversion")
-            except TypeError:
-                name = None
-        if isinstance(inv, int):
-            tones = sorted(list(self))
-            try:
-                bass = tones[inv]
+                bass = list(self)[inv]
             except IndexError:
                 raise IndexError(f"Max inversion is {len(self)-1}.")
-        
-            try:
-                name = name or (self.name + f" / {bass.unqualify_octave().pitch.unicode}")
-            except TypeError:
-                name = None
-            
+            name = name or (self.name and self.name + f" / {bass.unqualify_octave().pitch.unicode}")
+        else:
+            raise TypeError("`inv` must be a TonalVector or an int.")
+
         return ChordType(self, name, bass, self.quality)
-    
-    def __call__(self, tv: TonalVector):
-        tones = [(t + tv) for t in self.tones]
+
+    def __call__(self, tv: TonalVector) -> "Chord":
+        """Returns a Chord: this ChordType realized with its root at `tv`."""
+        tones = [t + tv for t in self]
         root = tv
         bass = self.bass + tv
 
-        return Chord(root, tones, bass)
+        return Chord(root, tones, bass, self.name)
 
-    def __div__(self, tv: TonalVector):
+    def __div__(self, tv: TonalVector) -> "ChordType":
         return self.inversion(tv)
-    
+
 class Chord(ToneCollection):
-    
-    def __init__(self, root: TonalVector, tones: Iterable[TonalVector], 
-                 bass: TonalVector=None, name:str=None):
-        
+    """A concrete realization of a ChordType at a specific root pitch."""
 
-        self.tones = set(tones)
+    def __init__(self, root: TonalVector, tones: Iterable[TonalVector],
+                 bass: TonalVector=None, name: str=None):
 
+        super().__init__(tones, root=root, name=name)
+        self.bass = bass or self.root
 
-
-
-
-    
-        

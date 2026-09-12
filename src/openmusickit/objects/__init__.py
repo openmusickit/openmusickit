@@ -19,10 +19,9 @@ is a LyricSyllable object (which is also a SequentialObject, and contains the sy
 and is connected to the Note object by an edge of type LYRIC.
 """
 
-from . import events, lyrics, note, omk_object
+from . import lyrics, note, omk_object
 
 __all__ = [
-    "events",
     "lyrics",
     "note",
     "omk_object",
