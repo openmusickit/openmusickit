@@ -435,7 +435,7 @@ class TonalVector(tuple):
         -------
 
         >>> type(TonalVector((0,0)).pitch)
-        <class 'wsmn.tonal_vector.TonalVector.Pitch'>
+        <class 'openmusickit.systems.wsmn.tonal.tonal_vector.TonalVector.Pitch'>
         """
         
         def __init__(self, vector: TonalVector):
