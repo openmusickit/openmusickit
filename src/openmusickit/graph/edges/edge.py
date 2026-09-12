@@ -27,7 +27,7 @@ class EdgeOrigin(StrEnum):
     DERIVED = auto()
     INFERRED = auto()
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True, kw_only=True)
 class OmkEdge:
     _type: EdgeType
     origin: EdgeOrigin = EdgeOrigin.ASSERTED

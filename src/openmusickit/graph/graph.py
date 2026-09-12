@@ -5,7 +5,6 @@ from .rx_adapter import RustworkxAdapter
 from .edges.edge import EdgeType, OmkEdge
 from openmusickit.utils.id import OmkId
 from openmusickit.objects.omk_object import OmkObject, SequentialObject
-from openmusickit.objects.events.event import MusicalEvent
 from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence 
 
 
