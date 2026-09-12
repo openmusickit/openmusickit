@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from openmusickit.objects.omk_object import SequentialObject
 from openmusickit.values.tone.tone import Tone
 from openmusickit.values.tone.tone_collection import ToneCollection
@@ -10,4 +12,5 @@ class ChordEvent(SequentialObject):
     
     In most WSMN contexts, a ChordEvent will use a systems.wsmn.tonal.Chord as its ToneCollection, 
     but other systems may use different ToneCollection types."""
-    tones: ToneCollection | None = None
+    
+    chord: ToneCollection
