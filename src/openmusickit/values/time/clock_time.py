@@ -1,16 +1,25 @@
 """Durations based on clock time."""
 
+from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
-from .duration import Duration
+from fractions import Fraction
+from .duration import Duration, TemporalElement, TemporalRatio, TemporalUnit, TemporalSystem
+from .errors import TemporalCompatibilityError
 
-@dataclass
+@dataclass(frozen=True)
 class ClockDuration(Duration):
-    _microseconds: int
+    """A duration measured in microseconds of real time.
+
+    The stored value may be a Fraction so that conversions from metered time
+    (e.g. a triplet eighth at quarter = 100) stay exact; the accessors
+    (`microseconds`, `seconds`, `str()`) present ordinary numbers.
+    """
+    _microseconds: int | Fraction
 
     @property
     def rational_length(self):
-        return self._microseconds
+        return Fraction(self._microseconds)
 
     def scale(self, scalar):
         return ClockDuration(self._microseconds * scalar)
@@ -19,6 +28,12 @@ class ClockDuration(Duration):
         if not isinstance(other, ClockDuration):
             return NotImplemented
         return ClockDuration(self._microseconds + other._microseconds)
+
+    def __radd__(self, other):
+        # lets `sum(clock_durations)` work with the default start value of 0
+        if other == 0:
+            return self
+        return NotImplemented
 
     def __sub__(self, other):
         if not isinstance(other, ClockDuration):
@@ -31,15 +46,28 @@ class ClockDuration(Duration):
     def __truediv__(self, scalar):
         return ClockDuration(self._microseconds / scalar)
 
+    def __eq__(self, other):
+        if isinstance(other, ClockDuration):
+            return self._microseconds == other._microseconds
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, ClockDuration):
+            return self._microseconds < other._microseconds
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(Fraction(self._microseconds))
+
     @property
     def temporal_system(self):
         return "RealTime"
 
     def __repr__(self):
-        return f"ClockTime({str(self._microseconds)})"
+        return f"ClockDuration({self._microseconds})"
 
     def __str__(self):
-        total_microseconds = int(self._microseconds)
+        total_microseconds = int(round(self._microseconds))
         hours, remainder = divmod(total_microseconds, 3_600_000_000)
         minutes, remainder = divmod(remainder, 60_000_000)
         seconds, microseconds = divmod(remainder, 1_000_000)
@@ -63,11 +91,11 @@ class ClockDuration(Duration):
 
     @property
     def microseconds(self) -> int:
-        return int(self._microseconds)
+        return int(round(self._microseconds))
 
     @property
     def to_timedelta(self) -> timedelta:
-        return timedelta(microseconds=self._microseconds)
+        return timedelta(microseconds=self.microseconds)
 
     @classmethod
     def from_minutes(cls, n):
@@ -86,3 +114,36 @@ class ClockDuration(Duration):
         total_microseconds = (td.days * 86_400 + td.seconds) * 1_000_000 + td.microseconds
         return cls(total_microseconds)
 
+    @classmethod
+    def from_duration(cls, duration: TemporalElement, ratio: TemporalRatio) -> ClockDuration:
+        """Convert any metered TemporalElement (a note value, a TemporalUnit,
+        a time signature, a tied duration...) into clock time.
+
+        `ratio` relates metered time to clock time; it is usually built with `Tempo`:
+
+        ```
+        quarter = MeteredDuration(1, 4)
+        ClockDuration.from_duration(MeteredDuration(1, 2, dots=1), Tempo(120, quarter))
+        # -> 1.5 seconds
+        ```
+
+        Raises:
+            TemporalCompatibilityError: if the contextual side of `ratio` is not clock time.
+        """
+        contextual = ratio.contextual
+        contextual_base = getattr(contextual, "base", contextual)
+        if not isinstance(contextual_base, ClockDuration):
+            raise TemporalCompatibilityError(
+                "The contextual side of the ratio must be a ClockDuration. (Use Tempo to build one.)")
+        return cls(Fraction(duration.rational_length) * ratio.r)
+
+
+def Tempo(n:int, beat: Duration, clock_time: ClockDuration=ClockDuration.from_minutes(1)) -> TemporalRatio:
+    """Returns a TemporalRatio representing a tempo of n beats per clock_time (default: one minute).
+
+    ```
+    Tempo(120, MeteredDuration(1, 4))           # quarter = 120
+    Tempo(60, MeteredDuration(1, 4, dots=1))    # dotted quarter = 60
+    ```
+    """
+    return TemporalRatio(TemporalUnit(n, beat), TemporalUnit(1, clock_time))
