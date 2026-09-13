@@ -1,5 +1,6 @@
 from __future__ import annotations
 from fractions import Fraction
+from math import lcm
 from typing import Tuple, Iterable
 
 from openmusickit.values.time.duration import TemporalUnit, CompoundTemporalUnit
@@ -59,11 +60,12 @@ class TimeSignature(CompoundTemporalUnit):
 
         Counts are scaled when they stay whole (4/4 * 2 = 8/4; 6/8 / 2 = 3/8),
         otherwise the denominator changes (3/8 / 2 = 3/16).
-        The presentation is scaled the same way when it is numeric;
-        a non-numeric presentation (e.g. "C") is dropped.
+        An odd factor (4/4 / 3) gives a tupleted denominator (4 triplet eighths).
+        The presentation is scaled the same way when it is numeric and the
+        result can be written as plain numbers; otherwise it is dropped.
 
         Raises:
-            ScalingError: if the result is not notatable (e.g. 4/4 / 3).
+            ScalingError: if the scalar is not positive.
         """
         scalar = Fraction(scalar)
         if scalar <= 0:
@@ -72,12 +74,7 @@ class TimeSignature(CompoundTemporalUnit):
         # Scale all groups in unison, so an additive meter keeps a single denominator:
         # if any group's count would stop being whole, every group moves to the smaller base.
         new_counts = [tu.count * scalar for tu in self._units]
-        leftover = 1
-        for c in new_counts:
-            if c.denominator > leftover:
-                leftover = c.denominator
-        if leftover & (leftover - 1) != 0:
-            raise ScalingError(f"Cannot scale {self!r} by {scalar}: the result is not notatable.")
+        leftover = lcm(*(c.denominator for c in new_counts))
 
         try:
             new_units = [
@@ -111,9 +108,10 @@ def _scale_presentation(presentation: Tuple[str, str] | None, scalar) -> Tuple[s
     if all(t.denominator == 1 for t in new_tops):
         return ("+".join(str(int(t)) for t in new_tops), str(bottom))
 
-    # push the largest leftover denominator into the bottom number
-    leftover = max(t.denominator for t in new_tops)
+    # push the leftover denominator into the bottom number;
+    # an odd factor means a tupleted denominator, which has no plain numeric presentation
+    leftover = lcm(*(t.denominator for t in new_tops))
     if leftover & (leftover - 1) != 0:
-        raise ScalingError(f"Cannot scale time signature {presentation} by {scalar}.")
+        return None
     new_tops = [t * leftover for t in new_tops]
     return ("+".join(str(int(t)) for t in new_tops), str(bottom * leftover))

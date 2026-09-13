@@ -60,16 +60,18 @@ class TemporalElement(ABC):
     
     @abstractmethod
     def scale(self, scalar: int|Fraction):
-        """Return a TemporalElement scaled by a scalar according to its TemporalSystem.
+        """Return a TemporalElement scaled by a positive scalar, according to its TemporalSystem.
 
-        Implementations should return a new TemporalElement of the same type.
+        The result's ``rational_length`` must equal ``self.rational_length * scalar``.
+        Implementations should return an element of the same type where the system
+        allows it, and otherwise the closest thing the system offers: WSMN's
+        ``MeteredDuration`` returns a ``MeteredDuration`` for powers of two and may
+        return a tuplet member or a ``TiedDuration`` for other scalars.
 
         Raises:
-            ScalingError: If the scaled value is musically valid in the TemporalSystem
-                but cannot be represented as a single TemporalElement of this type.
-                For example, a WSMN MeteredDuration may only support scaling by powers of two;
-                other scalar values may require a composite representation,
-                such as tied durations.
+            ScalingError: If ``scalar`` is not a positive rational, or if the
+                scaled value cannot be represented in this TemporalSystem at all.
+                Callers may catch this and fall back to an alternate strategy.
     """
         raise NotImplementedError
 
@@ -192,11 +194,12 @@ class TemporalUnit(TemporalElement):
         The count is scaled whenever the result is a whole number
         (4 quarters * 2 = 8 quarters; 6 eighths / 2 = 3 eighths).
         Otherwise the remaining factor is pushed into the base duration
-        (3 eighths / 2 = 3 sixteenths; 1 quarter * 3/2 = 3 eighths).
+        (3 eighths / 2 = 3 sixteenths; 1 quarter * 3/2 = 3 eighths;
+        4 quarters / 3 = 4 triplet eighths, if the base supports tuplets).
 
         Raises:
-            ScalingError: if the leftover factor is not a power of two
-                (e.g. 4 quarters / 3), or if the base cannot absorb it.
+            ScalingError: if the scalar is not positive,
+                or if the base cannot absorb the leftover factor.
         """
         scalar = Fraction(scalar)
         if scalar <= 0:

@@ -426,11 +426,27 @@ def test_duration_scaling_preserves_dots():
             scaled = md.MeteredDuration(1, d, dots=n_dots).scale(F(1, 2))
             assert scaled.dots == n_dots
 
-def test_duration_scaling_rejects_non_powers_of_two():
-    """A single MeteredDuration can only be augmented/diminished by powers of two.
-    Other scalars need a tuplet or tie and must raise ScalingError."""
+def test_duration_scaling_non_powers_of_two():
+    """Scalars that aren't powers of two resolve via from_length:
+    a different single symbol, a tuplet member, or a tie."""
     quarter = md.MeteredDuration(1, 4)
-    for bad in (3, 5, 6, F(2, 3), F(3, 2), F(1, 3)):
+    assert quarter.scale(3) == sym.dotted_half
+    assert isinstance(quarter.scale(3), md.MeteredDuration)
+    assert quarter.scale(F(3, 2)) == sym.dotted_quarter
+    assert quarter.scale(F(2, 3)) == sym.quarter_in_triplet
+    assert quarter.scale(F(2, 3)).tr.r == F(2, 3)
+    assert quarter.scale(F(1, 3)) == sym.eighth_in_triplet
+    assert quarter.scale(5) == sym.whole + sym.quarter
+    assert isinstance(quarter.scale(5), md.TiedDuration)
+    assert quarter.scale(6) == sym.dotted_whole
+    assert sym.dotted_quarter.scale(F(1, 3)) == sym.eighth   # 3/8 / 3 = 1/8, no tuplet needed
+
+    # an existing tuplet ratio is kept
+    scaled = sym.quarter_in_triplet.scale(3)
+    assert scaled.tr == sym.triplet(sym.quarter)
+    assert scaled.rational_length == sym.dotted_half.rational_length * F(2, 3)
+
+    for bad in (0, -2, "x", F(-1, 2)):
         with pytest.raises(ScalingError):
             quarter.scale(bad)
 
@@ -831,16 +847,29 @@ def test_temporal_unit_scaling_pushes_into_base():
     for scalar in (2, F(1, 2), F(3, 2), 3, F(1, 4)):
         assert isinstance(TemporalUnit(4, sym.quarter).scale(scalar).count, int)
 
-def test_temporal_unit_scaling_rejects_non_notatable():
-    """4 quarters / 3 has no notatable form without a tuplet."""
-    with pytest.raises(ScalingError):
-        TemporalUnit(4, sym.quarter).scale(F(1, 3))
-    with pytest.raises(ScalingError):
-        TemporalUnit(1, sym.quarter).scale(F(2, 3))
-    with pytest.raises(ScalingError):
-        TemporalUnit(4, sym.quarter).scale(0)
-    with pytest.raises(ScalingError):
-        TemporalUnit(4, sym.quarter).scale(-2)
+def test_temporal_unit_scaling_with_odd_factors():
+    """4 quarters / 3 = 4 triplet eighths; 1 quarter * 2/3 = 2 triplet eighths."""
+    third = TemporalUnit(4, sym.quarter).scale(F(1, 3))
+    assert third.rational_length == F(1, 3)
+    assert third.count == 4
+    assert third.base == sym.eighth_in_triplet
+    assert third.base.tr.r == F(2, 3)
+
+    two_thirds = TemporalUnit(1, sym.quarter).scale(F(2, 3))
+    assert two_thirds.count == 2
+    assert two_thirds.base == sym.eighth_in_triplet
+    assert two_thirds == sym.quarter_in_triplet
+
+    # 4 quarters / 5 = 4 quintuplet sixteenths
+    fifth = TemporalUnit(4, sym.quarter).scale(F(1, 5))
+    assert fifth.count == 4
+    assert fifth.base.nominal_length == F(1, 16)
+    assert fifth.base.tr.r == F(4, 5)
+    assert fifth.rational_length == F(1, 5)
+
+    for bad in (0, -2):
+        with pytest.raises(ScalingError):
+            TemporalUnit(4, sym.quarter).scale(bad)
 
 def test_temporal_unit_with_tuplet_base_scaling():
     """A tupleted base is left alone when the count absorbs the scalar."""
@@ -888,11 +917,26 @@ def test_additive_time_signature_scaling_presentation():
     assert halved.rational_length == F(7, 16)
     assert [tu.base for tu in halved] == [sym.sixteenth] * 3
 
-def test_time_signature_scaling_rejects_non_notatable():
-    with pytest.raises(ScalingError):
-        sym.four_four.scale(F(1, 3))
-    with pytest.raises(ScalingError):
-        sym.seven_eight_2_2_3.scale(F(1, 3))
+def test_time_signature_scaling_with_odd_factors():
+    """4/4 / 3 is a bar of 4 triplet eighths; there is no plain numeric presentation for it."""
+    third = sym.four_four.scale(F(1, 3))
+    assert isinstance(third, ts.TimeSignature)
+    assert third.rational_length == F(1, 3)
+    assert third.presentation is None
+    assert third.spec[0].count == 4
+    assert third.spec[0].base == sym.eighth_in_triplet
+
+    # 6/8 / 3 = 2/8: no tuplet needed, presentation survives
+    assert sym.six_eight.scale(F(1, 3)).presentation == ("2", "8")
+
+    third_additive = sym.seven_eight_2_2_3.scale(F(1, 3))
+    assert third_additive.rational_length == F(7, 24)
+    assert third_additive.presentation is None
+    assert len({tu.base for tu in third_additive}) == 1   # all groups share the same tupleted base
+
+    for bad in (0, -1):
+        with pytest.raises(ScalingError):
+            sym.four_four.scale(bad)
 
 def test_time_signature_scaling_non_numeric_presentation():
     """A presentation that isn't numeric (e.g. common time 'C') can't be scaled and is dropped."""
@@ -1000,6 +1044,9 @@ def test_tied_duration_scaling_and_tuplets():
     tied = sym.quarter + sym.sixteenth
     assert tied.scale(2) == sym.half + sym.eighth
     assert tied.scale(F(1, 2)).rational_length == F(5, 32)
+    # scaling can merge a tie back into one symbol: 5/16 * 3 = 15/16 = triple-dotted half
+    assert tied.scale(3) == md.MeteredDuration(1, 2, dots=3)
+    assert isinstance(tied.scale(3), md.MeteredDuration)
 
     # a tuplet member added to a non-tuplet note can only be tied
     mixed = sym.quarter + sym.quarter_in_triplet
@@ -1055,3 +1102,155 @@ def test_symbols_tuplet_helpers():
     assert sym.sextuplet(sym.sixteenth).r == F(2, 3)
     assert sym.septuplet(sym.sixteenth).r == F(4, 7)
     assert md.MeteredDuration(1, 16, tr=sym.quintuplet(sym.sixteenth)).rational_length == F(1, 20)
+
+
+# --- from_length ------------------------------------------------------------
+
+def test_from_length_single_symbols():
+    """Notatable lengths come back as one MeteredDuration, same as from_fraction."""
+    for d in standard_duration_denominators:
+        for n_dots in range(4):
+            expected = md.MeteredDuration(1, d, dots=n_dots)
+            result = md.MeteredDuration.from_length(expected.rational_length)
+            assert isinstance(result, md.MeteredDuration)
+            assert result == expected
+            assert result.dots == n_dots
+            assert result.tr is None
+    assert md.MeteredDuration.from_length(2) == sym.breve
+    assert md.MeteredDuration.from_length(F(3, 1)) == sym.dotted_breve
+    assert md.MeteredDuration.from_length(8) == sym.maxima
+
+def test_from_length_tuplets_canonical_ratios():
+    """An odd factor k in the denominator gives a k : (largest power of two below k) tuplet."""
+    cases = {
+        F(1, 3): (F(1, 2), F(2, 3)),    # half in a half-note triplet
+        F(1, 6): (F(1, 4), F(2, 3)),    # quarter in a quarter-note triplet
+        F(1, 12): (F(1, 8), F(2, 3)),
+        F(1, 5): (F(1, 4), F(4, 5)),    # quarter in a 5:4 quintuplet
+        F(1, 10): (F(1, 8), F(4, 5)),
+        F(1, 7): (F(1, 4), F(4, 7)),    # quarter in a 7:4 septuplet
+        F(1, 9): (F(1, 8), F(8, 9)),    # eighth in a 9:8
+        F(1, 11): (F(1, 8), F(8, 11)),
+        F(2, 5): (F(1, 2), F(4, 5)),    # half in a half-note quintuplet
+        F(2, 3): (F(1, 1), F(2, 3)),    # whole in a whole-note triplet
+        F(3, 7): (F(3, 4), F(4, 7)),    # dotted half in a 7:4
+    }
+    for length, (nominal, ratio) in cases.items():
+        result = md.MeteredDuration.from_length(length)
+        assert isinstance(result, md.MeteredDuration), length
+        assert result.rational_length == length
+        assert result.nominal_length == nominal, length
+        assert result.tr.r == ratio, length
+
+    assert md.MeteredDuration.from_length(F(1, 3)) == sym.half_in_triplet
+    assert md.MeteredDuration.from_length(F(1, 6)) == sym.quarter_in_triplet
+    assert md.MeteredDuration.from_length(F(1, 6)).tr == sym.triplet(sym.quarter)
+    assert md.MeteredDuration.from_length(F(1, 12)) == sym.eighth_in_triplet
+
+def test_from_length_tuplet_ratio_is_well_formed():
+    """The synthesized ratio is k units in the time of c units of the same plain note value."""
+    result = md.MeteredDuration.from_length(F(1, 5))
+    ratio = result.tr
+    assert isinstance(ratio, TemporalRatio)
+    assert ratio.nominal.count == 5
+    assert ratio.contextual.count == 4
+    assert ratio.nominal.base == sym.quarter
+    assert ratio.contextual.base == sym.quarter
+    assert ratio.nominal.base.dots == 0
+    assert ratio.contextual.rational_length == F(1, 1)     # the tuplet fills a bar of 4/4
+    assert TemporalUnit(5, result) == sym.four_four
+
+def test_from_length_ties():
+    """Non-notatable power-of-two lengths are split largest-first (dots included)."""
+    cases = {
+        F(5, 8): [sym.half, sym.eighth],
+        F(5, 16): [sym.quarter, sym.sixteenth],
+        F(9, 8): [sym.whole, sym.eighth],
+        F(11, 16): [sym.half, sym.dotted_eighth],
+        F(13, 16): [sym.dotted_half, sym.sixteenth],
+        F(5, 4): [sym.whole, sym.quarter],
+        F(5, 2): [sym.breve, sym.half],
+        F(9, 4): [sym.breve, sym.quarter],
+        F(21, 16): [sym.whole, sym.quarter, sym.sixteenth],
+    }
+    for length, members in cases.items():
+        result = md.MeteredDuration.from_length(length)
+        assert isinstance(result, md.TiedDuration), length
+        assert list(result) == members, length
+        assert result.rational_length == length
+        assert all(m.tr is None for m in result)
+
+def test_from_length_tie_inside_tuplet():
+    """5/24 = (quarter tied to sixteenth) inside a quarter-note triplet."""
+    result = md.MeteredDuration.from_length(F(5, 24))
+    assert isinstance(result, md.TiedDuration)
+    assert result.rational_length == F(5, 24)
+    assert [m.nominal_length for m in result] == [F(1, 4), F(1, 16)]
+    assert all(m.tr is result[0].tr for m in result)      # members share one ratio object
+    assert result[0].tr.r == F(2, 3)
+
+def test_from_length_with_existing_tuplet():
+    """With tr given, length is the notated value inside that tuplet."""
+    triplet = sym.triplet(sym.quarter)
+    assert md.MeteredDuration.from_length(F(1, 4), tr=triplet) == sym.quarter_in_triplet
+    assert md.MeteredDuration.from_length(F(1, 4), tr=triplet).tr is triplet
+
+    tied = md.MeteredDuration.from_length(F(5, 16), tr=triplet)
+    assert isinstance(tied, md.TiedDuration)
+    assert all(m.tr is triplet for m in tied)
+    assert tied.rational_length == F(5, 16) * F(2, 3)
+
+    # a notated value that itself needs a tuplet produces a nested tuplet
+    nested = md.MeteredDuration.from_length(F(1, 12), tr=triplet)
+    assert nested.nominal_length == F(1, 8)
+    assert nested.rational_length == F(1, 18)
+    assert nested.tr.contextual.base.tr is triplet     # inner ratio is measured in outer-tuplet units
+
+def test_from_length_divide_a_bar():
+    """Dividing common bars into n equal parts."""
+    for n in (2, 3, 4, 5, 6, 7, 8, 9, 12):
+        part = md.MeteredDuration.from_length(sym.four_four.rational_length / n)
+        assert TemporalUnit(n, part) == sym.four_four, n
+    # 3/4 into 2: dotted quarters, no tuplet
+    part = md.MeteredDuration.from_length(sym.three_four.rational_length / 2)
+    assert part == sym.dotted_quarter and part.tr is None
+    # 3/4 into 4: dotted eighths, no tuplet
+    part = md.MeteredDuration.from_length(sym.three_four.rational_length / 4)
+    assert part == sym.dotted_eighth and part.tr is None
+    # 6/8 into 4: 3/16 is a single symbol (dotted eighth), so no tuplet is synthesized,
+    # even though an engraver in 6/8 would write a quadruplet of eighths. Context-aware
+    # spelling is out of scope for from_length.
+    part = md.MeteredDuration.from_length(sym.six_eight.rational_length / 4)
+    assert part == sym.dotted_eighth and part.tr is None
+    # ...but 6/8 into 5 has no plain spelling, so it is a 5:4 quintuplet of dotted eighths
+    part = md.MeteredDuration.from_length(sym.six_eight.rational_length / 5)
+    assert part.nominal_length == F(3, 16)
+    assert part.tr.r == F(4, 5)
+    assert TemporalUnit(5, part) == sym.six_eight
+
+def test_from_length_rejects_non_positive():
+    with pytest.raises(ValueError):
+        md.MeteredDuration.from_length(0)
+    with pytest.raises(ValueError):
+        md.MeteredDuration.from_length(F(-1, 4))
+
+def test_from_length_vs_from_fraction():
+    """from_fraction stays strict; from_length always resolves."""
+    with pytest.raises(ValueError):
+        md.MeteredDuration.from_fraction(F(5, 8))
+    with pytest.raises(ValueError):
+        md.MeteredDuration.from_fraction(F(1, 3))
+    assert md.MeteredDuration.from_length(F(5, 8)).rational_length == F(5, 8)
+    assert md.MeteredDuration.from_length(F(1, 3)).rational_length == F(1, 3)
+    assert md.MeteredDuration.from_fraction(F(3, 8)) == md.MeteredDuration.from_length(F(3, 8))
+
+def test_from_length_quantized_float():
+    """Floats should be quantized to a Fraction first."""
+    length = F(1 / 3).limit_denominator(64)
+    assert length == F(1, 3)
+    assert md.MeteredDuration.from_length(length) == sym.half_in_triplet
+    # an unquantized float has a power-of-two denominator: an absurd (but exact) tie, not a triplet
+    raw = md.MeteredDuration.from_length(1 / 3)
+    assert isinstance(raw, md.TiedDuration)
+    assert raw.rational_length == F(1 / 3)
+    assert len(raw) == 27
