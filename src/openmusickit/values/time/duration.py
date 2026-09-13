@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from fractions import Fraction
-from functools import singledispatchmethod
-from numbers import Real
-from typing import List, Iterable
+from functools import total_ordering
+from typing import Iterable, List
 from .errors import ScalingError
 
 
@@ -12,6 +11,25 @@ class TemporalSystem:
     """A named system of musical time"""
     pass
 
+
+def _length_of(other) -> Fraction | None:
+    """Return the rational length of anything that can be measured:
+    a TemporalElement, or an iterable of TemporalElements.
+    Returns None if `other` cannot be measured."""
+    if isinstance(other, TemporalElement):
+        return other.rational_length
+    if isinstance(other, (str, bytes)):
+        return None
+    try:
+        members = list(other)
+    except TypeError:
+        return None
+    if not all(isinstance(m, TemporalElement) for m in members):
+        return None
+    return sum((m.rational_length for m in members), Fraction(0))
+
+
+@total_ordering
 class TemporalElement(ABC):
     """Any class that represents a structured period of time 
     which can be measured and subdivided. For example:
@@ -19,6 +37,11 @@ class TemporalElement(ABC):
 
     Any internally-consistent rhthmic/temporal system should be constructable
     using a subclasses of TemporalElement and AbstractDuration.
+
+    TemporalElements compare (and hash) by their rational_length,
+    so a dotted quarter == 3 eighths == TemporalUnit(3, eighth).
+    Any TemporalElement can also be compared against an iterable of TemporalElements,
+    which is measured as the sum of its members.
 
     """
     
@@ -49,6 +72,22 @@ class TemporalElement(ABC):
                 such as tied durations.
     """
         raise NotImplementedError
+
+    def __eq__(self, other) -> bool:
+        other_length = _length_of(other)
+        if other_length is None:
+            return NotImplemented
+        return self.rational_length == other_length
+
+    def __lt__(self, other) -> bool:
+        other_length = _length_of(other)
+        if other_length is None:
+            return NotImplemented
+        return self.rational_length < other_length
+
+    def __hash__(self):
+        return hash(self.rational_length)
+
 
 class Duration(TemporalElement):
     """Any class that represents a basic unit of time and is notated as a single symbol.
@@ -134,6 +173,8 @@ class TemporalUnit(TemporalElement):
     """
 
     def __init__(self, count: int, base: Duration):
+        if count < 0:
+            raise ValueError("A TemporalUnit cannot have a negative count.")
         self.count = count
         self.base = base
 
@@ -145,14 +186,36 @@ class TemporalUnit(TemporalElement):
     def rational_length(self) -> Fraction:
         return self.count * self.base.rational_length 
     
-    def scale(self, scalar: int):
-        """Scale the Temporal Unit"""
-        # TODO: Need to account for fractions
-        return self.__class__(self.count * scalar, self.base)
+    def scale(self, scalar: int|Fraction) -> TemporalUnit:
+        """Scale the Temporal Unit.
 
-    def __eq__(self, durations: List[Duration]):
-        """Compares self to the combined value of an iterable of durations."""
-        pass
+        The count is scaled whenever the result is a whole number
+        (4 quarters * 2 = 8 quarters; 6 eighths / 2 = 3 eighths).
+        Otherwise the remaining factor is pushed into the base duration
+        (3 eighths / 2 = 3 sixteenths; 1 quarter * 3/2 = 3 eighths).
+
+        Raises:
+            ScalingError: if the leftover factor is not a power of two
+                (e.g. 4 quarters / 3), or if the base cannot absorb it.
+        """
+        scalar = Fraction(scalar)
+        if scalar <= 0:
+            raise ScalingError("A TemporalUnit can only be scaled by a positive scalar.")
+
+        new_count = self.count * scalar
+        if new_count.denominator == 1:
+            return self.__class__(int(new_count), self.base)
+
+        # push the leftover denominator into the base
+        leftover = Fraction(1, new_count.denominator)
+        try:
+            new_base = self.base.scale(leftover)
+        except ScalingError as e:
+            raise ScalingError(
+                f"Cannot scale {self!r} by {scalar}: "
+                f"{new_count.denominator} does not divide the count, "
+                f"and the base cannot be scaled by {leftover}: {e}")
+        return self.__class__(new_count.numerator, new_base)
 
     def __repr__(self):
         return f'TemporalUnit({self.count}, {repr(self.base)})'
@@ -161,8 +224,8 @@ class TemporalUnit(TemporalElement):
 class CompoundTemporalUnit(TemporalElement):
     """An iterable defining a series of ordered temporal elements."""
 
-    def __init__(self, units: list[TemporalUnit]):
-        self._units = units
+    def __init__(self, units: Iterable[TemporalElement]):
+        self._units = list(units)
 
     def __iter__(self):
         return iter(self._units)
@@ -187,26 +250,31 @@ class CompoundTemporalUnit(TemporalElement):
 
     @property
     def rational_length(self):
-        return sum([tu.count * (tu.base.rational_length) for tu in self._units])
+        return sum((tu.rational_length for tu in self._units), Fraction(0))
+
+    def remainder(self, series: Iterable[TemporalElement]) -> Fraction:
+        """Returns the length of self minus the total length of `series`.
+        Negative if `series` overflows self."""
+        return self.rational_length - sum((s.rational_length for s in series), Fraction(0))
     
-    def first_out_of_bounds(self, series: Iterable[Duration]):
+    def first_out_of_bounds(self, series: Iterable[TemporalElement]):
         """Returns the index of the first items in `series`
         that exceeds the length of self.
         Returns None if the total length of series is <= length of self."""
 
         srl = self.rational_length
-        for i in len(series):
-            srl -= series[i].rational_length
+        for i, item in enumerate(series):
+            srl -= item.rational_length
             if srl < 0:
                 return i
         return None
     
     def scale(self, scalar):
         try:
-            new_units = [tu.scale(scalar) for tu in self.units]
+            new_units = [tu.scale(scalar) for tu in self._units]
         except ScalingError as e:
             raise ScalingError(f"One or more members cannot complete the requested scaling operation: {e}")
-        return CompoundTemporalUnit(new_units)
+        return self.__class__(new_units)
     
 
 
@@ -222,17 +290,17 @@ class TemporalRatio:
 
     Other temporal systems may find other uses (for example, defining duration ratios within a gong cycle).
 
-    n: numerator or nominal units, the number and type of notes notated and played
-    d: denominator (sometimes called "actual" or "contextual), the length of time (expressed as a multiple of Durations)
+    nominal: the number and type of notes notated and played
+    contextual: (sometimes called "actual") the length of time (expressed as a multiple of Durations)
         as measured in the surrounding context.
              
-    So, for example, a standard quarternote triple (3 quarters in the time/space of 2 quarters) would be:
+    So, for example, a standard quarter note triplet (3 quarters in the time/space of 2 quarters) would be:
 
     ```python
-    quarter = Duration(1, 4)
-    two_quarters = TemporalUnit(2, quarter)
+    quarter = MeteredDuration(1, 4)
     three_quarters = TemporalUnit(3, quarter)
-    triplet = TemporalRatio(two_quarters, three_quarters)
+    two_quarters = TemporalUnit(2, quarter)
+    triplet = TemporalRatio(nominal=three_quarters, contextual=two_quarters)
     ```
 
     Note that this only defines the relationship, and is not the tuplet itself.
@@ -243,39 +311,28 @@ class TemporalRatio:
 
     """
 
-    def __init__(self, nominal: TemporalUnit, contextual: TemporalUnit):
-
-        #if nominal.temporal_system != contextual.temporal_system:
-        #    raise TypeError('Both members of TemporalRatio must be in the same TemporalSystem. For mixed system ratios, use MixedTemporalRatio.')
-        # QUESTION: Do I need to check for this, and do I need a separate MixedTemporalRatio?   
-
+    def __init__(self, nominal: TemporalElement, contextual: TemporalElement):
         self._n = nominal
         self._c = contextual
 
     @property
-    def r(self):
+    def nominal(self) -> TemporalElement:
+        return self._n
 
-        if self._nominal.base == self._contextual.base:
-            return Fraction(self._contextual.count, self._nominal.count)
+    @property
+    def contextual(self) -> TemporalElement:
+        return self._c
 
-        t1 = self._nominal.count
-        n1 = self._nominal.base.n
-        d1 = self._nominal.base.d
+    @property
+    def r(self) -> Fraction:
+        """The multiplier that converts a nominal length into a contextual length:
+        contextual_length / nominal_length.
 
-        t2 = self._contextual.count
-        n2 = self._contextual.base.n
-        d2 = self._contextual.base.d
+        For a quarter-note triplet this is 2/3;
+        for a tempo of quarter = 60 it is microseconds-per-whole-note (4_000_000)."""
+        return Fraction(self._c.rational_length) / Fraction(self._n.rational_length)
 
-        dur1 = Fraction(n1, d1)
-        dur2 = Fraction(n2, d2)
-
-        t_dur1 = dur1 * t1
-        t_dur2 = dur2 * t2
-
-        tuplet_ratio = Fraction(t_dur2, t_dur1)
-
-        return tuplet_ratio
-
+    # kept for backwards compatibility
     @property
     def _nominal(self):
         return self._n 
@@ -284,6 +341,13 @@ class TemporalRatio:
     def _contextual(self):
         return self._c
 
+    def __eq__(self, other):
+        if not isinstance(other, TemporalRatio):
+            return NotImplemented
+        return self.r == other.r
 
-class MixedTemporalRatio:
-    pass
+    def __hash__(self):
+        return hash(self.r)
+
+    def __repr__(self):
+        return f"TemporalRatio({self._n!r}, {self._c!r})"
