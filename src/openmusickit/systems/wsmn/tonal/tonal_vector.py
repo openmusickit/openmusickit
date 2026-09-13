@@ -5,7 +5,7 @@ from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from .wsmn import WSMN
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq
-from .constants import D_LEN, C_LEN, MS, AC, Accidental
+from .constants import D_LEN, C_LEN, MS, AC, Accidental, SolfegeStyle
 
 
 @WSMN.register_tone_type()
@@ -134,10 +134,24 @@ class TonalVector(tuple):
         return 3
     
     @classmethod
-    def from_string(cls, s, mid_c=4, prev_note=None):
+    def from_string(cls, s, mid_c=4, solfege_style=SolfegeStyle.EURO_FIXED):
         """Creates and returns a TonalVector,
         given a parsable string representation of a pitch or interval.
-        
+
+        Accepts letter names (A-G, case-insensitive) with ASCII, Unicode, or
+        spelled-out accidentals; numeric octave designations (mid_c sets
+        which octave number is treated as middle C); solfege syllables; and
+        interval names (quality abbreviation or word, plus a number or
+        ordinal). Lilypond-style spellings ("is"/"es" accidentals, "'"/","
+        octave marks) are not accepted here -- use `from_ly` instead.
+
+        Solfege syllables are ambiguous between two conventions, selected
+        with `solfege_style`: EURO_FIXED (the default) treats each syllable
+        as a fixed diatonic letter name with an optional separate accidental
+        (e.g. "Si" = B, "Sol#" = G-sharp); OMK_MOVEABLE treats syllables as
+        moveable-do, with dedicated chromatic syllables of their own (e.g.
+        "Si" = so-sharp, "Di" = do-sharp).
+
         Examples
         --------
         
@@ -146,6 +160,30 @@ class TonalVector(tuple):
 
         >>> TonalVector.from_string('G#')
         TonalVector((4, 8))
+
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def from_ly(cls, s, prev_note=None):
+        """Creates and returns an octave-qualified TonalVector,
+        given a Lilypond-style pitch string.
+
+        Accepts Lilypond note names using "is"/"es" accidental suffixes, and
+        either absolute ("'"/",") or relative (resolved against `prev_note`)
+        octave marks. Since Lilypond has no notion of an octave-less
+        (abstract) pitch, the result is always octave-qualified -- with no
+        octave mark and no `prev_note`, the pitch is assumed to be in
+        Lilypond's default octave (OMK octave 0).
+
+        Examples
+        --------
+
+        >>> TonalVector.from_ly('cis')
+        TonalVector((0, 1, 0))
+
+        >>> TonalVector.from_ly("g'")
+        TonalVector((4, 7, 0))
 
         """
         raise NotImplementedError
@@ -627,10 +665,10 @@ class TonalVector(tuple):
             --------
 
             >>> TonalVector((0,1)).pitch.ly # C sharp
-            'ces'
+            'cis'
 
             >>> TonalVector((6,10,1)).pitch.ly # B flat, with an octave designation
-            'bis'
+            'bes'
             """
 
             return "".join([self._ln.lower(), self._modifier.ly])
@@ -648,19 +686,19 @@ class TonalVector(tuple):
             "c'"
 
             >>> TonalVector((6,10,-1)).pitch.ly_abs8ve # B flat below middle C
-            'bis,'
+            'bes,'
 
             >>> TonalVector((3,6,0)).pitch.ly_abs8ve # F sharp in octave of middle c
-            'fes'
+            'fis'
 
             >>> TonalVector((3,6)).pitch.ly_abs8ve # F sharp, no octave designation
-            'fes'
+            'fis'
 
             >>> TonalVector((1,1,4)).pitch.ly_abs8ve # D flat, 4 octaves above middle c
-            "dis''''"
+            "des''''"
 
             >>> TonalVector((1,1,-4)).pitch.ly_abs8ve # D flat, 4 octaves below middle c
-            'dis,,,,'
+            'des,,,,'
             """
 
             if not self._v._has_octave:

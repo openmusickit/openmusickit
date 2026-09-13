@@ -10,7 +10,7 @@ q_vals = {
 - 4.0 : 'quad_diminished-from_perfect',
 - 3.5 : 'trpl_diminished-from_maj_min',
 - 3.0 : 'trpl_diminished-from_perfect',
-- 2.5 : 'dbl_dimished-from_maj_min',
+- 2.5 : 'dbl_diminished-from_maj_min',
 - 2   : 'dbl_diminished-from_perfect',
 - 1.5 : 'diminished-from_maj_min',
 - 1   : 'diminished-from_perfect',
@@ -145,11 +145,6 @@ def _(v, _=None):
         if c > d_val.c:
             d_val_c = d_val.c + C_LEN
         modifier = c - d_val_c
-
-
-
-    if modifier < 0:
-        base_q_val = -base_q_val
 
     return _get_quality(base_q_val + modifier)
 
