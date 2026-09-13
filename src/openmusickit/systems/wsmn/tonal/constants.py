@@ -176,7 +176,7 @@ AC = {
      1 : {'v': 'sharp', 'u':'♯', 'a':'#', 'ly':'is'},
      2 : {'v': 'double sharp', 'u':'𝄪', 'a':'##', 'ly':'isis'},
      3 : {'v': 'triple sharp', 'u':'𝄪♯', 'a':'###', 'ly':'isisis'},
-     4 : {'v': 'quaduple sharp', 'u':'𝄪𝄪', 'a':'####', 'ly':'isisisis'},
+     4 : {'v': 'quadruple sharp', 'u':'𝄪𝄪', 'a':'####', 'ly':'isisisis'},
 }
 
 AC = {i:Accidental(offset=i, v=x['v'], uni=x['u'], asc=x['a'], ly=x['ly']) for i,x in AC.items()}

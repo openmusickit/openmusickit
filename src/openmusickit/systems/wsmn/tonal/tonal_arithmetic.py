@@ -471,20 +471,26 @@ def tonal_nearest_instance(x: tuple[int], y: tuple[int]):
 
     >>> tonal_nearest_instance((0, 0, 0), (0, 11, 0))
     (0, 11, 0)
+
+    A tritone is equally near in either direction; the tie goes to the
+    smaller diatonic distance (an augmented 4th over a diminished 5th),
+    as in Lilypond's relative octave mode.
+
+    >>> tonal_nearest_instance((0, 0, 0), (3, 6)) # F-sharp, a 4th above
+    (3, 6, 0)
+
+    >>> tonal_nearest_instance((0, 0, 0), (4, 6)) # G-flat, a 4th below
+    (4, 6, -1)
     """
     if len(x) == 2:
         return (y[0], y[1])
 
-    d = y[0]
-    c = y[1]
-    o = x[2]
+    candidates = [(y[0], y[1], o) for o in (x[2] - 1, x[2], x[2] + 1)]
 
-    o = [o, o-1, o+1]
+    def diatonic_steps(z):
+        return abs((z[0] + z[2] * D_LEN) - (x[0] + x[2] * D_LEN))
 
-    candidates = [(d,c,z) for z in o]
-    diff_candidates = {abs_int_diff(x, z):z for z in candidates}
-
-    return diff_candidates[min(diff_candidates.keys())]
+    return min(candidates, key=lambda z: (abs_int_diff(x, z), diatonic_steps(z)))
 
 def _tonal_unmodulo(x: tuple[int]) -> tuple[int]:
     """Utility function.

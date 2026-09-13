@@ -1,11 +1,218 @@
 from __future__ import annotations
 
+import re
+
+from openmusickit.utils.number_names import ordinals
 from openmusickit.values.tone.tone import TonalSystem, Tone, PitchRepresentation
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from .wsmn import WSMN
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq
-from .constants import D_LEN, C_LEN, MS, AC, Accidental, SolfegeStyle
+from .constants import D_LEN, C_LEN, MS, AC, EURO_SF, QualityType, Accidental, SolfegeStyle
+
+
+### Vocabulary and grammar for TonalVector.from_string / from_ly ###
+#
+# from_string strips all whitespace from its input, then matches it against
+# regular expressions built from the lookup tables below. The tables are the
+# single place where accepted spellings live; the patterns just glue them
+# together.
+
+def _alternation(spellings) -> str:
+    """A regex alternation matching any one of the given literal spellings,
+    longest first (so 'sol' is tried before 'so', and '##' before '#')."""
+    return "|".join(re.escape(s) for s in sorted(spellings, key=len, reverse=True))
+
+
+## Pitches ##
+
+_LETTERS = {diatone.ln: diatone.d for diatone in MS}   # 'c' -> 0, 'd' -> 1, ...
+
+
+def _pitch_names(solfege_style: SolfegeStyle) -> dict[str, tuple[int, int]]:
+    """Maps every name a pitch string may begin with (a letter name or a
+    solfege syllable, lowercase) to (d, half-steps above the natural).
+
+    Letter names and EURO_FIXED syllables are always natural -- any
+    accidental is spelled separately, after the name. OMK_MOVEABLE
+    syllables carry their own chromatic alteration (e.g. 'di' is do-sharp).
+    """
+    names = {letter: (d, 0) for letter, d in _LETTERS.items()}
+    if solfege_style == SolfegeStyle.EURO_FIXED:
+        names.update({syllable: (d, 0) for d, syllable in EURO_SF.items()})
+        names.update({'so': (4, 0), 'ti': (6, 0)})   # common alternates for 'sol' and 'si'
+    if solfege_style == SolfegeStyle.OMK_MOVEABLE:
+        for diatone in MS:
+            names.update({syllable: (diatone.d, offset) for offset, syllable in diatone.sf.items()})
+    return names
+
+_PITCH_NAMES = {style: _pitch_names(style) for style in SolfegeStyle}
+
+
+def _accidental_spellings() -> dict[str, int]:
+    """Maps every accidental spelling from_string accepts -- ASCII ('#', 'bb'),
+    Unicode ('♯', '𝄫'), and spelled out ('sharp', 'doubleflat') -- to its
+    offset in half-steps. Spelled-out forms are stored without spaces,
+    since from_string strips all whitespace before matching."""
+    spellings = {}
+    for offset, accidental in AC.items():
+        for spelling in (accidental.a, accidental.u, accidental.v.replace(" ", "")):
+            if spelling:   # a natural has no ASCII spelling
+                spellings[spelling] = offset
+    return spellings
+
+_ACCIDENTALS = _accidental_spellings()
+
+# e.g. "c", "g#", "c𝄪", "csharp", "do-sharp", "bb3", "g-1"
+_PITCH_PATTERNS = {
+    style: re.compile(rf"""
+        (?P<name>{_alternation(names)})
+        (?:-?(?P<accidental>{_alternation(_ACCIDENTALS)}))?
+        (?P<octave>-?\d+)?
+    """, re.VERBOSE)
+    for style, names in _PITCH_NAMES.items()
+}
+
+# Lilypond note names, e.g. "c", "cis", "beses", "c'", "des,,"
+_LY_PITCH_PATTERN = re.compile(r"""
+    (?P<letter>[a-g])
+    (?P<accidental>(?:is)*|(?:es)*)    # each 'is' raises a half-step, each 'es' lowers one
+    (?P<octave_marks>'*|,*)            # each ' raises an octave, each , lowers one
+""", re.VERBOSE)
+
+# Lilypond also accepts the Dutch contractions 'as' for 'aes' and 'es' for
+# 'ees' (and so 'ases' for 'aeses', 'eses' for 'eeses').
+_LY_CONTRACTION = re.compile(r"^([ae])s")
+
+
+def _ly_pitch_match(text: str) -> re.Match | None:
+    """Matches a (lowercase) Lilypond note name, contractions included."""
+    return _LY_PITCH_PATTERN.fullmatch(_LY_CONTRACTION.sub(r"\1es", text))
+
+
+def _ly_relative_octave(d: int, prev: tuple) -> int:
+    """The octave Lilypond's \\relative mode gives to letter name d when it
+    follows prev: whichever octave puts it within a fourth (three letter
+    names) of prev, above or below. As in Lilypond, accidentals play no part."""
+    steps = (d - prev[0] + 3) % D_LEN - 3   # letter-name steps from prev, -3..3
+    return (prev[2] * D_LEN + prev[0] + steps) // D_LEN
+
+
+def _pitch_from_match(m: re.Match, names: dict, mid_c: int) -> tuple:
+    """(d, c[, o]) for a string matched by one of the _PITCH_PATTERNS."""
+    d, chromatic_offset = names[m['name']]
+    if m['accidental']:
+        chromatic_offset += _ACCIDENTALS[m['accidental']]
+    c = (MS[d].c + chromatic_offset) % C_LEN
+
+    if m['octave'] is None:
+        return (d, c)
+    return (d, c, int(m['octave']) - mid_c)
+
+
+## Intervals ##
+
+# Quality words, mapped to a canonical kind. Bare 'M' (major) and bare 'm'
+# (minor) are the only case-sensitive spellings; see _quality_kind.
+_QUALITY_KINDS = {
+    'p': 'perfect', 'per': 'perfect', 'perfect': 'perfect',
+    'M': 'major', 'maj': 'major', 'major': 'major',
+    'm': 'minor', 'min': 'minor', 'minor': 'minor',
+    'aug': 'augmented', 'augmented': 'augmented',
+    'dim': 'diminished', 'diminished': 'diminished',
+}
+
+# Prefixes for multiply augmented/diminished intervals, mapped to how many
+# times. The three-letter forms are what IntervalQuality.abbr produces.
+_QUALITY_MULTIPLIERS = {
+    'dbl': 2, 'double': 2,
+    'trp': 3, 'trpl': 3, 'triple': 3,
+    'qua': 4, 'quad': 4, 'quadruple': 4,
+}
+
+_NUMBER_WORDS = {diatone.i: diatone.d + 1 for diatone in MS}   # 'unison' -> 1, 'second' -> 2, ...
+
+# e.g. "P5", "m3", "aug4", "dbldim5", "perfectfifth", "M9th", "aug4+1"
+_INTERVAL_PATTERN = re.compile(rf"""
+    (?P<multiplier>{_alternation(_QUALITY_MULTIPLIERS)})?
+    (?P<quality>{_alternation({k.lower() for k in _QUALITY_KINDS})})
+    (?:
+        (?P<number>\d+)(?P<ordinal>st|nd|rd|th)?
+      | (?P<number_word>{_alternation(_NUMBER_WORDS)})
+    )
+    (?P<octave>[+-]\d+)?    # octave suffix as in IntervalQuality.abbr, e.g. "aug4+1"
+""", re.VERBOSE | re.IGNORECASE)
+
+
+def _quality_kind(word: str) -> str:
+    """The canonical quality kind for a quality word matched by _INTERVAL_PATTERN."""
+    if word in ('M', 'm'):   # the one case-sensitive spelling
+        return _QUALITY_KINDS[word]
+    return _QUALITY_KINDS[word.lower()]
+
+
+def _interval_quality(kind: str, times: int, d: int) -> iq.IntervalQuality:
+    """The IntervalQuality named by a quality kind, for diatonic degree d.
+    `times` is how many times augmented or diminished (1 = augmented,
+    2 = double augmented); it is meaningless for perfect, major and minor.
+
+    Unisons, 4ths and 5ths (and their compounds) are perfect-type, so they
+    can't be major or minor. 2nds, 3rds, 6ths and 7ths (and their
+    compounds) are major/minor-type, so they can't be perfect.
+    """
+    degree = MS[d]
+    is_perfect_type = degree.q == QualityType.P
+    if kind == 'perfect' and not is_perfect_type:
+        raise ValueError(f"A {degree.i} cannot be perfect (only major, minor, augmented or diminished).")
+    if kind in ('major', 'minor') and is_perfect_type:
+        raise ValueError(f"A {degree.i} cannot be {kind} (only perfect, augmented or diminished).")
+
+    # IntervalQuality is keyed by a "relative number": 0 for perfect,
+    # +0.5/-0.5 for major/minor, and each augmentation or diminution moves
+    # a further 1 away from there.
+    base = degree.q.value
+    if kind == 'perfect':
+        rel_number = 0
+    elif kind == 'major':
+        rel_number = base
+    elif kind == 'minor':
+        rel_number = -base
+    elif kind == 'augmented':
+        rel_number = base + times
+    else:  # diminished
+        rel_number = -base - times
+
+    try:
+        return iq._get_quality(rel_number)
+    except KeyError:
+        raise ValueError(f"{times} times {kind} is beyond the supported range of interval qualities.") from None
+
+
+def _interval_from_match(m: re.Match) -> tuple:
+    """(d, c[, o]) for a string matched by _INTERVAL_PATTERN."""
+    kind = _quality_kind(m['quality'])
+    times = _QUALITY_MULTIPLIERS[m['multiplier'].lower()] if m['multiplier'] else 1
+    if times > 1 and kind not in ('augmented', 'diminished'):
+        raise ValueError(f"'{m['multiplier']}' only applies to augmented or diminished intervals.")
+
+    if m['number']:
+        number = int(m['number'])
+    else:
+        number = _NUMBER_WORDS[m['number_word'].lower()]
+    if not 1 <= number < len(ordinals):
+        raise ValueError(f"Interval numbers must be between 1 and {len(ordinals) - 1}.")
+    if m['ordinal'] and ordinals[number] != m['number'] + m['ordinal'].lower():
+        raise ValueError(f"'{m['number']}{m['ordinal']}' is not a valid ordinal (expected '{ordinals[number]}').")
+
+    # Numbers above 7 are compound: a 9th is a 2nd plus an octave.
+    d, octave = (number - 1) % D_LEN, (number - 1) // D_LEN
+    c = (MS[d].c + _interval_quality(kind, times, d).chromatic_modifier) % C_LEN
+
+    if m['octave']:
+        octave += int(m['octave'])
+    if number > D_LEN or m['octave']:
+        return (d, c, octave)
+    return (d, c)
 
 
 @WSMN.register_tone_type()
@@ -161,20 +368,48 @@ class TonalVector(tuple):
         >>> TonalVector.from_string('G#')
         TonalVector((4, 8))
 
+        >>> TonalVector.from_string('Bb3')
+        TonalVector((6, 10, -1))
+
+        >>> TonalVector.from_string('perfect fifth')
+        TonalVector((4, 7))
+
+        >>> TonalVector.from_string('M9')
+        TonalVector((1, 2, 1))
+
         """
-        raise NotImplementedError
+        text = "".join(s.split())   # whitespace is never significant
+
+        ly = _ly_pitch_match(text.lower())
+        if ly and (ly['accidental'] or ly['octave_marks']):
+            raise ValueError(f"{s!r} is a Lilypond pitch name; use TonalVector.from_ly instead.")
+
+        interval = _INTERVAL_PATTERN.fullmatch(text)
+        if interval:
+            return cls(_interval_from_match(interval))
+
+        pitch = _PITCH_PATTERNS[solfege_style].fullmatch(text.lower())
+        if pitch:
+            return cls(_pitch_from_match(pitch, _PITCH_NAMES[solfege_style], mid_c))
+
+        raise ValueError(f"{s!r} is not a recognized pitch or interval.")
 
     @classmethod
     def from_ly(cls, s, prev_note=None):
         """Creates and returns an octave-qualified TonalVector,
         given a Lilypond-style pitch string.
 
-        Accepts Lilypond note names using "is"/"es" accidental suffixes, and
+        Accepts Lilypond note names using "is"/"es" accidental suffixes
+        (including the Dutch contractions "as"/"es" for "aes"/"ees"), and
         either absolute ("'"/",") or relative (resolved against `prev_note`)
         octave marks. Since Lilypond has no notion of an octave-less
         (abstract) pitch, the result is always octave-qualified -- with no
         octave mark and no `prev_note`, the pitch is assumed to be in
         Lilypond's default octave (OMK octave 0).
+
+        Relative octaves follow Lilypond's \\relative rule: the note goes in
+        whichever octave puts its letter name within a fourth of `prev_note`,
+        ignoring accidentals, and any octave marks shift it from there.
 
         Examples
         --------
@@ -183,10 +418,35 @@ class TonalVector(tuple):
         TonalVector((0, 1, 0))
 
         >>> TonalVector.from_ly("g'")
-        TonalVector((4, 7, 0))
+        TonalVector((4, 7, 1))
+
+        >>> TonalVector.from_ly("g", prev_note=TonalVector((0, 0, 0)))
+        TonalVector((4, 7, -1))
+
+        >>> TonalVector.from_ly("as")
+        TonalVector((5, 8, 0))
 
         """
-        raise NotImplementedError
+        m = _ly_pitch_match(s.strip().lower())
+        if not m:
+            raise ValueError(f"{s!r} is not a Lilypond pitch name.")
+
+        d = _LETTERS[m['letter']]
+        accidental = m['accidental'].count('is') - m['accidental'].count('es')
+        if accidental not in AC:
+            raise ValueError(f"{s!r} has more sharps or flats than are supported.")
+        c = (MS[d].c + accidental) % C_LEN
+
+        if prev_note is None:
+            octave = 0   # Lilypond's default octave is OMK's octave 0
+        else:
+            prev_note = cls(prev_note)
+            if not prev_note._has_octave:
+                raise ValueError("prev_note must be octave-qualified.")
+            octave = _ly_relative_octave(d, prev_note)
+
+        octave_shift = m['octave_marks'].count("'") - m['octave_marks'].count(',')
+        return cls((d, c, octave + octave_shift))
     
 
     ### Util ###
@@ -727,23 +987,30 @@ class TonalVector(tuple):
 
             >>> TonalVector((4,7,-1)).pitch.ly_rel8ve(TonalVector((0,0,0)))
             'g'
+
+            >>> TonalVector((0,0,2)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            "c''"
+
+            Accidentals don't affect the octave: F-sharp is a fourth above C
+            and G-flat a fifth above, so G-flat gets an octave mark.
+
+            >>> TonalVector((3,6,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            'fis'
+
+            >>> TonalVector((4,6,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            "ges'"
             """
             if prev == None:
                 return self.ly_abs8ve
 
-            if self._v.distance(prev).d <= 3:
-                return self.ly
-
-            closer_chroma = prev.nearest_instance(self._v)
-
-            octave_distance = self._v.o - closer_chroma.o
+            octave_distance = self._v.o - _ly_relative_octave(self._v.d, prev)
 
             if octave_distance < 0:
                 ostr = ","
             else:
                 ostr = "'"
 
-            return "".join([self.ly, ostr*abs(octave_distance)]) 
+            return "".join([self.ly, ostr*abs(octave_distance)])
 
 
         @property
@@ -803,23 +1070,17 @@ class TonalVector(tuple):
             self._v = vector
             self.quality = iq._get_quality(vector)
             self.number = vector.d + 1
-            
-            try:
-                self.o = vector.o or 0
-            except AttributeError:
-                self.o = 0
-            
 
-            if self.o > 0:
-                self.o = "".join(["+", str(self.o)])
-            elif self.o == 0:
-                self.o = ""
+            # Signed octave suffix ("+0", "+1", "-2"); empty for abstract vectors.
+            if vector._has_octave:
+                self.o = f"{vector.o:+d}"
             else:
-                self.o = str(self.o)
+                self.o = ""
 
         @property
         def abbr(self):
-            """Returns abbreviated quality designation.
+            """Returns the abbreviated quality and interval number, followed
+            by a signed octave suffix if the vector is octave-qualified.
 
             Examples
             --------
@@ -827,8 +1088,14 @@ class TonalVector(tuple):
             >>> TonalVector((0,0)).interval.abbr
             'per1'
 
+            >>> TonalVector((0,0,0)).interval.abbr
+            'per1+0'
+
             >>> TonalVector((3, 6, 1)).interval.abbr
             'aug4+1'
+
+            >>> TonalVector((5, 8, -2)).interval.abbr
+            'min6-2'
             """
 
 

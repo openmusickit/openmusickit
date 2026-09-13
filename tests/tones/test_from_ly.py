@@ -36,6 +36,25 @@ def test_ly_default_octave(s, expected):
     assert TonalVector.from_ly(s) == TonalVector(expected)
 
 
+### Dutch contractions: Lilypond accepts "as" for "aes" and "es" for "ees" ###
+# (and likewise "ases"/"eses" for the double flats), alongside the long forms.
+
+@pytest.mark.parametrize("s, expected", [
+    ("as", (5, 8, 0)),
+    ("aes", (5, 8, 0)),
+    ("es", (2, 3, 0)),
+    ("ees", (2, 3, 0)),
+    ("ases", (5, 7, 0)),
+    ("aeses", (5, 7, 0)),
+    ("eses", (2, 2, 0)),
+    ("eeses", (2, 2, 0)),
+    ("as'", (5, 8, 1)),
+    ("es,", (2, 3, -1)),
+])
+def test_ly_dutch_contractions(s, expected):
+    assert TonalVector.from_ly(s) == TonalVector(expected)
+
+
 ### Absolute octave marks: ' raises an octave, , lowers an octave ###
 
 @pytest.mark.parametrize("s, expected", [
@@ -56,9 +75,9 @@ def test_ly_absolute_octave_marks(s, expected):
 
 ### Relative octave, resolved against prev_note ###
 # Lilypond's relative-octave convention: an unmarked note is placed in
-# whichever octave puts it within a tritone (<= a fourth by letter-name
-# distance) of the previous note; ' and , then shift that by an additional
-# octave in either direction.
+# whichever octave puts its letter name within a fourth of the previous
+# note's letter name (accidentals are ignored); ' and , then shift that by
+# an additional octave in either direction.
 
 @pytest.mark.parametrize("s, prev, expected", [
     ("c", (0, 0, 0), (0, 0, 0)),
@@ -71,6 +90,26 @@ def test_ly_absolute_octave_marks(s, expected):
     ("c,", (4, 7, 0), (0, 0, 0)),
 ])
 def test_ly_relative_octave(s, prev, expected):
+    prev_note = TonalVector(prev)
+    assert TonalVector.from_ly(s, prev_note=prev_note) == TonalVector(expected)
+
+
+### Relative octave ignores accidentals ###
+# Per the Lilypond docs, the interval to the previous note "is determined
+# without considering accidentals": after C, F-sharp is a fourth (placed
+# above) and G-flat is a fifth (placed below), even though both are a
+# tritone away; "a double-augmented fourth is considered a smaller interval
+# than a double-diminished fifth".
+
+@pytest.mark.parametrize("s, prev, expected", [
+    ("fis", (0, 0, 0), (3, 6, 0)),
+    ("ges", (0, 0, 0), (4, 6, -1)),
+    ("fisis", (0, 0, 0), (3, 7, 0)),
+    ("geses", (0, 0, 0), (4, 5, -1)),
+    ("eisis", (6, 11, 0), (2, 6, 1)),   # E double-sharp after B goes up (a fourth)
+    ("feses", (6, 11, 0), (3, 3, 0)),   # F double-flat after B goes down (a fifth)
+])
+def test_ly_relative_octave_ignores_accidentals(s, prev, expected):
     prev_note = TonalVector(prev)
     assert TonalVector.from_ly(s, prev_note=prev_note) == TonalVector(expected)
 
