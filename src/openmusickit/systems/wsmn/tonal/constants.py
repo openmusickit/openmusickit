@@ -18,6 +18,20 @@ P = QualityType.P
 Mm = QualityType.Mm
 
 
+class SolfegeStyle(Enum):
+    """Which solfege naming convention a solfege string belongs to.
+
+    OMK_MOVEABLE uses moveable-do syllables with chromatic variants
+    (e.g. 'di' = do-sharp, 'so' = the natural 5th, 'si' = so-sharp).
+
+    EURO_FIXED uses fixed-do syllables, one per diatonic letter name,
+    with no chromatic variants of their own (accidentals are applied as
+    separate modifiers, e.g. 'Do#', 'Sib').
+    """
+    OMK_MOVEABLE = "omk_moveable"
+    EURO_FIXED = "euro_fixed"
+
+
 # CHROMATIC SOLFEGE SYLLABLES
 # Based on 'standard' American Moveable Do
 # The following are invented here:
@@ -31,6 +45,12 @@ FA = {-1: 'fe', 0: 'fa', 1: 'fi'}
 SO = {-1: 'se', 0: 'so', 1: 'si'}
 LA = {-1: 'le', 0: 'la', 1: 'li'}
 TI = {-1: 'te', 0: 'ti', 1: 'to'}
+
+
+# EURO-STYLE FIXED DO SOLFEGE SYLLABLES
+# One syllable per diatonic letter name (C-B). No chromatic variants:
+# accidentals are represented separately (e.g. "Do#", "Sib").
+EURO_SF = {0: 'do', 1: 're', 2: 'mi', 3: 'fa', 4: 'sol', 5: 'la', 6: 'si'}
 
 
 
@@ -148,15 +168,15 @@ class Accidental:
 # Accidentals
 AC = {
     # halfsteps : verbose, unicode, ascii, ly
-    -4 : {'v': 'quadruple flat', 'u':'𝄫𝄫', 'a':'bbbb', 'ly':'isisisis' },
-    -3 : {'v': 'triple flat', 'u':'𝄫♭', 'a':'bbb', 'ly':'isisis'},
-    -2 : {'v': 'double flat', 'u':'𝄫', 'a':'bb', 'ly':'isis' },
-    -1 : {'v': 'flat', 'u':'♭', 'a':'b', 'ly':'is'},
+    -4 : {'v': 'quadruple flat', 'u':'𝄫𝄫', 'a':'bbbb', 'ly':'eseseses' },
+    -3 : {'v': 'triple flat', 'u':'𝄫♭', 'a':'bbb', 'ly':'eseses'},
+    -2 : {'v': 'double flat', 'u':'𝄫', 'a':'bb', 'ly':'eses' },
+    -1 : {'v': 'flat', 'u':'♭', 'a':'b', 'ly':'es'},
      0 : {'v': 'natural', 'u':'♮', 'a':'', 'ly':''},
-     1 : {'v': 'sharp', 'u':'♯', 'a':'#', 'ly':'es'},
-     2 : {'v': 'double sharp', 'u':'𝄪', 'a':'##', 'ly':'eses'},
-     3 : {'v': 'triple sharp', 'u':'𝄪♯', 'a':'###', 'ly':'eseses'},
-     4 : {'v': 'quaduple sharp', 'u':'𝄪𝄪', 'a':'####', 'ly':'eseseses'},
+     1 : {'v': 'sharp', 'u':'♯', 'a':'#', 'ly':'is'},
+     2 : {'v': 'double sharp', 'u':'𝄪', 'a':'##', 'ly':'isis'},
+     3 : {'v': 'triple sharp', 'u':'𝄪♯', 'a':'###', 'ly':'isisis'},
+     4 : {'v': 'quaduple sharp', 'u':'𝄪𝄪', 'a':'####', 'ly':'isisisis'},
 }
 
 AC = {i:Accidental(offset=i, v=x['v'], uni=x['u'], asc=x['a'], ly=x['ly']) for i,x in AC.items()}

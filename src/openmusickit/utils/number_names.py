@@ -9,7 +9,7 @@ ordinals = [
     "7th",
     "8th",
     "9th",
-    "10th,",
+    "10th",
     "11th",
     "12th",
     "13th",
