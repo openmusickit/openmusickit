@@ -23,7 +23,8 @@ class ChordType(ToneCollection):
     (for example, an added 2nd vs. an added 9th)."""
 
     def __init__(self, tones: Iterable[TonalVector],
-                 name: str, bass: TonalVector=None, quality: Quality=None):
+                 name: str, bass: TonalVector=None, quality: Quality=None,
+                 suffix: str=None):
 
         tones = tuple(tones)
         if TonalVector(0, 0) not in tones:
@@ -33,6 +34,8 @@ class ChordType(ToneCollection):
 
         self.bass = bass or self.root
         self.quality = quality
+        # Lead-sheet suffix, e.g. "maj7", "sus4", "7♭9". Empty string for a plain major triad.
+        self.suffix = suffix
 
     def arpegiate(self) -> ToneSequence:
         """Returns the chord's tones as a ToneSequence, bass tone first."""
@@ -40,32 +43,70 @@ class ChordType(ToneCollection):
         return ToneSequence([self.bass] + rest)
 
     def _resolve_inversion(self, inv: int|TonalVector, name: str|None) -> tuple[TonalVector, str|None]:
-        """Shared logic for `inversion()`: finds the new bass tone and,
-        if `name` was not supplied, builds a default name for the inversion.
+        """Shared logic for `inversion()`: finds the new bass tone, and
+        keeps the existing name unless `name` was supplied (inversions are
+        reflected in `__str__`, not in the name).
         Used by both ChordType and Chord, since inverting a Chord follows
         the same rule as inverting a ChordType, just producing a Chord."""
 
         if isinstance(inv, TonalVector):
             bass = inv
-            if name is None and self.name:
-                name = self.name + f" - {ordinals[list(self).index(bass)]} inversion"
         elif isinstance(inv, int):
             try:
                 bass = list(self)[inv]
             except IndexError:
                 raise IndexError(f"Max inversion is {len(self)-1}.")
-            if name is None and self.name:
-                name = self.name + f" / {bass.unqualify_octave().pitch.unicode}"
         else:
             raise TypeError("`inv` must be a TonalVector or an int.")
 
+        if name is None:
+            name = self._name_template
+
         return bass, name
 
-    # FIX naming
     def inversion(self, inv: int|TonalVector, name: str=None) -> "ChordType":
         """Returns a ChordType with the same tones, but a different bass tone."""
         bass, name = self._resolve_inversion(inv, name)
-        return ChordType(self, name, bass, self.quality)
+        return ChordType(self, name, bass, self.quality, self.suffix)
+
+    def __str__(self) -> str:
+        """Lead-sheet style label: the suffix if there is a non-empty one,
+        otherwise the name, followed by the ordinal inversion when the bass
+        is not the root. (The inversion is the index of the bass within the
+        chord type's tones.)
+
+        Examples
+        --------
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, maj7, G
+
+        Non-empty suffix, root position and inverted:
+
+        >>> str(maj7)
+        'maj7'
+        >>> str(maj7.inversion(1))
+        'maj7 1st inv.'
+        >>> str(maj7 / G)
+        'maj7 2nd inv.'
+
+        Empty suffix falls back to the name:
+
+        >>> str(maj)
+        'major'
+        >>> str(maj.inversion(1))
+        'major 1st inv.'
+
+        No suffix or name at all (degenerate; falls back to `__repr__`):
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E
+        >>> str(ChordType([C, E, G], name=None))
+        'ChordType([TonalVector((0, 0)), TonalVector((2, 4)), TonalVector((4, 7))], root=TonalVector((0, 0)))'
+        """
+        label = self.suffix or self.name or ""
+        inv = list(self).index(self.bass)
+        if inv:
+            label = f"{label} {ordinals[inv]} inv."
+        return label.strip() or repr(self)
 
     def __call__(self, tv: TonalVector) -> "Chord":
         """Returns a Chord: this ChordType realized with its root at `tv`.
@@ -86,7 +127,7 @@ class ChordType(ToneCollection):
         root = tv
         bass = self.bass + tv
 
-        return Chord(root, tones, bass, self.name)
+        return Chord(root, tones, bass, self.name, self.suffix)
 
     def __truediv__(self, tv: TonalVector) -> "ChordType":
         """Returns a ChordType with the same tones, but a different bass tone.
@@ -105,15 +146,63 @@ class Chord(ToneCollection):
     rooted at E)."""
 
     def __init__(self, root: TonalVector, tones: Iterable[TonalVector],
-                 bass: TonalVector=None, name: str=None):
+                 bass: TonalVector=None, name: str=None, suffix: str=None):
 
         super().__init__(tuple(tones), root=root, name=name)
         self.bass = bass or self.root
+        self.suffix = suffix
 
     def inversion(self, inv: int|TonalVector, name: str=None) -> "Chord":
         """Returns a Chord with the same tones and root, but a different bass tone."""
         bass, name = ChordType._resolve_inversion(self, inv, name)
-        return Chord(self.root, self, bass, name)
+        return Chord(self.root, self, bass, name, self.suffix)
+
+    def __str__(self) -> str:
+        """Lead-sheet chord symbol: the root's pitch name followed by the
+        suffix, plus "/bass" when the bass is not the root. Falls back to
+        `name` (with a separating space) when there is no suffix.
+
+        Examples
+        --------
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Eb, maj, maj7, hdim7
+
+        Non-empty suffix, root position and inverted:
+
+        >>> str(C(maj7))
+        'Cmaj7'
+        >>> str(C(maj7) / E)
+        'Cmaj7/E'
+        >>> str(Eb(hdim7).inversion(2))
+        'E♭ø7/B𝄫'
+
+        Empty suffix (the plain major triad) shows just the root:
+
+        >>> str(C(maj))
+        'C'
+        >>> str(C(maj) / G)
+        'C/G'
+
+        No suffix at all falls back to the name:
+
+        >>> str(Chord(C, [C, E, G], name="major"))
+        'C major'
+        >>> str(Chord(C, [C, E, G], name="major") / E)
+        'C major/E'
+        """
+        root = self.root.unqualify_octave()
+        bass = self.bass.unqualify_octave()
+
+        if self.suffix is not None:
+            symbol = root.pitch.unicode + self.suffix
+        elif self.name:
+            symbol = f"{root.pitch.unicode} {self.name}"
+        else:
+            symbol = root.pitch.unicode
+
+        if bass != root:
+            symbol = f"{symbol}/{bass.pitch.unicode}"
+        return symbol
 
     def __truediv__(self, tv: TonalVector) -> "Chord":
         """Returns a Chord with the same tones and root, but a different bass tone.
