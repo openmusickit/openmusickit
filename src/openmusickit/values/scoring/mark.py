@@ -12,6 +12,9 @@ class MarkType(StrEnum):
     BOWING = auto()
     BREATH = auto()
     FICTA = auto()
+    PHRASING = auto() # slurs, ties, pedaling, fermatas: marks that shape how events connect and are sustained
+    NAVIGATION = auto() # segno, coda, and other signs that direct movement through the score
+    TRANSPOSITION = auto() # 8va, 8vb, 15ma, and similar octave lines
     OTHER = auto()
 
 class AttachmentMode(StrEnum):
@@ -19,7 +22,7 @@ class AttachmentMode(StrEnum):
     
     SINGLE: A mark that is attached to a single note or event.
     SPAN: A mark that is attached to a span of notes or events.
-    DISTRIBUTED: A mark that is attached to a span of notes or events, but
+    EITHER: A mark that can be attached to either a single event or a span.
     
     This is not enforced at the OmkGraph level,
     but may be used in validation or rendering to determine how a mark should be applied,
@@ -35,5 +38,5 @@ class Mark:
     name: str
     description: str | None = None
     type: MarkType | None = None
-    attachment_mode: frozenset[AttachmentMode] | None = None
+    attachment_mode: AttachmentMode | None = None
     aliases: tuple[str, ...] = ()
