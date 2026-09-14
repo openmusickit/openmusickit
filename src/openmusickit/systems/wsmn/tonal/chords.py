@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Iterable
+from typing import Callable, Iterable
 from openmusickit.values.tone.tone_collection import ToneCollection, ToneSequence
 from openmusickit.utils.number_names import ordinals
 from .tonal_vector import TonalVector
@@ -156,6 +156,69 @@ class Chord(ToneCollection):
         """Returns a Chord with the same tones and root, but a different bass tone."""
         bass, name = ChordType._resolve_inversion(self, inv, name)
         return Chord(self.root, self, bass, name, self.suffix)
+
+    def transform(self, operation: Callable[..., TonalVector], *args,
+                  new_name: str=None, new_suffix: str=None, **kwargs) -> "Chord":
+        """Returns a new Chord made by applying `operation` to every tone
+        of this chord (root, tones, and bass).
+
+        `operation` is called as `operation(tone, *args, **kwargs)` for each
+        tone. It is typically a TonalVector method (such as
+        `TonalVector.transpose`), but any callable that accepts a TonalVector
+        as its first argument and returns a TonalVector will do. The
+        operation is validated against the root first; if it does not
+        return a TonalVector, a TypeError is raised.
+
+        The new chord keeps this chord's name and suffix unless `new_name`
+        and/or `new_suffix` are given.
+
+        Examples
+        --------
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, G, min, maj, M3
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection
+
+        Transposition, with the interval passed as the operand:
+
+        >>> str(C(min).transform(TonalVector.transpose, M3))
+        'Emin'
+        >>> str(C(min).transform(TonalVector.transpose, M3, TonalDirection.DOWN))
+        'A♭min'
+
+        The bass is transformed along with the rest of the chord:
+
+        >>> str((C(maj) / G).transform(TonalVector.transpose, M3))
+        'E/B'
+
+        A user-defined operation that needs no operand, with a new suffix:
+
+        >>> def sharpen(tv):
+        ...     return tv + TonalVector((0, 1))
+        >>> str(C(maj).transform(sharpen, new_suffix="maj"))
+        'C♯maj'
+
+        An operation that does not produce a TonalVector is rejected:
+
+        >>> C(maj).transform(str)
+        Traceback (most recent call last):
+        ...
+        TypeError: ...
+        """
+        root = operation(self.root, *args, **kwargs)
+        if not isinstance(root, TonalVector):
+            raise TypeError(
+                f"`operation` must return a TonalVector, but returned {root!r} for the root."
+            )
+
+        tones = [operation(t, *args, **kwargs) for t in self]
+        bass = operation(self.bass, *args, **kwargs)
+
+        if new_name is None:
+            new_name = self._name_template
+        if new_suffix is None:
+            new_suffix = self.suffix
+
+        return Chord(root, tones, bass, new_name, new_suffix)
 
     def __str__(self) -> str:
         """Lead-sheet chord symbol: the root's pitch name followed by the
