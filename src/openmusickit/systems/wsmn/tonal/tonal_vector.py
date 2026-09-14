@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from enum import StrEnum, auto
 
 from openmusickit.utils.number_names import ordinals
 from openmusickit.values.tone.tone import TonalSystem, Tone, PitchRepresentation
@@ -17,6 +18,11 @@ from .constants import D_LEN, C_LEN, MS, AC, EURO_SF, QualityType, Accidental, S
 # regular expressions built from the lookup tables below. The tables are the
 # single place where accepted spellings live; the patterns just glue them
 # together.
+
+class TonalDirection(StrEnum):
+    """Direction for transposition or inversion of a TonalVector."""
+    UP = auto()
+    DOWN = auto()
 
 def _alternation(spellings) -> str:
     """A regex alternation matching any one of the given literal spellings,
@@ -622,6 +628,23 @@ class TonalVector(tuple):
             return int(self) < int(x)
         except TypeError:
             return int(self) < ta.tonal_int(x)
+
+    def transpose(self, x: tuple[int], direction: TonalDirection=TonalDirection.UP) -> TonalVector:
+        """Returns a TonalVector transposed by x, in the given direction.
+
+        Examples
+        --------
+
+        >>> TonalVector((0,0)).transpose(TonalVector((1,1))) 
+        TonalVector((1, 1))
+        """
+        if direction == TonalDirection.UP:
+            return self + x
+        elif direction == TonalDirection.DOWN:
+            return self - x
+        else:
+            raise ValueError(f"Invalid TonalDirection: {direction}.")
+
 
     def inversion(self, x: tuple[int]=(0,0)) -> TonalVector:
         """Returns the inversion of self over x.
