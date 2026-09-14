@@ -38,40 +38,40 @@ from .time_signature import TimeSignature
 maxima = MeteredDuration(8, 1)
 longa = MeteredDuration(4, 1)
 breve = MeteredDuration(2, 1)
-whole = MeteredDuration(1, 1)
-half = MeteredDuration(1, 2)
-quarter = MeteredDuration(1, 4)
-eighth = MeteredDuration(1, 8)
-sixteenth = MeteredDuration(1, 16)
-thirtysecond = MeteredDuration(1, 32)
-sixtyfourth = MeteredDuration(1, 64)
-onehundredtwentyeighth = MeteredDuration(1, 128)
+whole = semibreve = MeteredDuration(1, 1)
+half = minim = MeteredDuration(1, 2)
+quarter = crotchet = MeteredDuration(1, 4)
+eighth = quaver = MeteredDuration(1, 8)
+sixteenth = semiquaver = MeteredDuration(1, 16)
+thirtysecond = demisemiquaver = MeteredDuration(1, 32)
+sixtyfourth = hemidemisemiquaver = MeteredDuration(1, 64)
+onehundredtwentyeighth = semihemidemisemiquaver = MeteredDuration(1, 128)
 
 # --- dotted ------------------------------------------------------------------
 
 dotted_maxima = MeteredDuration(8, 1, dots=1)
 dotted_longa = MeteredDuration(4, 1, dots=1)
 dotted_breve = MeteredDuration(2, 1, dots=1)
-dotted_whole = MeteredDuration(1, 1, dots=1)
-dotted_half = MeteredDuration(1, 2, dots=1)
-dotted_quarter = MeteredDuration(1, 4, dots=1)
-dotted_eighth = MeteredDuration(1, 8, dots=1)
-dotted_sixteenth = MeteredDuration(1, 16, dots=1)
-dotted_thirtysecond = MeteredDuration(1, 32, dots=1)
-dotted_sixtyfourth = MeteredDuration(1, 64, dots=1)
+dotted_whole = dotted_semibreve = MeteredDuration(1, 1, dots=1)
+dotted_half = dotted_minim = MeteredDuration(1, 2, dots=1)
+dotted_quarter = dotted_crotchet = MeteredDuration(1, 4, dots=1)
+dotted_eighth = dotted_quaver = MeteredDuration(1, 8, dots=1)
+dotted_sixteenth = dotted_semiquaver = MeteredDuration(1, 16, dots=1)
+dotted_thirtysecond = dotted_demisemiquaver = MeteredDuration(1, 32, dots=1)
+dotted_sixtyfourth = dotted_hemidemisemiquaver = MeteredDuration(1, 64, dots=1)
 
 # --- double dotted -----------------------------------------------------------
 
 double_dotted_maxima = MeteredDuration(8, 1, dots=2)
 double_dotted_longa = MeteredDuration(4, 1, dots=2)
 double_dotted_breve = MeteredDuration(2, 1, dots=2)
-double_dotted_whole = MeteredDuration(1, 1, dots=2)
-double_dotted_half = MeteredDuration(1, 2, dots=2)
-double_dotted_quarter = MeteredDuration(1, 4, dots=2)
-double_dotted_eighth = MeteredDuration(1, 8, dots=2)
-double_dotted_sixteenth = MeteredDuration(1, 16, dots=2)
-double_dotted_thirtysecond = MeteredDuration(1, 32, dots=2)
-double_dotted_sixtyfourth = MeteredDuration(1, 64, dots=2)
+double_dotted_whole = double_dotted_semibreve = MeteredDuration(1, 1, dots=2)
+double_dotted_half = double_dotted_minim = MeteredDuration(1, 2, dots=2)
+double_dotted_quarter = double_dotted_crotchet = MeteredDuration(1, 4, dots=2)
+double_dotted_eighth = double_dotted_quaver = MeteredDuration(1, 8, dots=2)
+double_dotted_sixteenth = double_dotted_semiquaver = MeteredDuration(1, 16, dots=2)
+double_dotted_thirtysecond = double_dotted_demisemiquaver = MeteredDuration(1, 32, dots=2)
+double_dotted_sixtyfourth = double_dotted_hemidemisemiquaver = MeteredDuration(1, 64, dots=2)
 
 # --- tuplet ratios -----------------------------------------------------------
 
@@ -106,13 +106,13 @@ def septuplet(base: MeteredDuration) -> TemporalRatio:
 # --- notes inside a standard triplet of their own value ----------------------
 
 breve_in_triplet = MeteredDuration(2, 1, tr=triplet(breve))
-whole_in_triplet = MeteredDuration(1, 1, tr=triplet(whole))
-half_in_triplet = MeteredDuration(1, 2, tr=triplet(half))
-quarter_in_triplet = MeteredDuration(1, 4, tr=triplet(quarter))
-eighth_in_triplet = MeteredDuration(1, 8, tr=triplet(eighth))
-sixteenth_in_triplet = MeteredDuration(1, 16, tr=triplet(sixteenth))
-thirtysecond_in_triplet = MeteredDuration(1, 32, tr=triplet(thirtysecond))
-sixtyfourth_in_triplet = MeteredDuration(1, 64, tr=triplet(sixtyfourth))
+whole_in_triplet = semibreve_in_triplet = MeteredDuration(1, 1, tr=triplet(whole))
+half_in_triplet = minim_in_triplet = MeteredDuration(1, 2, tr=triplet(half))
+quarter_in_triplet = crotchet_in_triplet = MeteredDuration(1, 4, tr=triplet(quarter))
+eighth_in_triplet = quaver_in_triplet = MeteredDuration(1, 8, tr=triplet(eighth))
+sixteenth_in_triplet = semiquaver_in_triplet = MeteredDuration(1, 16, tr=triplet(sixteenth))
+thirtysecond_in_triplet = demisemiquaver_in_triplet = MeteredDuration(1, 32, tr=triplet(thirtysecond))
+sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MeteredDuration(1, 64, tr=triplet(sixtyfourth))
 
 # --- time signatures ---------------------------------------------------------
 
@@ -159,10 +159,10 @@ nine_eight = time_signature(9, 8)
 twelve_eight = time_signature(12, 8)
 
 # compound meters expressed by their beat
-one_dotted_quarter = TimeSignature(TemporalUnit(1, dotted_quarter), presentation=("3", "8"))
-two_dotted_quarters = TimeSignature(TemporalUnit(2, dotted_quarter), presentation=("6", "8"))
-three_dotted_quarters = TimeSignature(TemporalUnit(3, dotted_quarter), presentation=("9", "8"))
-four_dotted_quarters = TimeSignature(TemporalUnit(4, dotted_quarter), presentation=("12", "8"))
+one_dotted_quarter = one_dotted_crotchet = TimeSignature(TemporalUnit(1, dotted_quarter), presentation=("3", "8"))
+two_dotted_quarters = two_dotted_crotchets = TimeSignature(TemporalUnit(2, dotted_quarter), presentation=("6", "8"))
+three_dotted_quarters = three_dotted_crotchets = TimeSignature(TemporalUnit(3, dotted_quarter), presentation=("9", "8"))
+four_dotted_quarters = four_dotted_crotchets = TimeSignature(TemporalUnit(4, dotted_quarter), presentation=("12", "8"))
 
 # common additive groupings
 five_eight_2_3 = additive_time_signature([2, 3], 8)
