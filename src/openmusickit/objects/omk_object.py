@@ -29,7 +29,16 @@ class OmkObject:
 class SequentialObject(OmkObject):
     duration: Duration | None = None
 
-
     def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any):
         new_duration = operation(self.duration, operand)
         self.duration = new_duration
+
+@dataclass(kw_only=True)
+class Spanner(OmkObject):
+    """Used with OmkEdges of type STARTS_AT and ENDS_AT
+    to group a sequence of SequentialObjects together.
+    
+    Articulations (such as slurs and crescendos) and other objects
+    which normally attach to a single OmkObject can attach to a Spanner
+    to indicate that they apply to the entire sequence of objects."""
+    pass
