@@ -1,6 +1,5 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from openmusickit.utils.meta import FrozenMeta
 
 class TonalSystem:
     """A named system of tones, pitches, and intervals.
@@ -37,7 +36,6 @@ class TonalSystem:
     def __init__(self, name, desc):
         self._name = name
         self._desc = desc
-        self.tone_type = None 
 
     @property
     def name(self):
@@ -48,20 +46,9 @@ class TonalSystem:
         return self._desc
 
 
-    def register_tone_type(self):
-        def decorator(cls):
-            cls.tonal_system = self
-            self.tone_type = cls
-            return cls
-        return decorator
+class Tone(ABC):
 
-
-
-class Tone(ABC, FrozenMeta):
-
-    """A Tone is a defined pitch or sound type within a TonalSystem,
-    with a defined vectorization that is mathematically meaningful and consistent
-    within that system. 
+    """A Tone is a defined pitch or sound type within a TonalSystem.
 
     Subclasses of Tone define a type of musical sound, noise, or silence
     with its own logical system of relationships, 
@@ -77,6 +64,13 @@ class Tone(ABC, FrozenMeta):
 
     - SilentTone represents any rest or silence.
 
+    >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+    >>> from openmusickit.values.tone.silent_tone import SilentTone
+    >>> isinstance(TonalVector((0, 0)), Tone)
+    True
+    >>> isinstance(SilentTone(), Tone)
+    True
+
     Tone and Interval should be subclassed to represent 
     the members and relationships of any other pitch or sonic system.
     
@@ -84,87 +78,34 @@ class Tone(ABC, FrozenMeta):
     as they represent abstract values ('C# above middle C'), 
     rather than concrete instance of a note in a score."""
 
-    #TONAL_SYSTEM: TonalSystem
-
-    def __init_subclass__(cls):
-        super().__init_subclass__()
-        #if not hasattr(cls, 'TONAL_SYSTEM'):
-        #    raise TypeError(f"{cls.__name__} must define 'TONAL_SYSTEM'")
-
     @classmethod
     def from_string(cls, s) -> Tone:
         """Parses a string and returns a Tone."""
         raise NotImplementedError
 
-    @abstractmethod
-    def to_array(self):
-        """Returns an np.array used for ML and analysis.
-        This method's docstring should, whenever possible,
-        provide information about the meaning of each array member. """
-        raise NotImplementedError
-    
-    @abstractmethod
-    def __array__(self):
-        return self.to_array()
-    
-    @classmethod
-    def abstract_array_len(cls):
-        """Vector size for an unqualified or abstract category of tone.
-        
-        For example,
-        TonalVector (pitch and interval) have an abstract_vector_len of 2,
-        as they represent a pitch class (C, D-flat) or interval (Perfect 5th),
-        without an octave designation.
-
-        These are used in things like chord definitions and chord symbols.
-        Whereas a pitch at a specific octave notated into a score
-        is a qualified TonalVector, which has a length of 3.
-        
-        Docstrings for abstract_array_len should describe
-        what constitutes an "abstract" vs "qualified" version of the Tone."""
-        raise NotImplementedError
-    
-    @classmethod
-    def qualified_array_len(self):
-        """Vector size for a qualified instance of a specific tone.
-
-        Typically, a qualified_vector_len has one (1) additional member,
-        specifiying an octave.
-
-        However, some musical systems or Tone types may need additional vector members,
-        and some may need no additional information.
-
-        Docstrings for qualified_array_len should describe
-        what constitutes a "qualified" version of the Tone.
-        
-        See `abstact_vector_len` for more explanation."""
-        raise NotImplementedError
-    
     @property
-    @abstractmethod
-    def pitch(self) -> PitchRepresentation:
-        """Returns a PitchRepresentation defined within a specific musical system,
-        which handles various string output methods (ex. `x.pitch.unicode`)
-        and interpreters (ex. `TonalVector.pitch('g sharp')`).
+    def pitch(self) -> PitchRepresentation | None:
+        """The PitchRepresentation of this Tone, defined within a specific
+        musical system, which handles various string output methods
+        (ex. `x.pitch.unicode`) and interpreters (ex. `TonalVector.pitch('g sharp')`).
 
-        Under most circumstances, this would be handled like:
+        Unpitched tones (silence, percussion) have no pitch, so the default
+        returns None. Pitched subclasses override this, typically like:
 
         ```
         class ToneSubclass(Tone):
-        
-            def __init__(self): 
+
+            def __init__(self):
                 self._pitch = PitchRepresentationSubclass(self)
-                # or, in __new__ with __setattr__
 
             @property
             def pitch(self):
                 return self._pitch
         ```
-            
         """
-        raise NotImplementedError
+        return None
 
-    
+
 
 class PitchRepresentation(ABC):
     """The representation of a Tone as a pitch in a score or other human-readable context,
@@ -174,7 +115,7 @@ class PitchRepresentation(ABC):
     and each system will likely want to expose a specific API
     for various forms of notation and text output.
 
-    For an example implementation, see TonalVector.Pitch.
+    For an example implementation, see TonalVector._PitchRepresentation.
     """
 
     @property

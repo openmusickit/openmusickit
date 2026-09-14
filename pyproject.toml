@@ -15,7 +15,6 @@ requires-python = ">=3.12"
 
 # Add your base dependencies here
 dependencies = [
-    "numpy (>=1.24,<2.0)",
     "scipy (>=1.10,<2.0)",
     "pydantic (>=2.6,<3.0)",
     "rustworkx>=0.18.1",

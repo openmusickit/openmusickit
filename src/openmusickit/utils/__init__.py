@@ -1,8 +1,7 @@
-from . import id, meta, number_names
+from . import id, number_names
 
 __all__ = [
     "id",
-    "meta",
     "number_names",
 ]
 
