@@ -4,7 +4,7 @@ from .graph_adapter import GraphAdapter
 from .rx_adapter import RustworkxAdapter
 from .edges.edge import EdgeType, OmkEdge
 from openmusickit.utils.id import OmkId
-from openmusickit.objects.omk_object import OmkObject, SequentialObject
+from openmusickit.objects.omk_object import OmkObject, SequentialObject, Spanner
 from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence 
 
 
@@ -117,6 +117,13 @@ class OmkGraph:
             self.add_next(line[i], line[i + 1])
         self.add_next(line[-1], next)
 
+    def define_span(self, start: SequentialObject, end: SequentialObject, spanner: Spanner|None = None) -> Spanner:
+        """Defines a span of SequentialObjects from start to end, inclusive."""
+        spanner = spanner or Spanner()
+        self.add_node(spanner)
+        self.add_edge(spanner, start, EdgeType.STARTS_AT)
+        self.add_edge(spanner, end, EdgeType.ENDS_AT)
+        return spanner
 
     # Annotations (articulations, memos, analysis)
 
