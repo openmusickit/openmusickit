@@ -20,13 +20,48 @@ class NoteEvent(SequentialObject):
     tones: set[Tone]
 
     def __post_init__(self):
-        if SilentTone in self.tones and len(self.tones) > 1:
+        """
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E
+        >>> NoteEvent(tones={C, E}, duration=None)
+        NoteEvent(tones=[TonalVector((0, 0)), TonalVector((2, 4))], duration=None)
+
+        A SilentTone cannot coexist with other tones:
+
+        >>> NoteEvent(tones={C, SilentTone()}, duration=None)
+        Traceback (most recent call last):
+        ...
+        ValueError: A NoteEvent cannot contain a SilentTone and other tones simultaneously.
+        """
+        if self.is_rest and len(self.tones) > 1:
             raise ValueError("A NoteEvent cannot contain a SilentTone and other tones simultaneously.")
 
+    @property
+    def is_rest(self) -> bool:
+        """True if this NoteEvent contains a SilentTone.
+
+        >>> Rest(None).is_rest
+        True
+        >>> NoteEvent(tones=set(), duration=None).is_rest
+        False
+        """
+        return SilentTone() in self.tones
+
     def add_tone(self, tone: Tone):
+        """Adds a tone. Adding a pitched tone to a rest un-rests it;
+        adding a SilentTone to a pitched NoteEvent is a no-op.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C
+        >>> rest = Rest(None)
+        >>> rest.add_tone(C)
+        >>> rest.tones == {C}
+        True
+        >>> rest.add_tone(SilentTone())
+        >>> rest.tones == {C}
+        True
+        """
         self.tones.add(tone)
-        if SilentTone in self.tones and len(self.tones) > 1:
-            self.tones.remove(SilentTone)
+        if self.is_rest and len(self.tones) > 1:
+            self.tones.remove(SilentTone())
 
     def remove_tone(self, tone: Tone):
         self.tones.remove(tone)
@@ -48,9 +83,10 @@ class NoteEvent(SequentialObject):
 
         `operation` is typically a method of the relevant Tone subclass
         (such as `TonalVector.transpose`), but any callable that accepts a
-        Tone as its first argument and returns a Tone of the same type will
-        do. If it returns anything else, a TypeError is raised and the
-        NoteEvent is unchanged.
+        Tone as its first argument and returns a Tone will do. The result
+        need not be of the same type (an operation may translate tones
+        from one tonal system to another), but if it is not a Tone at all,
+        a TypeError is raised and the NoteEvent is unchanged.
 
         Examples
         --------
@@ -76,12 +112,19 @@ class NoteEvent(SequentialObject):
         >>> note.tones == {TonalVector((0, 1)), TonalVector((2, 5)), TonalVector((4, 8))}
         True
 
-        An operation that does not produce a Tone of the same type is rejected:
+        An operation that does not produce a Tone is rejected:
 
         >>> note.transform(str)
         Traceback (most recent call last):
         ...
         TypeError: ...
+
+        A rest stays a rest:
+
+        >>> rest = Rest(None)
+        >>> rest.transform(TonalVector.transpose, M3)
+        >>> rest
+        Rest(duration=None)
         """
         new_tones = set()
         for tone in self.tones:
@@ -89,23 +132,36 @@ class NoteEvent(SequentialObject):
                 new_tones.add(tone)
                 continue
             new_tone = operation(tone, *args, **kwargs)
-            if not isinstance(new_tone, type(tone)):
+            if not isinstance(new_tone, Tone):
                 raise TypeError(
-                    f"`operation` must return a {type(tone).__name__}, "
+                    f"`operation` must return a Tone, "
                     f"but returned {new_tone!r} for {tone!r}."
                 )
             new_tones.add(new_tone)
         self.tones = new_tones
 
     def __repr__(self):
-        if SilentTone in self.tones:
+        """
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C
+        >>> NoteEvent(tones={C}, duration=None)
+        NoteEvent(tones=[TonalVector((0, 0))], duration=None)
+        >>> Rest(None)
+        Rest(duration=None)
+        """
+        if self.is_rest:
             return f"Rest(duration={self.duration})"
-        tone_names = [tone.name for tone in self.tones]
-        return f"NoteEvent(tones={tone_names}, duration={self.duration})"
+        tones = sorted(repr(tone) for tone in self.tones)
+        return f"NoteEvent(tones=[{', '.join(tones)}], duration={self.duration})"
     
 
 def Rest(duration: Duration) -> NoteEvent:
-    """Utility function that generates a Note with a Silent Tone."""
+    """Utility function that generates a Note with a Silent Tone.
+
+    >>> Rest(None)
+    Rest(duration=None)
+    >>> Rest(None).tones == {SilentTone()}
+    True
+    """
     
     return NoteEvent(tones={SilentTone()}, duration=duration)
 

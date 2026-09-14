@@ -11,6 +11,20 @@ class SilentTone(Tone):
     """
     A musical silence, for example a rest.
 
+    Every SilentTone is equal to every other, so they can be used
+    interchangeably as members of a set of Tones:
+
+    >>> SilentTone() == SilentTone()
+    True
+    >>> SilentTone() in {SilentTone()}
+    True
+    >>> isinstance(SilentTone(), Tone)
+    True
+
+    A silence has no pitch:
+
+    >>> SilentTone().pitch is None
+    True
     """
     
     def __repr__(self):

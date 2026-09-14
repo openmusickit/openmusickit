@@ -4,9 +4,8 @@ import re
 from enum import StrEnum, auto
 
 from openmusickit.utils.number_names import ordinals
-from openmusickit.values.tone.tone import TonalSystem, Tone, PitchRepresentation
+from openmusickit.values.tone.tone import Tone, PitchRepresentation
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
-from .wsmn import WSMN
 from . import tonal_arithmetic as ta
 from . import interval_quality as iq
 from .constants import D_LEN, C_LEN, MS, AC, EURO_SF, QualityType, Accidental, SolfegeStyle
@@ -221,12 +220,19 @@ def _interval_from_match(m: re.Match) -> tuple:
     return (d, c)
 
 
-@WSMN.register_tone_type()
-class TonalVector(tuple):
+class TonalVector(tuple, Tone, Interval):
     """A tuple of form (d_iatonic, c_hromatic, (o_ctave)),
     representing either a pitch or interval (or both).
     TonalVector implements tonal arithmetic with __dunder__ methods,
-    allowing use of standard operators (+, -, =, <, >)."""
+    allowing use of standard operators (+, -, =, <, >).
+
+    TonalVector is the WSMN implementation of both Tone and Interval:
+
+    >>> isinstance(TonalVector((0, 0)), Tone)
+    True
+    >>> isinstance(TonalVector((0, 0)), Interval)
+    True
+    """
     _cache = {}
 
     def __new__(cls, *args):
@@ -278,7 +284,7 @@ class TonalVector(tuple):
         True
         """
 
-        if hasattr(self, '__initialized'):
+        if hasattr(self, '_initialized'):
             return
 
         """
@@ -296,12 +302,30 @@ class TonalVector(tuple):
             self._has_octave = False
         """
             
-        self.pitch = self.Pitch(self)
-        self.interval = self.Interval(self)
+        self._pitch = self._PitchRepresentation(self)
+        self._interval = self._IntervalRepresentation(self)
 
-        self.__initialized = True
+        self._initialized = True
 
     ## Basic property interface
+
+    @property
+    def pitch(self) -> TonalVector._PitchRepresentation:
+        """This TonalVector as a pitch (letter name, accidental, octave, ...).
+
+        >>> TonalVector((0, 0)).pitch.unicode
+        'C'
+        """
+        return self._pitch
+
+    @property
+    def interval(self) -> TonalVector._IntervalRepresentation:
+        """This TonalVector as an interval (quality, number, ...).
+
+        >>> TonalVector((4, 7)).interval.unicode
+        'perfect 5'
+        """
+        return self._interval
 
     @property
     def d(self) -> int:
@@ -331,21 +355,6 @@ class TonalVector(tuple):
         raise ValueError("Somehow, unexpectedly, this TonalVector has the wrong size.")
 
 
-    @classmethod
-    def abstract_vector_len(cls):
-        """An abstract TonalVector has two members (diatonic, chromatic),
-        and represents an abstract pitch class (C; A-flat; F-sharp) 
-        or interval (Perfect Unison; Minor Sixth; Augmented Fourth)
-        without an octave designation."""
-        return 2
-    
-    @classmethod
-    def qualified_vector_len(cls):
-        """A qualified TonalVector has three members (diatonic, chromatic, octave),
-        and represents a specfic, octave qualified pitch (C above middle C)
-        or interval (Perfect fifth plus 2 octaves; Minor sixth minus 1 octave)."""
-        return 3
-    
     @classmethod
     def from_string(cls, s, mid_c=4, solfege_style=SolfegeStyle.EURO_FIXED):
         """Creates and returns a TonalVector,
@@ -748,7 +757,7 @@ class TonalVector(tuple):
 
     ### Represent as a pitch ###
 
-    class Pitch(PitchRepresentation):
+    class _PitchRepresentation(PitchRepresentation):
         """A TonalVector's pitch representation,
         which holds relevant details such as letter name, accidental, etc.
         
@@ -756,7 +765,7 @@ class TonalVector(tuple):
         -------
 
         >>> type(TonalVector((0,0)).pitch)
-        <class 'openmusickit.systems.wsmn.tonal.tonal_vector.TonalVector.Pitch'>
+        <class 'openmusickit.systems.wsmn.tonal.tonal_vector.TonalVector._PitchRepresentation'>
         """
         
         def __init__(self, vector: TonalVector):
@@ -1077,7 +1086,7 @@ class TonalVector(tuple):
             return "".join([self.unicode, " | ", str(tuple(self._v))])
 
     
-    class Interval(IntervalRepresentation):
+    class _IntervalRepresentation(IntervalRepresentation):
 
         def __init__(self, vector):
             """
