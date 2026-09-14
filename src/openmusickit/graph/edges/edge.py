@@ -9,7 +9,7 @@ class EdgeType(StrEnum):
     IMPLEMENTS = auto()
     REALIZES = auto()
     ANNOTATES = auto()
-    ARTICULATION = auto()
+    MARKS = auto()
     LYRIC = auto()
     ACCOMPANIES = auto()
     HARMONIZES = auto()
