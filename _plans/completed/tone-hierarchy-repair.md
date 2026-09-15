@@ -6,6 +6,8 @@ suite went from 2063 to 2094 passing (`uv run pytest`). New tests live in
 plus doctests on `Tone`, `Interval`, `SilentTone`, `TonalVector`,
 `TonalVector.pitch` / `.interval`, and `NoteEvent`.
 
+diff: main 2ae44e8
+
 Deviations / notes from implementation:
 
 - `NoteEvent` gained an `is_rest` property (`SilentTone() in self.tones`)
