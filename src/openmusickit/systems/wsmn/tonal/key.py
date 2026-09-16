@@ -198,8 +198,13 @@ class ModePattern:
 
 @dataclass(slots=True, kw_only=True, frozen=True)
 class Key:
-    """A key in the tonal or modal system."""
-    tonic: TonalVector
+    """A key in the tonal or modal system.
+
+    `tonic` is None only for the "no key" case (atonal music, unpitched parts),
+    which is represented in score formats as an open key signature
+    (MusicXML `<mode>none</mode>`). See `symbols.NoKey`.
+    """
+    tonic: TonalVector | None
     tones: ToneCollection
     signature: KeySignature
     _mode: ModePattern | None = None
@@ -273,6 +278,9 @@ class Key:
         """Returns the name of this key, if it has one."""
         if self._name:
             return self._name
+
+        if self.tonic is None:
+            return "No Key"
 
         if self._mode:
             return f"{self.tonic.pitch.unicode} {self._mode.name}"
