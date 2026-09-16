@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 
 from .graph_adapter import GraphAdapter
 from .rx_adapter import RustworkxAdapter
@@ -9,7 +10,7 @@ from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence
 
 
 class GraphMeta:
-    """Details about the graph, including title, composer namer, etc."""
+    """Details about the graph, including title, composer name, etc."""
     pass
 
 class OmkGraph:
@@ -26,9 +27,22 @@ class OmkGraph:
         """Returns an OmkGraph built from a JSON serialization."""
         pass
 
+    @classmethod
+    def load_from_file(cls, f: Path, graph_engine: GraphAdapter | None = None) -> OmkGraph:
+        pass
+
     def import_json_graph(self, js_graph) -> None:
         """Adds the contents of js_graph to the current graph.
         Do not assume metadata from the source graph is retained."""
+        pass
+
+    def import_file(self, f: Path) -> None:
+        pass
+
+    def export_to_json(self):
+        pass
+
+    def export_json_to_file(self, f: Path) -> None: # Return some status object?
         pass
 
 
