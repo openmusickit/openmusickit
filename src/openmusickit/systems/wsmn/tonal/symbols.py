@@ -671,3 +671,77 @@ Minor = ModePattern(
     ),
     quality=Quality.MIN,
 )
+
+# The seven diatonic ("church" / jazz) modes
+
+Ionian = ModePattern(
+    name="Ionian",
+    tones=ToneCollection(
+        name="Ionian Mode",
+        tones=[P1, M2, M3, P4, P5, M6, M7],
+    ),
+    quality=Quality.MAJ,
+)
+
+Dorian = ModePattern(
+    name="Dorian",
+    tones=ToneCollection(
+        name="Dorian Mode",
+        tones=[P1, M2, m3, P4, P5, M6, m7],
+    ),
+    quality=Quality.MIN,
+)
+
+Phrygian = ModePattern(
+    name="Phrygian",
+    tones=ToneCollection(
+        name="Phrygian Mode",
+        tones=[P1, m2, m3, P4, P5, m6, m7],
+    ),
+    quality=Quality.MIN,
+)
+
+Lydian = ModePattern(
+    name="Lydian",
+    tones=ToneCollection(
+        name="Lydian Mode",
+        tones=[P1, M2, M3, a4, P5, M6, M7],
+    ),
+    quality=Quality.MAJ,
+)
+
+Mixolydian = ModePattern(
+    name="Mixolydian",
+    tones=ToneCollection(
+        name="Mixolydian Mode",
+        tones=[P1, M2, M3, P4, P5, M6, m7],
+    ),
+    quality=Quality.DOM,
+)
+
+Aeolian = ModePattern(
+    name="Aeolian",
+    tones=ToneCollection(
+        name="Aeolian Mode",
+        tones=[P1, M2, m3, P4, P5, m6, m7],
+    ),
+    quality=Quality.MIN,
+)
+
+Locrian = ModePattern(
+    name="Locrian",
+    tones=ToneCollection(
+        name="Locrian Mode",
+        tones=[P1, m2, m3, P4, d5, m6, m7],
+    ),
+    quality=Quality.HDM,
+)
+
+# An open key signature with no tonic or mode, for atonal music and unpitched parts.
+# Corresponds to MusicXML `<key><fifths>0</fifths><mode>none</mode></key>`.
+NoKey = Key(
+    tonic=None,
+    tones=ToneCollection(name="No Key"),
+    signature=KeySignature(),
+    _name="No Key",
+)
