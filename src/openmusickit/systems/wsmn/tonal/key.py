@@ -1,10 +1,11 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Real
+from enum import StrEnum, auto
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
 from openmusickit.systems.wsmn.tonal.chords import Quality
-
 
 
 class KeySignature(tuple):
@@ -57,6 +58,37 @@ class KeySignature(tuple):
 
         return super().__new__(cls, values)
 
+    # Convenience constructor for "normal" keysignatures.
+    
+    @classmethod
+    def from_alts(cls, alts: int) -> KeySignature:
+        """Create a key signature by specifying the number of sharps (positive int) or flats (negative int).
+        Assumes normal ordering (F C G D A E B | B E A D G C F) and should be symmetrical to `fifths`.
+
+        Examples:
+
+            >>> KeySignature.from_alts(2)
+            KeySignature(c=1, f=1)
+            
+            >>> KeySignature.from_alts(-3)
+            KeySignature(e=-1, a=-1, b=-1)
+            
+            >>> KeySignature.from_alts(-10)
+            KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2)
+            
+            >>> KeySignature.from_alts(5).fifths
+            5
+        """
+        sharp_order = [3, 0, 4, 1, 5, 2, 6]
+        order = sharp_order if alts > 0 else sharp_order[::-1]
+        step = 1 if alts > 0 else -1
+
+        values = [0] * 7
+        for i in range(abs(alts)):
+            values[order[i % 7]] += step
+
+        return cls(*values)
+
     @property
     def c(self) -> Real:
         return self[0]
@@ -99,12 +131,16 @@ class KeySignature(tuple):
 
             >>> KeySignature().fifths
             0
+            
             >>> KeySignature(c=1, f=1).fifths
             2
+            
             >>> KeySignature(e=-1, a=-1, b=-1).fifths
             -3
+            
             >>> KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2).fifths
             -10
+            
             >>> KeySignature(f=1, b=-1).fifths
             Traceback (most recent call last):
                 ...
@@ -131,6 +167,23 @@ class KeySignature(tuple):
 
         return sum(ordered)
 
+    def __repr__(self) -> str:
+        """Only non-zero alterations are shown, matching how a KeySignature is typically constructed.
+
+        Examples:
+
+            >>> KeySignature()
+            KeySignature()
+            
+            >>> KeySignature(c=1, f=1)
+            KeySignature(c=1, f=1)
+            
+            >>> KeySignature(e=-1, a=-1, b=-1)
+            KeySignature(e=-1, a=-1, b=-1)
+        """
+        alts = ", ".join(f"{name}={value!r}" for name, value in zip("cdefgab", self) if value)
+        return f"{type(self).__name__}({alts})"
+
 
 @dataclass(slots=True, kw_only=True, frozen=True)
 class ModePattern:
@@ -152,9 +205,67 @@ class Key:
     _mode: ModePattern | None = None
     _name: str | None = None
 
+    @classmethod
+    def of(cls, tonic: TonalVector, mode: ModePattern, signature: KeySignature | None = None) -> Key:
+        """Convenience constructor for Key.
+
+        The key's tones are the mode pattern transposed to the tonic.
+        If `signature` is not given, it is derived from those tones:
+        each letter takes the alteration of its tone in the key,
+        and letters not present in the mode (e.g. in a pentatonic mode) stay natural.
+        This raises ValueError if the same letter occurs with different alterations
+        (e.g. a mode containing both F and F#); pass `signature` explicitly in that case.
+
+        Examples:
+
+            >>> from openmusickit.systems.wsmn.tonal.symbols import C, Eb, Fx, Major, Minor
+
+            >>> c = Key.of(C, Major)
+            >>> c.name, c.mode, c.signature
+            ('C Major', 'Major', KeySignature())
+            >>> [t.pitch.unicode for t in c.tones]
+            ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+
+            >>> Key.of(Eb, Major).signature
+            KeySignature(e=-1, a=-1, b=-1)
+
+            >>> fs = Key.of(Fx, Minor)
+            >>> fs.name, fs.signature.fifths
+            ('F♯ Minor', 3)
+            >>> fs.tones.root is Fx
+            True
+
+        An explicit signature is used as given, without inspection:
+
+            >>> Key.of(C, Major, KeySignature.from_alts(-1)).signature
+            KeySignature(b=-1)
+        """
+        tones = mode.tones.transform(TonalVector.transpose, tonic)
+        if tones.root is None:
+            tones.root = tonic
+
+        if signature is None:
+            alts: dict[int, int] = {}
+            for tone in tones:
+                alt = tone.pitch._modifier_value
+                if alts.setdefault(tone.d, alt) != alt:
+                    raise ValueError(
+                        f"Cannot derive a KeySignature: {tone.pitch._ln} occurs with "
+                        f"more than one alteration in {mode.name}. Pass `signature` explicitly."
+                    )
+            signature = KeySignature(*(alts.get(i, 0) for i in range(7)))
+
+        return cls(
+            tonic=tonic,
+            tones=tones,
+            signature=signature,
+            _mode=mode,
+            _name=f"{tonic.pitch.unicode} {mode.name}",
+        )
+
     @property
     def mode(self) -> str | None:
-        """Returns the mode pattern of this key, if it has one."""
+        """Returns the name of the mode pattern of this key, if it has one."""
         return self._mode.name if self._mode else None
 
     @property
@@ -167,3 +278,6 @@ class Key:
             return f"{self.tonic.pitch.unicode} {self._mode.name}"
 
         return f"{self.tonic.pitch.unicode} (unspecified mode)"
+
+
+    
