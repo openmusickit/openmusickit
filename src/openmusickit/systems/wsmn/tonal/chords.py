@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Callable, Iterable
-from openmusickit.values.tone.tone_collection import ToneCollection, ToneSequence
+from openmusickit.values.tone.tone_collection import ToneCollection
 from openmusickit.utils.number_names import ordinals
 from .tonal_vector import TonalVector
 
@@ -37,10 +37,32 @@ class ChordType(ToneCollection):
         # Lead-sheet suffix, e.g. "maj7", "sus4", "7♭9". Empty string for a plain major triad.
         self.suffix = suffix
 
-    def arpegiate(self) -> ToneSequence:
-        """Returns the chord's tones as a ToneSequence, bass tone first."""
-        rest = [t for t in self if t != self.bass]
-        return ToneSequence([self.bass] + rest)
+    def arpegiate(self) -> ToneCollection:
+        """Returns the chord's tones as a ToneCollection, rotated so that the
+        bass tone comes first and the remaining tones follow in their
+        original (cyclic) order. Root and name are preserved.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj7
+        >>> def names(tc): return [t.pitch.unicode for t in tc]
+        >>> names(maj7.arpegiate())
+        ['C', 'E', 'G', 'B']
+        >>> names(maj7.inversion(1).arpegiate())
+        ['E', 'G', 'B', 'C']
+        >>> names(maj7.inversion(2).arpegiate())
+        ['G', 'B', 'C', 'E']
+        >>> names(maj7.inversion(3).arpegiate())
+        ['B', 'C', 'E', 'G']
+        """
+        return ChordType._rotate_to_bass(self)
+
+    def _rotate_to_bass(self) -> ToneCollection:
+        """Shared logic for `arpegiate()`: the tones rotated so the bass
+        comes first, as a plain ToneCollection with root and name preserved.
+        Used by both ChordType and Chord."""
+        tones = list(self)
+        i = tones.index(self.bass)
+        return ToneCollection(tones[i:] + tones[:i], root=self.root,
+                              name=self._name_template)
 
     def _resolve_inversion(self, inv: int|TonalVector, name: str|None) -> tuple[TonalVector, str|None]:
         """Shared logic for `inversion()`: finds the new bass tone, and
@@ -169,6 +191,24 @@ class Chord(ToneCollection):
         """Returns a Chord with the same tones and root, but a different bass tone."""
         bass, name = ChordType._resolve_inversion(self, inv, name)
         return Chord(self.root, self, bass, name, self.suffix)
+
+    def arpegiate(self) -> ToneCollection:
+        """Returns the chord's tones as a ToneCollection, rotated so that the
+        bass tone comes first and the remaining tones follow in their
+        original (cyclic) order. Root and name are preserved.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, maj7
+        >>> def names(tc): return [t.pitch.unicode for t in tc]
+        >>> names(C(maj7).arpegiate())
+        ['C', 'E', 'G', 'B']
+        >>> names((C(maj7) / E).arpegiate())
+        ['E', 'G', 'B', 'C']
+        >>> names((C(maj7) / G).arpegiate())
+        ['G', 'B', 'C', 'E']
+        >>> names(C(maj7).inversion(3).arpegiate())
+        ['B', 'C', 'E', 'G']
+        """
+        return ChordType._rotate_to_bass(self)
 
     def transform(self, operation: Callable[..., TonalVector], *args,
                   new_name: str=None, new_suffix: str=None, **kwargs) -> "Chord":
