@@ -69,6 +69,19 @@ class ChordType(ToneCollection):
         bass, name = self._resolve_inversion(inv, name)
         return ChordType(self, name, bass, self.quality, self.suffix)
 
+    def transform(self, *args, **kwargs):
+        """ChordTypes are interval patterns rooted at `TonalVector(0,0)`, so
+        there is nothing to transform: realize the type at a root first
+        (`C(maj)`), then transform the resulting Chord.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, M3
+        >>> maj.transform(TonalVector.transpose, M3)
+        Traceback (most recent call last):
+        ...
+        NotImplementedError: ChordTypes do not transform.
+        """
+        raise NotImplementedError("ChordTypes do not transform.")
+
     def __str__(self) -> str:
         """Lead-sheet style label: the suffix if there is a non-empty one,
         otherwise the name, followed by the ordinal inversion when the bass

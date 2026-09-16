@@ -139,6 +139,10 @@ class ModePattern:
     tones: ToneCollection
     quality: Quality | None = None
 
+    def __post_init__(self):
+        if self.tones[0] is not TonalVector((0, 0)):
+            raise ValueError("A ModePattern must begin with TonalVector((0, 0))")
+
 @dataclass(slots=True, kw_only=True, frozen=True)
 class Key:
     """A key in the tonal or modal system."""

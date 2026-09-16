@@ -105,6 +105,47 @@ class Tone(ABC):
         """
         return None
 
+    def __format__(self, spec: str) -> str:
+        """Display form of the Tone, used by `str.format` and f-strings.
+
+        For pitched tones, the format spec names an attribute of the Tone's
+        PitchRepresentation, defaulting to `unicode`; unpitched tones fall
+        back to `str()`. `str()` and `repr()` are unaffected, so they remain
+        available as debug forms (use `{tone!r}` or `{tone!s}` in a template
+        to get them).
+
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+        >>> from openmusickit.values.tone.silent_tone import SilentTone
+        >>> Eb = TonalVector((2, 3))
+        >>> f"{Eb} major"
+        'E♭ major'
+        >>> f"{Eb:ascii} major"
+        'Eb major'
+        >>> f"{Eb!r}"
+        'TonalVector((2, 3))'
+        >>> f"{SilentTone()}"
+        'SilentTone()'
+
+        The spec must name a string attribute of the PitchRepresentation:
+
+        >>> f"{Eb:nonsense}"
+        Traceback (most recent call last):
+        ...
+        ValueError: ...
+        """
+        if self.pitch is None:
+            return str(self)
+
+        spec = spec or "unicode"
+        result = getattr(self.pitch, spec, None)
+        if not isinstance(result, str):
+            raise ValueError(
+                f"Unknown format spec {spec!r} for {type(self).__name__}: "
+                f"expected the name of a string attribute of its "
+                f"PitchRepresentation, such as 'unicode' or 'ascii'."
+            )
+        return result
+
 
 
 class PitchRepresentation(ABC):
