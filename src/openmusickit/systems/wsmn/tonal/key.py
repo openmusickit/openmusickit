@@ -118,7 +118,7 @@ class KeySignature(tuple):
 
     @property
     def fifths(self) -> int:
-        """Returns the MusicXML representation of the key signature, which is jumps around the circle of fifths. 
+        """Returns the MusicXML representation of the key signature, which walks around the circle of fifths. 
         For example, C major has 0 fifths, G major has 1 fifth, F major has -1 fifth, etc.
         
         Raises AttributeError if self is a non-standard keysignature 
@@ -217,7 +217,8 @@ class Key:
         If `signature` is not given, it is derived from those tones:
         each letter takes the alteration of its tone in the key,
         and letters not present in the mode (e.g. in a pentatonic mode) stay natural.
-        This raises ValueError if the same letter occurs with different alterations
+        
+        Raises ValueError if the same letter occurs with different alterations
         (e.g. a mode containing both F and F#); pass `signature` explicitly in that case.
 
         Examples:
