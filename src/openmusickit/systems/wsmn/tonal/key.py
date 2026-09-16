@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Real
-from enum import StrEnum, auto
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
