@@ -481,11 +481,17 @@ class TonalVector(tuple, Tone, Interval):
         along with human readable pitch and interval annotations
         in a Python-style inline comment.
 
+        This is a debug form. Note that f-strings and `str.format` do *not*
+        use it: they go through `Tone.__format__`, which gives the display
+        form (`pitch.unicode` by default).
+
         Examples
         --------
 
         >>> print(TonalVector((0,1)))
         TonalVector((0, 1)) # C♯
+        >>> f"{TonalVector((0,1))}"
+        'C♯'
 
         >>> print(TonalVector((2,3,1)))
         TonalVector((2, 3, 1)) # E♭1
