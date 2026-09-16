@@ -18,6 +18,8 @@ TonalVector((6, 10))
 
 from .tonal_vector import TonalVector
 from .chords import ChordType, Quality
+from .key import KeySignature, ModePattern, Key
+from openmusickit.values.tone.tone_collection import ToneCollection
 
 Cbb = dd1 = TonalVector((0,10))
 Cb = d1 = TonalVector((0,11))
@@ -647,4 +649,25 @@ hdim11 = ChordType(
     name="half-diminished 11",
     quality=Quality.HDM,
     suffix="ø11",
+)
+
+
+"""Modes and Keys"""
+
+Major = ModePattern(
+    name="Major",
+    tones=ToneCollection(
+        name="Major Scale",
+        tones=[P1, M2, M3, P4, P5, M6, M7],
+    ),
+    quality=Quality.MAJ,
+)
+
+Minor = ModePattern(
+    name="Minor",
+    tones=ToneCollection(
+        name="Natural Minor Scale",
+        tones=[P1, M2, m3, P4, P5, m6, m7],
+    ),
+    quality=Quality.MIN,
 )
