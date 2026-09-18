@@ -7,23 +7,6 @@ from openmusickit.values.tone.tone_collection import ToneCollection
 from openmusickit.systems.wsmn.tonal.chords import Quality
 
 
-def _fifths_of(x: TonalVector) -> int:
-    """The position of `x` on the circle of fifths, relative to C / a perfect unison:
-    read as a pitch, the `fifths` of the major key on that tonic;
-    read as an interval, how far a key signature moves when its tonic moves by `x`.
-
-    Each natural letter sits 2 fifths from the last (C=0, D=2, E=4, F=-1, G=1, A=3, B=5),
-    and each sharp or flat adds or subtracts a further 7.
-
-        >>> from openmusickit.systems.wsmn.tonal.symbols import C, G, F, Fx, Bb, Cb, P5, M3
-        >>> [_fifths_of(t) for t in (C, G, F, Fx, Bb, Cb)]
-        [0, 1, -1, 6, -2, -7]
-        >>> _fifths_of(P5), _fifths_of(M3)
-        (1, 4)
-    """
-    return (2 * x.d + 1) % 7 - 1 + 7 * x.pitch._modifier_value
-
-
 class KeySignature(tuple):
     """Representation of the flat or sharp alterations of a key signature,
     in semitones up or down from natural:
@@ -211,9 +194,9 @@ class KeySignature(tuple):
             AttributeError: This KeySignature has no valid fifths property.
         """
         if direction == TonalDirection.UP:
-            return self.from_alts(self.fifths + _fifths_of(x))
+            return self.from_alts(self.fifths + x.fifths_position)
         elif direction == TonalDirection.DOWN:
-            return self.from_alts(self.fifths - _fifths_of(x))
+            return self.from_alts(self.fifths - x.fifths_position)
         else:
             raise ValueError(f"Invalid TonalDirection: {direction}.")
 

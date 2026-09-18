@@ -354,6 +354,40 @@ class TonalVector(tuple, Tone, Interval):
             return True
         raise ValueError("Somehow, unexpectedly, this TonalVector has the wrong size.")
 
+    @property
+    def fifths_position(self) -> int:
+        """The position of this TonalVector on the line of fifths, with C (or a perfect unison) at 0.
+
+        Each natural letter sits 2 fifths from the last (F=-1, C=0, G=1, D=2, A=3, E=4, B=5),
+        and each sharp adds 7 while each flat subtracts 7. The line does not wrap:
+        B♯ is 12, not 0, since the spelling matters.
+
+        Read as a pitch, this is the `fifths` of the major key on that tonic
+        (see `KeySignature.fifths`). Read as an interval, it is how far a key signature
+        moves around the circle when its tonic moves by this interval.
+
+        Examples
+        --------
+
+        >>> TonalVector((0, 0)).fifths_position   # C
+        0
+        >>> TonalVector((4, 7)).fifths_position   # G / perfect 5
+        1
+        >>> TonalVector((3, 5)).fifths_position   # F / perfect 4
+        -1
+        >>> TonalVector((3, 6)).fifths_position   # F♯
+        6
+        >>> TonalVector((6, 10)).fifths_position  # B♭
+        -2
+        >>> TonalVector((0, 11)).fifths_position  # C♭
+        -7
+        >>> TonalVector((6, 0)).fifths_position   # B♯
+        12
+        >>> TonalVector((2, 4, 1)).fifths_position  # E, any octave
+        4
+        """
+        return (2 * self.d + 1) % 7 - 1 + 7 * self.pitch._modifier_value
+
 
     @classmethod
     def from_string(cls, s, mid_c=4, solfege_style=SolfegeStyle.EURO_FIXED):
