@@ -1,5 +1,5 @@
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from openmusickit.objects.omk_object import SequentialObject, TonalObject
@@ -8,16 +8,23 @@ from openmusickit.values.time.duration import Duration, ZeroDuration
 from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class ContextEvent(SequentialObject):
     """An instantaneous event that changes the interpretation
-    of subsequent material."""
+    of subsequent material.
 
-    @property
-    def duration(self) -> Duration:
-        return ZeroDuration
+    A ContextEvent always has zero duration; it cannot be given one.
 
-@dataclass(slots=True, kw_only=True)
+    >>> isinstance(ContextEvent().duration, ZeroDuration)
+    True
+    >>> ContextEvent(duration=None)
+    Traceback (most recent call last):
+    ...
+    TypeError: ...
+    """
+    duration: Duration = field(default_factory=ZeroDuration, init=False)
+
+@dataclass(kw_only=True)
 class KeySignatureEvent(ContextEvent, TonalObject):
     """A key signature in a score, defined using a Key (which specifies tonality and alterations)
     xor a KeySignature (which only specifies alterations).
