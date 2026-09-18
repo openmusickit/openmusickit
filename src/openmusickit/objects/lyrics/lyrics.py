@@ -38,7 +38,7 @@ class LyricSyllable(OmkObject):
     lexical_stress: LexicalStress | None = None
     language: str | None = None # Two letter BCP 47 language code.
 
-    def __post__init__(self):
+    def __post_init__(self):
         """Validates syllable placement/location is consistent."""
         if self.word is None:
             self.word = self.s
@@ -64,19 +64,8 @@ class LyricSyllable(OmkObject):
                 raise LyricConsistencyError(
                     f"placement='whole', but {self.s} is not the whole word {self.word}"
                 )
-        
 
-
-    @property
-    def id(self):
-        """The stable identity of the musical event, across sessions and storage."""
-        return self.__id
-    
-    @property
-    def meta(self):
-        return self.__meta
-
-    def __string__(self):
+    def __str__(self):
         return self.syl_str()
     
     def syl_str(self, hyphen: str = "-"):
