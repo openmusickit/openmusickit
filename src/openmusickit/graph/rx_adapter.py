@@ -84,7 +84,7 @@ class RustworkxAdapter(GraphAdapter):
         Raises an exception if edge_type is NEXT and source already has an outgoing edge of type NEXT."""
         if self.has_edge(source, target, edge.type):
             raise ValueError(f"An edge of type {edge.type!r} already exists between {source!r} and {target!r}.")
-        if edge.type == EdgeType.NEXT and self.has_edge(source, target, EdgeType.NEXT):
+        if edge.type == EdgeType.NEXT and any(self.out_edges(source, EdgeType.NEXT)):
             raise ValueError(f"Source {source!r} already has an outgoing edge of type NEXT.")
         rxid = self.graph.add_edge(self._rxid(source), self._rxid(target), edge)
         self._register_edge(edge, rxid)
