@@ -1,6 +1,9 @@
 # Plan: unify tonal transformation across events (`transform_tones`)
 
-Status: **completed 2026-09-18.** All seven steps implemented as written;
+Status: **completed 2026-09-18.** 
+commit: 4bf1e52
+
+All seven steps implemented as written;
 `uv run pytest` → 2358 passed. Doctests only (no new test files); the four
 `NoteEvent.transform` tests in `tests/notes/test_note_event.py` were renamed.
 
