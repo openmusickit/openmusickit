@@ -1,7 +1,7 @@
 import functools
 import math
 
-from .constants import D_LEN, C_LEN, MS, AC
+from .constants import C_LEN, MS
 
 
 

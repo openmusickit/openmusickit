@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from bidict import bidict
 
 class MarkType(StrEnum):
     """The type of a Mark."""

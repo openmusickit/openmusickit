@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 from fractions import Fraction
-from .duration import Duration, TemporalElement, TemporalRatio, TemporalUnit, TemporalSystem
+from .duration import Duration, TemporalElement, TemporalRatio, TemporalUnit
 from .errors import TemporalCompatibilityError
 
 @dataclass(frozen=True)

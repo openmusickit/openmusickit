@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, Iterator, Optional
+from typing import Callable, Iterator, Optional
 
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.edges.edge import OmkEdge, EdgeType

@@ -9,7 +9,7 @@ from openmusickit.values.tone.tone_collection import ToneCollection
 from openmusickit.systems.wsmn.tonal.symbols import (
     C, D, E, F, G, A, B,
     Cb, Db, Eb, Gb, Ab, Bb, Cx, Fx,
-    P1, a1, M2, m3, M3, P4, P5, M6, m7,
+    P1, a1, M2, M3, P5, M6,
     Major, Minor,
     Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian,
     NoKey,

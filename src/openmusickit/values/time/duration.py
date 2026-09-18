@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from fractions import Fraction
 from functools import total_ordering
-from typing import Iterable, List
+from typing import Iterable
 from .errors import ScalingError
 
 

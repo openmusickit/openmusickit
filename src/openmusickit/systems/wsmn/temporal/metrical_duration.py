@@ -2,7 +2,7 @@ from __future__ import annotations
 from fractions import Fraction as F
 from numbers import Rational
 
-from openmusickit.values.time.duration import Duration, ZeroDuration, TemporalElement, TemporalRatio, TemporalUnit
+from openmusickit.values.time.duration import Duration, ZeroDuration, TemporalRatio, TemporalUnit
 from openmusickit.values.time.errors import ScalingError
 
 class MeteredDuration(Duration):

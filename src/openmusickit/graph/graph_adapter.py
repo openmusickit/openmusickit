@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable, Iterator, Optional
+from typing import Callable, Iterator, Optional
 
 from openmusickit.utils.id import OmkId
 from openmusickit.objects.omk_object import OmkObject
