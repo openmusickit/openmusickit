@@ -356,15 +356,17 @@ class TonalVector(tuple, Tone, Interval):
 
     @property
     def fifths_position(self) -> int:
-        """The position of this TonalVector on the line of fifths, with C (or a perfect unison) at 0.
+        """The position of this TonalVector on the circle (line) of fifths,
+        with C (or a perfect unison) at 0.
 
         Each natural letter sits 2 fifths from the last (F=-1, C=0, G=1, D=2, A=3, E=4, B=5),
         and each sharp adds 7 while each flat subtracts 7. The line does not wrap:
         B♯ is 12, not 0, since the spelling matters.
 
         Read as a pitch, this is the `fifths` of the major key on that tonic
-        (see `KeySignature.fifths`). Read as an interval, it is how far a key signature
-        moves around the circle when its tonic moves by this interval.
+        (see `KeySignature.fifths`). 
+        Read as an interval, it is how far a key signature moves around the circle
+        when its tonic moves by this interval.
 
         Examples
         --------
