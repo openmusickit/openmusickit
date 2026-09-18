@@ -37,6 +37,23 @@ class ChordType(ToneCollection):
         # Lead-sheet suffix, e.g. "maj7", "sus4", "7♭9". Empty string for a plain major triad.
         self.suffix = suffix
 
+    def __eq__(self, other) -> bool:
+        """Equal when tones, root and bass all match; name, suffix and quality
+        are ignored (as `name` is for ToneCollection).
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, maj7, C, E, G
+        >>> maj == ChordType([C, E, G], name="anything")
+        True
+        >>> maj == maj.inversion(1)
+        False
+        """
+        if not isinstance(other, ChordType):
+            return NotImplemented
+        return super().__eq__(other) and self.bass == other.bass
+
+    def __hash__(self) -> int:
+        return hash((super().__hash__(), self.bass))
+
     def arpegiate(self) -> ToneCollection:
         """Returns the chord's tones as a ToneCollection, rotated so that the
         bass tone comes first and the remaining tones follow in their
@@ -186,6 +203,20 @@ class Chord(ToneCollection):
         super().__init__(tuple(tones), root=root, name=name)
         self.bass = bass or self.root
         self.suffix = suffix
+
+    def __eq__(self, other) -> bool:
+        """Equal when tones, root and bass all match; name and suffix are ignored.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, C, E
+        >>> C(maj) == C(maj), C(maj) == C(maj) / E
+        (True, False)
+        """
+        if not isinstance(other, Chord):
+            return NotImplemented
+        return super().__eq__(other) and self.bass == other.bass
+
+    def __hash__(self) -> int:
+        return hash((super().__hash__(), self.bass))
 
     def inversion(self, inv: int|TonalVector, name: str=None) -> "Chord":
         """Returns a Chord with the same tones and root, but a different bass tone."""
