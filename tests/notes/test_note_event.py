@@ -62,15 +62,15 @@ def test_swap_tone():
 
 def test_transform_transposes_every_tone():
     note = NoteEvent(tones={C, E, G})
-    note.transform(TonalVector.transpose, M3)
+    note.transform_tones(TonalVector.transpose, M3)
     assert note.tones == {E, Gx, B}
-    note.transform(TonalVector.transpose, M3, TonalDirection.DOWN)
+    note.transform_tones(TonalVector.transpose, M3, TonalDirection.DOWN)
     assert note.tones == {C, E, G}
 
 
 def test_transform_leaves_rest_alone():
     rest = Rest(None)
-    rest.transform(TonalVector.transpose, M3)
+    rest.transform_tones(TonalVector.transpose, M3)
     assert rest.tones == {SilentTone()}
     assert rest.is_rest
 
@@ -84,12 +84,12 @@ def test_transform_accepts_any_tone_result():
             return 1
 
     note = NoteEvent(tones={C})
-    note.transform(lambda tv: OtherTone())
+    note.transform_tones(lambda tv: OtherTone())
     assert note.tones == {OtherTone()}
 
 
 def test_transform_rejects_non_tone_result():
     note = NoteEvent(tones={C, E})
     with pytest.raises(TypeError, match="must return a Tone"):
-        note.transform(str)
+        note.transform_tones(str)
     assert note.tones == {C, E}

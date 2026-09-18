@@ -1,7 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Real
+from typing import Callable
 
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, MS
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector, TonalDirection
 from openmusickit.values.tone.tone_collection import ToneCollection
 from openmusickit.systems.wsmn.tonal.chords import Quality
@@ -166,12 +168,70 @@ class KeySignature(tuple):
 
         return sum(ordered)
 
-    def transpose(self, x: TonalVector, direction: TonalDirection = TonalDirection.UP) -> KeySignature:
-        """Returns this key signature moved around the circle of fifths by the interval `x`,
-        as if it were the signature of a major key whose tonic is transposed by `x`.
-        (Since relative keys share a signature, this is equally correct for any mode.)
+    def transform(self, operation: Callable[..., TonalVector], *args, **kwargs) -> KeySignature:
+        """Returns a new KeySignature made by applying `operation` to each of the
+        seven letters, taken as the pitches C, D, E, F, G, A, B with this
+        signature's alterations, and reading the new alteration of each letter
+        from the result.
 
-        Only works for standard signatures; raises AttributeError otherwise (see `fifths`).
+        `operation` is called as `operation(tone, *args, **kwargs)` and must
+        return a TonalVector, or a TypeError is raised. If two letters are sent
+        to the same letter, the result is not a key signature and a ValueError
+        is raised. Alterations must be integers (the letter-pitches must be
+        expressible as TonalVectors); otherwise a ValueError is raised.
+
+        Examples:
+
+            >>> from openmusickit.systems.wsmn.tonal.symbols import M2
+
+            Transposition, including of a non-standard signature
+            (C D E F♯ G A B♭ up a major second is D E F♯ G♯ A B C):
+
+            >>> KeySignature().transform(TonalVector.transpose, M2)
+            KeySignature(c=1, f=1)
+            >>> KeySignature(f=1, b=-1).transform(TonalVector.transpose, M2)
+            KeySignature(f=1, g=1)
+
+            An operation that needs no operand:
+
+            >>> def sharpen(tv):
+            ...     return tv + TonalVector((0, 1))
+            >>> KeySignature().transform(sharpen)
+            KeySignature(c=1, d=1, e=1, f=1, g=1, a=1, b=1)
+
+            An operation that does not produce a TonalVector is rejected:
+
+            >>> KeySignature().transform(str)
+            Traceback (most recent call last):
+                ...
+            TypeError: ...
+        """
+        if any(not isinstance(alt, int) for alt in self):
+            raise ValueError("Only a KeySignature with integer alterations can be transformed.")
+
+        alts: dict[int, int] = {}
+        for d, alt in enumerate(self):
+            tone = TonalVector((d, (MS[d].c + alt) % C_LEN))
+            new_tone = operation(tone, *args, **kwargs)
+            if not isinstance(new_tone, TonalVector):
+                raise TypeError(
+                    f"`operation` must return a TonalVector, "
+                    f"but returned {new_tone!r} for {tone!r}."
+                )
+            if new_tone.d in alts:
+                raise ValueError(
+                    f"Cannot build a KeySignature: `operation` sent two letters to "
+                    f"{new_tone.pitch._ln}."
+                )
+            alts[new_tone.d] = new_tone.pitch._modifier_value
+
+        return KeySignature(*(alts[i] for i in range(7)))
+
+    def transpose(self, x: TonalVector, direction: TonalDirection = TonalDirection.UP) -> KeySignature:
+        """Returns this key signature transposed by the interval `x`: each letter
+        moves by `x`, so a standard signature moves around the circle of fifths
+        as if it were the signature of a key whose tonic is transposed by `x`.
+        (Since relative keys share a signature, this is equally correct for any mode.)
 
         Examples:
 
@@ -189,16 +249,9 @@ class KeySignature(tuple):
             9
 
             >>> KeySignature(f=1, b=-1).transpose(M2)
-            Traceback (most recent call last):
-                ...
-            AttributeError: This KeySignature has no valid fifths property.
+            KeySignature(f=1, g=1)
         """
-        if direction == TonalDirection.UP:
-            return self.from_alts(self.fifths + x.fifths_position)
-        elif direction == TonalDirection.DOWN:
-            return self.from_alts(self.fifths - x.fifths_position)
-        else:
-            raise ValueError(f"Invalid TonalDirection: {direction}.")
+        return self.transform(TonalVector.transpose, x, direction)
 
     def __repr__(self) -> str:
         """Only non-zero alterations are shown, matching how a KeySignature is typically constructed.
@@ -320,6 +373,48 @@ class Key:
             return f"{self.tonic.pitch.unicode} {self._mode.name}"
 
         return f"{self.tonic.pitch.unicode} (unspecified mode)"
+
+    def transform(self, operation: Callable[..., TonalVector], *args, **kwargs) -> Key:
+        """Returns a new Key made by applying `operation` to this key's tonic
+        (and to its tones and signature).
+
+        If the key has a mode pattern, the new key is that mode on the new tonic
+        (as in `Key.of`), with the signature transformed alongside so that an
+        explicitly given signature is carried over. Otherwise the tones and
+        signature are transformed directly. `NoKey` has no tonic and is
+        returned unchanged.
+
+        For operations other than transposition, "keep the mode" and "transform
+        the tones" can disagree (C Major inverted about C is C Major by the
+        first rule and C Phrygian by the second); the mode is kept.
+
+        Examples:
+
+            >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, Major, NoKey
+            >>> Key.of(C, Major).transform(TonalVector.transpose, M2).name
+            'D Major'
+            >>> NoKey.transform(TonalVector.transpose, M2) is NoKey
+            True
+        """
+        if self.tonic is None:
+            return self
+
+        new_tonic = operation(self.tonic, *args, **kwargs)
+        if not isinstance(new_tonic, TonalVector):
+            raise TypeError(
+                f"`operation` must return a TonalVector, "
+                f"but returned {new_tonic!r} for the tonic {self.tonic!r}."
+            )
+        signature = self.signature.transform(operation, *args, **kwargs)
+
+        if self._mode is not None:
+            return Key.of(new_tonic, self._mode, signature)
+
+        return Key(
+            tonic=new_tonic,
+            tones=self.tones.transform(operation, *args, **kwargs),
+            signature=signature,
+        )
 
 
     

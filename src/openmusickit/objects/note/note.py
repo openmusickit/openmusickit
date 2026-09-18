@@ -4,11 +4,11 @@ from typing import Callable
 from openmusickit.values.tone.tone import Tone
 from openmusickit.values.tone.silent_tone import SilentTone
 from openmusickit.values.time.duration import Duration
-from openmusickit.objects.omk_object import SequentialObject
+from openmusickit.objects.omk_object import SequentialObject, TonalObject
 
 
 @dataclass(kw_only=True)
-class NoteEvent(SequentialObject):
+class NoteEvent(SequentialObject, TonalObject):
     """A MultiNote is a SequentialObject that contains zero or more Tones played simultaneously within a single voice, line, or part.
     
     A NoteEvent with zero tones is not considered a rest, but rather a duration with unspecified tonal content ---
@@ -77,7 +77,7 @@ class NoteEvent(SequentialObject):
         self.remove_tone(old_tone)
         self.add_tone(new_tone)
 
-    def transform(self, operation: Callable[..., Tone], *args, **kwargs):
+    def transform_tones(self, operation: Callable[..., Tone], *args, **kwargs) -> None:
         """Replaces every tone of this NoteEvent with the result of
         `operation(tone, *args, **kwargs)`. SilentTones are left as they are.
 
@@ -97,10 +97,10 @@ class NoteEvent(SequentialObject):
         Transposition, with the interval passed as the operand:
 
         >>> note = NoteEvent(tones={C, E, G})
-        >>> note.transform(TonalVector.transpose, M3)
+        >>> note.transform_tones(TonalVector.transpose, M3)
         >>> note.tones == {E, Gx, B}
         True
-        >>> note.transform(TonalVector.transpose, M3, TonalDirection.DOWN)
+        >>> note.transform_tones(TonalVector.transpose, M3, TonalDirection.DOWN)
         >>> note.tones == {C, E, G}
         True
 
@@ -108,13 +108,13 @@ class NoteEvent(SequentialObject):
 
         >>> def sharpen(tv):
         ...     return tv + TonalVector((0, 1))
-        >>> note.transform(sharpen)
+        >>> note.transform_tones(sharpen)
         >>> note.tones == {TonalVector((0, 1)), TonalVector((2, 5)), TonalVector((4, 8))}
         True
 
         An operation that does not produce a Tone is rejected:
 
-        >>> note.transform(str)
+        >>> note.transform_tones(str)
         Traceback (most recent call last):
         ...
         TypeError: ...
@@ -122,7 +122,7 @@ class NoteEvent(SequentialObject):
         A rest stays a rest:
 
         >>> rest = Rest(None)
-        >>> rest.transform(TonalVector.transpose, M3)
+        >>> rest.transform_tones(TonalVector.transpose, M3)
         >>> rest
         Rest(duration=None)
         """

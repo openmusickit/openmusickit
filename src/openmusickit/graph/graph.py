@@ -1,11 +1,13 @@
 from __future__ import annotations
 from pathlib import Path
+from typing import Callable
 
 from .graph_adapter import GraphAdapter
 from .rx_adapter import RustworkxAdapter
 from .edges.edge import EdgeType, OmkEdge
 from openmusickit.utils.id import OmkId
-from openmusickit.objects.omk_object import OmkObject, SequentialObject, Spanner
+from openmusickit.objects.omk_object import OmkObject, SequentialObject, Spanner, TonalObject
+from openmusickit.values.tone.tone import Tone
 from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence 
 
 
@@ -77,7 +79,7 @@ class OmkGraph:
         return [edge for edge in self._graph.edges(edge_type)]
 
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
-        edge = OmkEdge(edge_type)
+        edge = OmkEdge(_type=edge_type)
         self._graph.add_edge(from_obj, to_obj, edge)
 
     def remove_edge(self, edge: OmkEdge) -> OmkEdge:
@@ -138,6 +140,39 @@ class OmkGraph:
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
         return spanner
+
+    def transform_tones(self, start: SequentialObject, end: SequentialObject | None,
+                        operation: Callable[..., Tone], *args, **kwargs) -> None:
+        """Applies `operation` to the tonal content of every TonalObject from
+        `start` to `end` (inclusive) along NEXT edges; `end=None` runs to the end
+        of the line. Objects without tonal content are passed over.
+
+        Raises ValueError if the line ends before `end` is reached.
+
+        >>> from openmusickit.objects.note.note import NoteEvent
+        >>> from openmusickit.objects.chord.chord_event import ChordEvent
+        >>> from openmusickit.objects.context.context_event import KeySignatureEvent
+        >>> from openmusickit.systems.wsmn.tonal.key import Key
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Gx, B, maj, M3, Major
+        >>> key, note, chord = (KeySignatureEvent(_key=Key.of(C, Major)),
+        ...                     NoteEvent(tones={C, E, G}), ChordEvent(chord=C(maj)))
+        >>> graph = OmkGraph(GraphMeta())
+        >>> graph.add_line([key, note, chord])
+        >>> graph.transform_tones(key, chord, TonalVector.transpose, M3)
+        >>> key.key.name, note.tones == {E, Gx, B}, str(chord.chord)
+        ('E Major', True, 'E')
+        """
+        obj = start
+        while obj is not None:
+            if isinstance(obj, TonalObject):
+                obj.transform_tones(operation, *args, **kwargs)
+            if obj is end:
+                return
+            obj = self.get_next(obj)
+
+        if end is not None:
+            raise ValueError(f"{end!r} was not reached: the line starting at {start!r} ended first.")
 
     # Annotations (articulations, memos, analysis)
 

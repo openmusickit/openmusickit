@@ -1,7 +1,9 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from openmusickit.values.time.duration import Duration
+from openmusickit.values.tone.tone import Tone
 
 from openmusickit.utils.id import OmkId
 
@@ -32,6 +34,17 @@ class SequentialObject(OmkObject):
     def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any):
         new_duration = operation(self.duration, operand)
         self.duration = new_duration
+
+class TonalObject(ABC):
+    """Mixin for objects with tonal content that a Tone -> Tone operation
+    can be pushed through (notes, chord symbols, key signatures, ...)."""
+    __slots__ = ()
+
+    @abstractmethod
+    def transform_tones(self, operation: Callable[..., Tone], *args, **kwargs) -> None:
+        """Replaces this object's tonal content, in place, with the result of
+        applying `operation(tone, *args, **kwargs)` to it."""
+
 
 @dataclass(kw_only=True)
 class Spanner(OmkObject):
