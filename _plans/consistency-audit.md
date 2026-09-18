@@ -1,6 +1,22 @@
 # Plan: consistency audit — Tier 0 fixes
 
-Status: **in progress 2026-09-18.**
+Status: **Tier 0 completed 2026-09-18** (commits b6c61d6..d0539a8); Tiers 1–4 still to be discussed, so this plan stays open.
+`uv run pytest` → 2362 passed (was 2358; four new doctests).
+
+Deviations / notes from implementation:
+
+- 0.3 required an adjacent fix: `RustworkxAdapter.get_next`/`get_previous` raised
+  `rustworkx.NoSuitableNeighbors` at the end of a line instead of returning `None`
+  as their contract says, which broke every line-walking method
+  (`zip_lyrics_to_objects`, `unlink_lyric_sequence`, `transform_tones` with
+  `end=None`). Fixed in the same commit (ddf84b6).
+- 0.1: `ZeroDuration` has no `__repr__`, so the doctest checks `isinstance`.
+- 0.7: `OmkId == str` remains True while `hash(OmkId) != hash(str)` — the same
+  eq/hash asymmetry removed from `TonalVector` in 0.6, kept here by decision and
+  logged in `revisit.md`.
+- 0.12: a root-position `ChordType`/`Chord` still compares equal to a plain
+  `ToneCollection` with the same tones and root (Python falls back to
+  `ToneCollection.__eq__` when the chord side returns `NotImplemented`).
 
 # OMK consistency audit — inventory for discussion
 
