@@ -41,7 +41,7 @@ class GraphAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_edges(self, source: OmkObject, target: OmkObject)-> tuple[list[OmkEdge]]:
+    def get_edges(self, source: OmkObject, target: OmkObject) -> tuple[list[OmkEdge], list[OmkEdge]]:
         """Returns all edges between source and target, in two lists:
             return_tuple[0] --> edges from source to target
             return_tuple[1] --> edges from target to source

@@ -72,7 +72,7 @@ class OmkGraph:
     def get_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> OmkEdge:
         return self._graph.get_edge(from_obj, to_obj, edge_type)
 
-    def get_edges(self, from_obj: OmkObject, to_obj: OmkObject) -> list[OmkEdge]:
+    def get_edges(self, from_obj: OmkObject, to_obj: OmkObject) -> tuple[list[OmkEdge], list[OmkEdge]]:
         return self._graph.get_edges(from_obj, to_obj)
 
     def get_edges_by_type(self, edge_type: EdgeType) -> list[OmkEdge]:
