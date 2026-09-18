@@ -46,6 +46,10 @@ class ClockDuration(Duration):
     def __truediv__(self, scalar):
         return ClockDuration(self._microseconds / scalar)
 
+    # Clock time is deliberately not comparable to metered time: `rational_length`
+    # is a WSMN notion (the named fractional value), whereas here it is a count of
+    # microseconds. To compare or combine the two, convert first with
+    # `ClockDuration.from_duration(duration, ratio)` using a TemporalRatio/Tempo.
     def __eq__(self, other):
         if isinstance(other, ClockDuration):
             return self._microseconds == other._microseconds
