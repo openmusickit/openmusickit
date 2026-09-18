@@ -1,7 +1,7 @@
 from test_fixtures import tonal_tuples, tonal_oct_tuples
 from openmusickit.systems.wsmn.tonal import tonal_arithmetic as ta
 
-def test_test(tonal_tuples):
+def test_fixture_covers_all_35_pitch_classes(tonal_tuples):
     assert len(tonal_tuples) == 35
 
 def test_tonal_sum_diff(tonal_tuples, tonal_oct_tuples):
