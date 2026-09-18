@@ -178,11 +178,11 @@ class OmkGraph:
 
     def add_articulation(self, articulation: OmkObject, obj: OmkObject) -> None:
         self.add_node(articulation)
-        self.add_edge(articulation, obj, EdgeType.ARTICULATION)
+        self.add_edge(articulation, obj, EdgeType.MARKS)
 
     def add_annotation(self, annotation: OmkObject, obj: OmkObject) -> None:
         self.add_node(annotation)
-        self.add_edge(annotation, obj, EdgeType.ANNOTATION)
+        self.add_edge(annotation, obj, EdgeType.ANNOTATES)
 
 
     # Spanners (slurs, crescendos, phrasing)
@@ -221,7 +221,7 @@ class OmkGraph:
             obj = self.get_next(obj)
 
     def unlink_lyric_from_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:
-        self.remove_edge(obj, lyric_syllable, EdgeType.LYRIC)
+        self.remove_edge(self.get_edge(obj, lyric_syllable, EdgeType.LYRIC))
 
     def unlink_lyric_sequence(self, start_syllable: LyricSyllable, stop_syllable: LyricSyllable|None = None) -> None:
         """Unlink a sequence of lyric syllables from their associated musical objects, stopping at the specified stop syllable if provided.
@@ -231,7 +231,6 @@ class OmkGraph:
             if stop_syllable is not None and syllable == stop_syllable:
                 break
             next_syllable = self.get_next(syllable)
-            for edge in list(self.get_edges(syllable)):
-                if edge.type == EdgeType.LYRIC:
-                    self.remove_edge(edge._from, edge._to, EdgeType.LYRIC)
+            for edge in list(self._graph.incident_edges(syllable, EdgeType.LYRIC)):
+                self.remove_edge(edge)
             syllable = next_syllable

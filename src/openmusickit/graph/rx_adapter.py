@@ -263,11 +263,17 @@ class RustworkxAdapter(GraphAdapter):
 
     def get_next(self, node: OmkObject) -> Optional[OmkObject]:
         """Return the next node connected by an edge of type NEXT from the given node, if it exists."""
-        return self.graph.find_successor_node_by_edge(self._rxid(node), lambda edge: edge.type == EdgeType.NEXT)
+        try:
+            return self.graph.find_successor_node_by_edge(self._rxid(node), lambda edge: edge.type == EdgeType.NEXT)
+        except rx.NoSuitableNeighbors:
+            return None
 
     def get_previous(self, node: OmkObject) -> Optional[OmkObject]:
         """Return the previous node connected by an edge of type NEXT to the given node, if it exists."""
-        return self.graph.find_predecessor_node_by_edge(self._rxid(node), lambda edge: edge.type == EdgeType.NEXT)
+        try:
+            return self.graph.find_predecessor_node_by_edge(self._rxid(node), lambda edge: edge.type == EdgeType.NEXT)
+        except rx.NoSuitableNeighbors:
+            return None
 
     
     def neighbors(
