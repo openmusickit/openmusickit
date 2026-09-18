@@ -47,6 +47,20 @@ class OmkId:
     def __str__(self) -> str:
         return str(self.value)
     
-    def __eq__(self, other: OmkId) -> bool:
-        return str(self) == str(other)
+    def __eq__(self, other: object) -> bool:
+        """Equal to another OmkId, or to the string form of one, with the same UUID.
+
+        String equality is deliberate: persistence layers and graph backends
+        carry ids as strings. (Whether OmkId should exist at all, rather than
+        plain UUID strings, is an open question -- see _plans/revisit.md.)
+
+        >>> a = OmkId.new()
+        >>> a == OmkId(str(a)), a == str(a), a == OmkId.new()
+        (True, True, False)
+        >>> a == 42
+        False
+        """
+        if isinstance(other, (OmkId, str)):
+            return str(self) == str(other)
+        return NotImplemented
     
