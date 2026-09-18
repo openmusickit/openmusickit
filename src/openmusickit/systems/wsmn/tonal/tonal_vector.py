@@ -721,9 +721,11 @@ class TonalVector(tuple, Tone, Interval):
         return TonalVector(ta.tonal_invert(self, x))
 
     def __eq__(self, x) -> bool:
-        """Returns true if self and x are equal or equivalent.
-        Can compare with TonalVectors, (d, c, [o]) tuples, 
-        or integers representing half-steps or 12-tone pitches.
+        """Returns True if self and x are the same (d, c, [o]) values.
+        Can compare with TonalVectors and plain (d, c, [o]) tuples.
+
+        Enharmonic equivalents are not equal (C♯ is not D♭); compare
+        half-step values with `int()` for that.
 
         Examples
         --------
@@ -735,14 +737,14 @@ class TonalVector(tuple, Tone, Interval):
         False
 
         >>> TonalVector((0,1)) == 1
-        True
+        False
 
         >>> int(TonalVector((0,1))) == int(TonalVector((1,1)))
         True
         """
-        if type(self) == type(x):
+        if isinstance(x, tuple):
             return tuple(self) == tuple(x)
-        return tuple(self) == x or int(self) == x
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(tuple(self))
