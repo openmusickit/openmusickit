@@ -165,7 +165,3 @@ class GraphAdapter(ABC):
     @abstractmethod
     def out_degree(self, node: OmkObject) -> int:
         """Return the number of edges originating from node."""
-
-    # NOTE: subgraph/edge_subgraph/copy/merge previously lived here but were
-    # removed pending a redesign that moves derived-graph construction to
-    # OmkGraph itself, built from lower-level adapter primitives.

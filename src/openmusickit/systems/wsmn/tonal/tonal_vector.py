@@ -341,21 +341,6 @@ class TonalVector(tuple, Tone, Interval):
         if hasattr(self, "_initialized"):
             return
 
-        """
-        self.d = self[0] # diatonic value
-        self.c = self[1] # chromatic value
-
-        self._diatone = DIATONES[self.d] # Q for source # rename?
-
-        # if a third value (octave) supplied
-        try:
-            self.o = self[2]
-            self.has_octave = True
-        except IndexError:
-            self.o = None
-            self.has_octave = False
-        """
-
         self._pitch = self._PitchRepresentation(self)
         self._interval = self._IntervalRepresentation(self)
 
@@ -624,7 +609,8 @@ class TonalVector(tuple, Tone, Interval):
         return TonalVector(ta.tonal_diff(self, x))
 
     def distance(self, x: tuple[int, ...]) -> TonalVector:
-        """Returns the smallest difference
+        """Returns the smallest difference between self and x, as an interval
+        (the absolute distance: never larger than a tritone for abstract vectors).
 
         Examples
         --------
@@ -745,12 +731,9 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((0,0)).transpose(TonalVector((1,1)))
         TonalVector((1, 1))
         """
-        if direction == TonalDirection.UP:
-            return self + x
-        elif direction == TonalDirection.DOWN:
+        if direction == TonalDirection.DOWN:
             return self - x
-        else:
-            raise ValueError(f"Invalid TonalDirection: {direction}.")
+        return self + x
 
     def inversion(self, x: tuple[int, ...] = (0, 0)) -> TonalVector:
         """Returns the inversion of self over x.

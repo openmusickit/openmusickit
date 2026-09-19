@@ -7,9 +7,6 @@ These functions operate on tuples of the form `(d, c, o)`, where
 `o` is an optional integer representing an octave designation.
 """
 
-# TODO: @tonal_args decorator
-#   Input validation on arithmetic functions
-
 import itertools
 
 from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES
@@ -44,7 +41,6 @@ def tonal_sum(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
     return _tonal_modulo(total)
 
 
-# @tonal_args
 def tonal_diff(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
     """Returns the value of x diminished by y.
 
@@ -89,7 +85,6 @@ def _negative_tuple(x: tuple[int, ...]) -> tuple[int, ...]:
     return tuple(-m for m in x)
 
 
-# @tonal_args
 def tonal_invert(x: tuple[int, ...], y: tuple[int, ...] = (0, 0)) -> tuple[int, ...]:
     """Returns the inversion of x on y.
 
@@ -148,7 +143,7 @@ def _tonal_modulo(x: tuple[int, ...]) -> tuple[int, ...]:
     """
 
     # From (0,0) to (6,11) (inclusive), no modulo is needed.
-    if x[0] in range(D_LEN) and x[1] in range(C_LEN):
+    if 0 <= x[0] < D_LEN and 0 <= x[1] < C_LEN:
         return x
 
     d_val = x[0] % D_LEN  # The normalized diatonic value.
@@ -411,11 +406,6 @@ def tonal_abs_diff(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
 
     """
     x, y = _qualify_octave_as_needed(x, y)
-    # if len(x) == 3:
-    #    return tonal_diff(tonal_greater_of(x,y), tonal_lesser_of(x,y))
-
-    # return tonal_lesser_of(tonal_diff(x,y), tonal_diff(y,x))
-
     a = abs_interval(tonal_diff(x, y))
     b = abs_interval(tonal_diff(y, x))
 

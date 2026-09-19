@@ -43,7 +43,7 @@ class TemporalElement(ABC):
     note durations, measures, beat cycles, gong cycles, and other units of time.
 
     Any internally-consistent rhythmic/temporal system should be constructable
-    using subclasses of TemporalElement and AbstractDuration.
+    using subclasses of TemporalElement and Duration.
 
     TemporalElements compare (and hash) by their rational_length,
     so a dotted quarter == 3 eighths == TemporalUnit(3, eighth).

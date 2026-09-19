@@ -16,25 +16,18 @@ class TonalSystem:
     - Optionally, create a `symbols` module that instantiates and assigns
       commonly used Tones and Intervals to meaningfully named variables.
 
-    To implement a complete musical system,
-    you might also create:
+    To implement a complete musical system, you might also create:
 
-    - A TemporalSystem, using base classes defined in the `time` subpackage.
-    - A percussion system, instantiating `PercussionTone` and `Gesture`
-      into relevant atomic units with meaningfully named variables.
-    - Chords or other harmonic structures, instantiating or extending classes
-      in the `harmony` subpackage.
-    - Structural units (analogous to WSMN's measure, section, movement, etc.)
-      using base classes defined in the `structure` subpackage.
+    - A TemporalSystem, using base classes defined in `values.time`.
+    - Chords or other harmonic structures, subclassing `ToneCollection`.
+    - Unpitched (percussion) tones, and structural units such as measures
+      and sections; base classes for these do not exist yet.
 
     All of these elements of a complete musical system are optional,
     and are decoupled from each other (there is no `MusicalSystem` class),
     so you are free to implement only what you need,
-    as well as mix-and-match
-    (for example,
-    combining a TonalSystem from one musical culture
-    with the RhythmicSystem from another).
-
+    as well as mix-and-match (for example, combining a TonalSystem
+    from one musical culture with the TemporalSystem from another).
     """
 
     name: str
@@ -54,9 +47,9 @@ class Tone(ABC):  # noqa: B024 -- a marker base: the contract is set by each ton
     - TonalVector encapsulates the 12-note diatonic/chromatic logic of Western music,
     and represents either a pitch or an interval. (TonalVector also subclasses Interval.)
 
-    - PercussionTone represents unpitched percussion sounds.
-
     - SilentTone represents any rest or silence.
+
+    (An unpitched percussion tone would be another subclass; it does not exist yet.)
 
     >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
     >>> from openmusickit.values.tone.silent_tone import SilentTone

@@ -22,25 +22,23 @@ class MetricalDuration(Duration):
     as understood and notated in Western Standard Music Notation.
 
     Duration values are stored as nominal values,
-    so a dotted quarter notes is stored as: {n: 1, d: 4, dots: 1}.
-    Actual temporal values (3, 8) are calculated when queried.
+    so a dotted quarter note is stored as numerator 1, denominator 4, dots 1.
+    Actual temporal values (3/8) are calculated when queried.
 
     Notes longer than a whole note (breve, longa, maxima) are stored
     with a power-of-two numerator and a denominator of 1,
-    so a breve is {n: 2, d: 1, dots: 0} and a dotted longa is {n: 4, d: 1, dots: 1}.
+    so a breve is (2, 1) and a dotted longa is (4, 1, dots=1).
 
     Tuplet values are handled by storing a TemporalRatio,
     which is (n, TemporalElements) against (m, TemporalElements).
 
-    A quarter note inside standard quarter note triplet would then be:
+    A quarter note inside a standard quarter-note triplet would then be:
 
-        Duration(
-        n = 1, d = 4, dots = 0,
-        TemporalRatio(
-            (TemporalUnit(3, Duration(1,4)),
-            (TemporalUnit(2, Duration(1,4))
-            )
-        )
+    >>> from openmusickit.values.time.duration import TemporalRatio, TemporalUnit
+    >>> quarter = MetricalDuration(1, 4)
+    >>> triplet = TemporalRatio(TemporalUnit(3, quarter), TemporalUnit(2, quarter))
+    >>> MetricalDuration(1, 4, ratio=triplet).rational_length
+    Fraction(1, 6)
 
     MetricalDurations compare, sort, and hash by their real length,
     so ``MetricalDuration(3, 8) == MetricalDuration(1, 4, dots=1)``.
@@ -343,43 +341,19 @@ class MetricalDuration(Duration):
         return TiedDuration(members)
 
     @property
-    def real_n(self):
-        return self.real_note_duration[0]
-
-    @property
-    def real_d(self):
-        return self.real_note_duration[1]
-
-    @property
     def temporal_system(self) -> TemporalSystem:
         return WSMN_TEMPORAL
 
     @property
     def nominal_length(self) -> F:
         """The notated value, including dots but ignoring any tuplet ratio."""
-        return F(*self.real_note_duration)
+        return F(self.numerator * (2 ** (self.dots + 1) - 1), self.denominator * (2**self.dots))
 
     @property
     def rational_length(self) -> F:
         if self.ratio is None:
             return self.nominal_length
         return self.nominal_length * self.ratio.multiplier
-
-    @property
-    def scalar_length(self):
-        return float(self.rational_length)
-
-    @property
-    def real_note_duration(self) -> tuple[int, int]:
-        """
-        Calculate the numerator and denominator of a dotted note duration
-        (ignoring any tuplet ratio).
-
-        Returns:
-            (int, int): Tuple of (numerator, denominator) of the total duration.
-        """
-        f = F(self.numerator * (2 ** (self.dots + 1) - 1), self.denominator * (2**self.dots))
-        return f.numerator, f.denominator
 
     def scale(self, scalar: int | F) -> MetricalDuration | TiedDuration:
         """Returns this duration augmented or diminished by ``scalar``.

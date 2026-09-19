@@ -53,7 +53,7 @@ class TonalObject(ABC):
 
 @dataclass(kw_only=True)
 class Spanner(OmkObject):
-    """Used with OmkEdges of type STARTS_AT and ENDS_AT
+    """Used with edges of type STARTS_AT and ENDS_AT
     to group a sequence of SequentialEvents together.
 
     Articulations (such as slurs and crescendos) and other objects

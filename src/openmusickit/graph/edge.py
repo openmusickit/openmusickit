@@ -76,12 +76,10 @@ class Next(OmkEdge):
 
         if self.displacement is None:
             self.displacement = ZeroDuration()
-        if direction == NudgeDirection.FORWARD:
-            self.displacement += amount
-        elif direction == NudgeDirection.BACKWARD:
+        if direction == NudgeDirection.BACKWARD:
             self.displacement -= amount
         else:
-            raise ValueError(f"Invalid nudge direction: {direction}")
+            self.displacement += amount
 
     def __repr__(self):
         return f"{type(self).__name__}(anchor={self.anchor}, displacement={self.displacement})"

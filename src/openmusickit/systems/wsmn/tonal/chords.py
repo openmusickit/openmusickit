@@ -185,7 +185,7 @@ class ChordType(_ChordBase):
 
             particularly useful with symbols:
 
-            from openmusickit.values.symbols import *
+            from openmusickit.systems.wsmn.tonal.symbols import *
 
             C_major_chord = C(maj)
         """
@@ -210,7 +210,7 @@ class Chord(_ChordBase):
     """A concrete realization of a ChordType at a specific root pitch.
 
     Unlike ChordType, a Chord's root is not necessarily `TonalVector(0,0)` --
-    it is wherever the ChordType was realized (e.g. `maj(E)` produces a Chord
+    it is wherever the ChordType was realized (e.g. `E(maj)` produces a Chord
     rooted at E)."""
 
     def __init__(

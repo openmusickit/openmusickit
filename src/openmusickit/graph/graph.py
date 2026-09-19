@@ -207,7 +207,6 @@ class OmkGraph:
     def add_lyric_sequence(self, lyric_sequence: LyricSequence) -> None:
         """Creates a new linear subgraph from a sequence of lyric syllables."""
         self.add_line(list(lyric_sequence))
-        # Do something with lyric sequence metadata once i have an annotation object
 
     def zip_lyrics_to_objects(
         self, start_syllable: LyricSyllable, start_object: SequentialEvent

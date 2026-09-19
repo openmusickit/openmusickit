@@ -10,14 +10,14 @@ from openmusickit.values.tone.tone_collection import apply_tone_operation
 
 @dataclass(kw_only=True)
 class NoteEvent(SequentialEvent, TonalObject):
-    """A MultiNote is a SequentialEvent that contains zero or more Tones played simultaneously within a single voice, line, or part.
+    """A NoteEvent is a SequentialEvent that contains zero or more Tones played simultaneously within a single voice, line, or part.
 
     A NoteEvent with zero tones is not considered a rest, but rather a duration with unspecified tonal content ---
     either because the tonal content doesn't need to be specified (for example, a comping chart),
     or because it has not yet been specified (for example, in a sketch or draft).
 
     A Rest is represented as a NoteEvent with a SilentTone.
-    Unpitched percussion notes are represented a NoteEvents with an UnpitchedTone."""
+    Unpitched percussion notes would be NoteEvents holding an unpitched Tone subclass (not yet defined)."""
 
     tones: set[Tone]
 

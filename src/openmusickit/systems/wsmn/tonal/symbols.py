@@ -653,7 +653,7 @@ hdim11 = ChordType(
 )
 
 
-"""Modes and Keys"""
+# --- modes and keys -----------------------------------------------------------
 
 Major = ModePattern(
     name="Major",
