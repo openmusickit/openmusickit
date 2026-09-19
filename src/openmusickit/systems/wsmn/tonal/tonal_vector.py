@@ -6,17 +6,17 @@ from enum import StrEnum, auto
 from openmusickit.systems.wsmn.tonal import interval_quality as iq
 from openmusickit.systems.wsmn.tonal import tonal_arithmetic as ta
 from openmusickit.systems.wsmn.tonal.constants import (
-    AC,
+    ACCIDENTALS,
     C_LEN,
     D_LEN,
+    DIATONES,
     EURO_SF,
-    MS,
     Accidental,
     Diatone,
     QualityType,
     SolfegeStyle,
 )
-from openmusickit.utils.number_names import ordinals
+from openmusickit.utils.number_names import ORDINALS
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from openmusickit.values.tone.tone import PitchRepresentation, Tone
 
@@ -43,7 +43,7 @@ def _alternation(spellings) -> str:
 
 ## Pitches ##
 
-_LETTERS = {diatone.ln: diatone.d for diatone in MS}  # 'c' -> 0, 'd' -> 1, ...
+_LETTERS = {diatone.letter: diatone.degree for diatone in DIATONES}  # 'c' -> 0, 'd' -> 1, ...
 
 
 def _pitch_names(solfege_style: SolfegeStyle) -> dict[str, tuple[int, int]]:
@@ -59,8 +59,10 @@ def _pitch_names(solfege_style: SolfegeStyle) -> dict[str, tuple[int, int]]:
         names.update({syllable: (d, 0) for d, syllable in EURO_SF.items()})
         names.update({"so": (4, 0), "ti": (6, 0)})  # common alternates for 'sol' and 'si'
     if solfege_style == SolfegeStyle.OMK_MOVEABLE:
-        for diatone in MS:
-            names.update({syllable: (diatone.d, offset) for offset, syllable in diatone.sf.items()})
+        for diatone in DIATONES:
+            names.update(
+                {syllable: (diatone.degree, offset) for offset, syllable in diatone.solfege.items()}
+            )
     return names
 
 
@@ -73,8 +75,8 @@ def _accidental_spellings() -> dict[str, int]:
     offset in half-steps. Spelled-out forms are stored without spaces,
     since from_string strips all whitespace before matching."""
     spellings = {}
-    for offset, accidental in AC.items():
-        for spelling in (accidental.a, accidental.u, accidental.v.replace(" ", "")):
+    for offset, accidental in ACCIDENTALS.items():
+        for spelling in (accidental.ascii, accidental.unicode, accidental.name.replace(" ", "")):
             if spelling:  # a natural has no ASCII spelling
                 spellings[spelling] = offset
     return spellings
@@ -128,7 +130,7 @@ def _pitch_from_match(m: re.Match, names: dict, mid_c: int) -> tuple:
     d, chromatic_offset = names[m["name"]]
     if m["accidental"]:
         chromatic_offset += _ACCIDENTALS[m["accidental"]]
-    c = (MS[d].c + chromatic_offset) % C_LEN
+    c = (DIATONES[d].chromatic + chromatic_offset) % C_LEN
 
     if m["octave"] is None:
         return (d, c)
@@ -168,7 +170,9 @@ _QUALITY_MULTIPLIERS = {
     "quadruple": 4,
 }
 
-_NUMBER_WORDS = {diatone.i: diatone.d + 1 for diatone in MS}  # 'unison' -> 1, 'second' -> 2, ...
+_NUMBER_WORDS = {
+    diatone.interval_name: diatone.degree + 1 for diatone in DIATONES
+}  # 'unison' -> 1, 'second' -> 2, ...
 
 # e.g. "P5", "m3", "aug4", "dbldim5", "perfectfifth", "M9th", "aug4+1"
 _INTERVAL_PATTERN = re.compile(
@@ -201,19 +205,21 @@ def _interval_quality(kind: str, times: int, d: int) -> iq.IntervalQuality:
     can't be major or minor. 2nds, 3rds, 6ths and 7ths (and their
     compounds) are major/minor-type, so they can't be perfect.
     """
-    degree = MS[d]
-    is_perfect_type = degree.q == QualityType.P
+    degree = DIATONES[d]
+    is_perfect_type = degree.quality_type == QualityType.P
     if kind == "perfect" and not is_perfect_type:
         raise ValueError(
-            f"A {degree.i} cannot be perfect (only major, minor, augmented or diminished)."
+            f"A {degree.interval_name} cannot be perfect (only major, minor, augmented or diminished)."
         )
     if kind in ("major", "minor") and is_perfect_type:
-        raise ValueError(f"A {degree.i} cannot be {kind} (only perfect, augmented or diminished).")
+        raise ValueError(
+            f"A {degree.interval_name} cannot be {kind} (only perfect, augmented or diminished)."
+        )
 
     # IntervalQuality is keyed by a "relative number": 0 for perfect,
     # +0.5/-0.5 for major/minor, and each augmentation or diminution moves
     # a further 1 away from there.
-    base = degree.q.value
+    base = degree.quality_type.value
     if kind == "perfect":
         rel_number = 0
     elif kind == "major":
@@ -244,16 +250,16 @@ def _interval_from_match(m: re.Match) -> tuple:
         number = int(m["number"])
     else:
         number = _NUMBER_WORDS[m["number_word"].lower()]
-    if not 1 <= number < len(ordinals):
-        raise ValueError(f"Interval numbers must be between 1 and {len(ordinals) - 1}.")
-    if m["ordinal"] and ordinals[number] != m["number"] + m["ordinal"].lower():
+    if not 1 <= number < len(ORDINALS):
+        raise ValueError(f"Interval numbers must be between 1 and {len(ORDINALS) - 1}.")
+    if m["ordinal"] and ORDINALS[number] != m["number"] + m["ordinal"].lower():
         raise ValueError(
-            f"'{m['number']}{m['ordinal']}' is not a valid ordinal (expected '{ordinals[number]}')."
+            f"'{m['number']}{m['ordinal']}' is not a valid ordinal (expected '{ORDINALS[number]}')."
         )
 
     # Numbers above 7 are compound: a 9th is a 2nd plus an octave.
     d, octave = (number - 1) % D_LEN, (number - 1) // D_LEN
-    c = (MS[d].c + _interval_quality(kind, times, d).chromatic_modifier) % C_LEN
+    c = (DIATONES[d].chromatic + _interval_quality(kind, times, d).chromatic_modifier) % C_LEN
 
     if m["octave"]:
         octave += int(m["octave"])
@@ -334,7 +340,7 @@ class TonalVector(tuple, Tone, Interval):
         self.d = self[0] # diatonic value
         self.c = self[1] # chromatic value
 
-        self._diatone = MS[self.d] # Q for source # rename?
+        self._diatone = DIATONES[self.d] # Q for source # rename?
 
         # if a third value (octave) supplied
         try:
@@ -387,7 +393,7 @@ class TonalVector(tuple, Tone, Interval):
 
     @property
     def _diatone(self) -> Diatone:
-        return MS[self.d]
+        return DIATONES[self.d]
 
     @property
     def _has_octave(self) -> bool:
@@ -528,9 +534,9 @@ class TonalVector(tuple, Tone, Interval):
 
         d = _LETTERS[m["letter"]]
         accidental = m["accidental"].count("is") - m["accidental"].count("es")
-        if accidental not in AC:
+        if accidental not in ACCIDENTALS:
             raise ValueError(f"{s!r} has more sharps or flats than are supported.")
-        c = (MS[d].c + accidental) % C_LEN
+        c = (DIATONES[d].chromatic + accidental) % C_LEN
 
         if prev_note is None:
             octave = 0  # Lilypond's default octave is OMK's octave 0
@@ -870,7 +876,7 @@ class TonalVector(tuple, Tone, Interval):
             >>> TonalVector((0,1)).pitch._ln
             'C'
             """
-            return self._v._diatone.ln.upper()
+            return self._v._diatone.letter.upper()
 
         # how sharp or flat
         @property
@@ -894,13 +900,13 @@ class TonalVector(tuple, Tone, Interval):
             1
             """
 
-            modifier = self._v.c - self._v._diatone.c
+            modifier = self._v.c - self._v._diatone.chromatic
 
             if abs(modifier) > 4:  # 4 = triple aug or triple dim
-                if self._v.c < self._v._diatone.c:
-                    d_val_c = self._v._diatone.c - C_LEN
-                if self._v.c > self._v._diatone.c:
-                    d_val_c = self._v._diatone.c + C_LEN
+                if self._v.c < self._v._diatone.chromatic:
+                    d_val_c = self._v._diatone.chromatic - C_LEN
+                if self._v.c > self._v._diatone.chromatic:
+                    d_val_c = self._v._diatone.chromatic + C_LEN
                 modifier = self._v.c - d_val_c
 
             return modifier
@@ -911,12 +917,12 @@ class TonalVector(tuple, Tone, Interval):
             information about how to represent the modifier (sharp, flat, natural).
 
             >>> TonalVector((0,0)).pitch._modifier
-            Accidental(offset=0, v='natural', uni='♮', asc='', ly='')
+            Accidental(offset=0, name='natural', unicode='♮', ascii='', ly='')
 
-            >>> TonalVector((0,0)).pitch._modifier.v
+            >>> TonalVector((0,0)).pitch._modifier.name
             'natural'
             """
-            return AC[self._modifier_value]
+            return ACCIDENTALS[self._modifier_value]
 
         def _unicode(self, mid_c: int = 0) -> str:
             """Returns a human readable representation of the pitch, with Unicode modifiers (♯, ♭).
@@ -935,7 +941,7 @@ class TonalVector(tuple, Tone, Interval):
             u_str = self._ln
 
             if self._modifier_value:
-                u_str = "".join([u_str, self._modifier.u])
+                u_str = "".join([u_str, self._modifier.unicode])
 
             if self._v._has_octave:
                 u_str = "".join([u_str, str(self._v.o + mid_c)])
@@ -991,7 +997,7 @@ class TonalVector(tuple, Tone, Interval):
             astr = self._ln
 
             if self._modifier_value:
-                astr = "".join([astr, self._modifier.a])
+                astr = "".join([astr, self._modifier.ascii])
 
             if self._v._has_octave:
                 astr = "".join([astr, str(self._v.o + octave_modifier)])
@@ -1147,7 +1153,7 @@ class TonalVector(tuple, Tone, Interval):
             if self._modifier_value == 0:
                 mod_text = ""
             else:
-                mod_text = self._modifier.v
+                mod_text = self._modifier.name
 
             return "".join([self._ln, mod_text, o])
 

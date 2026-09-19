@@ -12,7 +12,7 @@ These functions operate on tuples of the form `(d, c, o)`, where
 
 import itertools
 
-from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, MS
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES
 
 
 def tonal_sum(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
@@ -219,7 +219,7 @@ def tonal_int(x: tuple[int, ...]) -> int:
 
     d = x[0]
     c = x[1]
-    base_c = MS[d].c
+    base_c = DIATONES[d].chromatic
 
     # Example: Cb --- base=0 c=11  c-base=11   11 - 12 = -1
 
@@ -515,7 +515,7 @@ def _tonal_unmodulo(x: tuple[int, ...]) -> tuple[int, ...]:
 
     d = x[0]
     c = x[1]
-    base_c = MS[d].c
+    base_c = DIATONES[d].chromatic
     # Example: Cb --- base=0 c=11  c-base=11   11 - 12 = -1
 
     if c - base_c > 6:

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from numbers import Real
 
 from openmusickit.systems.wsmn.tonal.chords import Quality
-from openmusickit.systems.wsmn.tonal.constants import C_LEN, MS
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, DIATONES
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
 
@@ -212,7 +212,7 @@ class KeySignature(tuple):
 
         alts: dict[int, int] = {}
         for d, alt in enumerate(self):
-            tone = TonalVector((d, (MS[d].c + alt) % C_LEN))
+            tone = TonalVector((d, (DIATONES[d].chromatic + alt) % C_LEN))
             new_tone = operation(tone, *args, **kwargs)
             if not isinstance(new_tone, TonalVector):
                 raise TypeError(

@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterable
 from enum import Enum
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
-from openmusickit.utils.number_names import ordinals
+from openmusickit.utils.number_names import ORDINALS
 from openmusickit.values.tone.tone_collection import ToneCollection
 
 
@@ -166,7 +166,7 @@ class ChordType(ToneCollection):
         label = self.suffix or self.name or ""
         inv = list(self).index(self.bass)
         if inv:
-            label = f"{label} {ordinals[inv]} inv."
+            label = f"{label} {ORDINALS[inv]} inv."
         return label.strip() or repr(self)
 
     def __call__(self, tv: TonalVector) -> "Chord":

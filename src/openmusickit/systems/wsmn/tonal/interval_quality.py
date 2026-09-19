@@ -1,7 +1,7 @@
 import functools
 import math
 
-from openmusickit.systems.wsmn.tonal.constants import C_LEN, MS
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, DIATONES
 
 q_vals = {
     -4.5: "quad_diminished-from_maj_min",
@@ -129,16 +129,16 @@ def _(v, _=None):
     IntervalQuality("diminished-from_perfect", -1)
     """
     d, c = v[0], v[1]
-    d_val = MS[d]
-    modifier = c - d_val.c
-    base_q_val = d_val.q.value
+    d_val = DIATONES[d]
+    modifier = c - d_val.chromatic
+    base_q_val = d_val.quality_type.value
 
     # correct for octave break cases
     if abs(modifier) > 4:  # 4 = triple aug or triple dim
-        if c < d_val.c:
-            d_val_c = d_val.c - C_LEN
-        if c > d_val.c:
-            d_val_c = d_val.c + C_LEN
+        if c < d_val.chromatic:
+            d_val_c = d_val.chromatic - C_LEN
+        if c > d_val.chromatic:
+            d_val_c = d_val.chromatic + C_LEN
         modifier = c - d_val_c
 
     return _get_quality(base_q_val + modifier)
@@ -197,7 +197,7 @@ def _(q, d=None):
 
 def _get_quality_x(q, d):  # x= extended
     q = q.lower()
-    base_quality = MS[d].q.value
+    base_quality = DIATONES[d].quality_type.value
 
     if q == "a" or "aug" in q:
         q_add = 1  # quality addend

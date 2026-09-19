@@ -1,4 +1,4 @@
-ordinals = [
+ORDINALS = [
     "0th",
     "1st",
     "2nd",
@@ -14,14 +14,3 @@ ordinals = [
     "12th",
     "13th",
 ]
-
-fractionals = {
-    1: "whole",
-    2: "half",
-    4: "quarter",
-    8: "eighth",
-    16: "sixteenth",
-    32: "thirty-second",
-    64: "sixty-fourth",
-    128: "128th",
-}

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 
 D_LEN = 7  # "Diatonic Length" - The number of tones in a diatonic scale.
@@ -56,129 +57,56 @@ TI = {-1: "te", 0: "ti", 1: "to"}
 EURO_SF = {0: "do", 1: "re", 2: "mi", 3: "fa", 4: "sol", 5: "la", 6: "si"}
 
 
+@dataclass(frozen=True, slots=True)
 class Diatone:
-    """A major or perfect pitch or interval.
+    """A degree of the major scale: a major or perfect pitch or interval.
 
     All pitch values, interval qualities, and scales are based on
     the diatonic major scale.
     """
 
-    def __init__(self, d: int, c: int, q: QualityType, i: str, ln: str, sf: dict, f: str, z: int):
-        self._d = d  # diatonic scale degree (zero indexed)
-        self._c = c  # chromatic (12-tone) value (zero indexed)
-        self._q = q  # quality type - Perfect or Major/Minor
-        self._i = i  # interval name - "unison", "second", etc
-        self._ln = ln  # letter name in C major
-        self._sf = sf  # solfege (moveable do)
-        self._f = f  # functional name
-        self._z = z  # dissonance score
-
-    @property
-    def d(self) -> int:
-        return self._d
-
-    @property
-    def c(self) -> int:
-        return self._c
-
-    @property
-    def q(self) -> QualityType:
-        return self._q
-
-    @property
-    def i(self) -> str:
-        return self._i
-
-    @property
-    def ln(self) -> str:
-        return self._ln
-
-    @property
-    def sf(self) -> dict[int, str]:
-        return self._sf
-
-    @property
-    def f(self) -> str:
-        return self._f
-
-    @property
-    def z(self) -> int:
-        return self._z
-
-    def __repr__(self):
-        return f"{type(self).__name__}(d={self.d}, c={self.c}, q={self.q}, i='{self.i}', ln='{self.ln}', sf={self.sf}, f='{self.f}', z={self.z})"
+    degree: int  # diatonic scale degree (zero indexed)
+    chromatic: int  # chromatic (12-tone) value (zero indexed)
+    quality_type: QualityType  # Perfect or Major/Minor
+    interval_name: str  # "unison", "second", ...
+    letter: str  # letter name in C major
+    solfege: dict[int, str]  # moveable-do syllables by chromatic offset (see DO, RE, ...)
+    function: str  # "tonic", "dominant", ...
+    dissonance: int  # dissonance score
 
 
-# Set up Diatones for Major Scale
-
-MS = [
-    # diatonic value, chromatic value, interval quality (0 or 0.5), interval name,  letter name, solfege list, function, diszonance
-    {"d": 0, "c": 0, "q": P, "in": "unison", "ln": "c", "sf": DO, "f": "tonic", "z": 0},
-    {"d": 1, "c": 2, "q": Mm, "in": "second", "ln": "d", "sf": RE, "f": "subtonic", "z": 2},
-    {"d": 2, "c": 4, "q": Mm, "in": "third", "ln": "e", "sf": MI, "f": "mediant", "z": 1},
-    {"d": 3, "c": 5, "q": P, "in": "fourth", "ln": "f", "sf": FA, "f": "subdominant", "z": 2},
-    {"d": 4, "c": 7, "q": P, "in": "fifth", "ln": "g", "sf": SO, "f": "dominant", "z": 0},
-    {"d": 5, "c": 9, "q": Mm, "in": "sixth", "ln": "a", "sf": LA, "f": "submediant", "z": 1},
-    {"d": 6, "c": 11, "q": Mm, "in": "seventh", "ln": "b", "sf": TI, "f": "leading tone", "z": 3},
-]
-
-MS = [
-    Diatone(d=x["d"], c=x["c"], q=x["q"], i=x["in"], ln=x["ln"], sf=x["sf"], f=x["f"], z=x["z"])
-    for x in MS
-]
+DIATONES = (
+    Diatone(0, 0, P, "unison", "c", DO, "tonic", 0),
+    Diatone(1, 2, Mm, "second", "d", RE, "subtonic", 2),
+    Diatone(2, 4, Mm, "third", "e", MI, "mediant", 1),
+    Diatone(3, 5, P, "fourth", "f", FA, "subdominant", 2),
+    Diatone(4, 7, P, "fifth", "g", SO, "dominant", 0),
+    Diatone(5, 9, Mm, "sixth", "a", LA, "submediant", 1),
+    Diatone(6, 11, Mm, "seventh", "b", TI, "leading tone", 3),
+)
+"""The seven degrees of the major scale, indexed by diatonic value."""
 
 
+@dataclass(frozen=True, slots=True)
 class Accidental:
-    def __init__(self, offset: int, v: str, uni: str, asc: str, ly: str):
-        self._offset = offset  # half-steps from natural
-        self._v = v  # verbose name; e.g. "flat", "double sharp"
-        self._uni = uni  # unicode symbol
-        self._asc = asc  # ASCII symbol
-        self._ly = ly  # Lilypond symbol
+    """A chromatic alteration of a letter name, with its spellings."""
 
-    @property
-    def offset(self) -> int:
-        """Chromatic offset from the base note, in half steps.
-        Positive is sharp and negative is flat."""
-        return self._offset
-
-    @property
-    def v(self) -> str:
-        """The English name of the accidental, spelled out.
-        For example, 'flat' or 'double sharp'."""
-        return self._v
-
-    @property
-    def u(self) -> str:
-        """The Unicode representation."""
-        return self._uni
-
-    @property
-    def a(self) -> str:
-        """The ASCII representation."""
-        return self._asc
-
-    @property
-    def ly(self) -> str:
-        """The Lilypond command."""
-        return self._ly
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}(offset={self.offset}, v='{self.v}', uni='{self.u}', asc='{self.a}', ly='{self.ly}')"
+    offset: int  # half-steps from natural; positive is sharp, negative is flat
+    name: str  # spelled out: "flat", "double sharp", ...
+    unicode: str
+    ascii: str
+    ly: str  # Lilypond suffix
 
 
-# Accidentals
-AC = {
-    # halfsteps : verbose, unicode, ascii, ly
-    -4: {"v": "quadruple flat", "u": "𝄫𝄫", "a": "bbbb", "ly": "eseseses"},
-    -3: {"v": "triple flat", "u": "𝄫♭", "a": "bbb", "ly": "eseses"},
-    -2: {"v": "double flat", "u": "𝄫", "a": "bb", "ly": "eses"},
-    -1: {"v": "flat", "u": "♭", "a": "b", "ly": "es"},
-    0: {"v": "natural", "u": "♮", "a": "", "ly": ""},
-    1: {"v": "sharp", "u": "♯", "a": "#", "ly": "is"},
-    2: {"v": "double sharp", "u": "𝄪", "a": "##", "ly": "isis"},
-    3: {"v": "triple sharp", "u": "𝄪♯", "a": "###", "ly": "isisis"},
-    4: {"v": "quadruple sharp", "u": "𝄪𝄪", "a": "####", "ly": "isisisis"},
+ACCIDENTALS = {
+    -4: Accidental(-4, "quadruple flat", "𝄫𝄫", "bbbb", "eseseses"),
+    -3: Accidental(-3, "triple flat", "𝄫♭", "bbb", "eseses"),
+    -2: Accidental(-2, "double flat", "𝄫", "bb", "eses"),
+    -1: Accidental(-1, "flat", "♭", "b", "es"),
+    0: Accidental(0, "natural", "♮", "", ""),
+    1: Accidental(1, "sharp", "♯", "#", "is"),
+    2: Accidental(2, "double sharp", "𝄪", "##", "isis"),
+    3: Accidental(3, "triple sharp", "𝄪♯", "###", "isisis"),
+    4: Accidental(4, "quadruple sharp", "𝄪𝄪", "####", "isisisis"),
 }
-
-AC = {i: Accidental(offset=i, v=x["v"], uni=x["u"], asc=x["a"], ly=x["ly"]) for i, x in AC.items()}
+"""Accidentals by chromatic offset from natural."""
