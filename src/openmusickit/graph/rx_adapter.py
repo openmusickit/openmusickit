@@ -3,7 +3,7 @@ from collections.abc import Callable, Iterator
 import rustworkx as rx
 from bidict import bidict
 
-from openmusickit.graph.edges.edge import EdgeType, OmkEdge
+from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.utils.id import OmkId

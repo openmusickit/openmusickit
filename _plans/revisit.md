@@ -42,7 +42,7 @@ is called anywhere yet. Question: are durations signed quantities (add
 `__neg__`/`__sub__` to the `Duration` contract), or is displacement a signed
 offset stored on the `Next` edge with durations staying positive lengths?
 Files: [src/openmusickit/values/time/duration.py](../src/openmusickit/values/time/duration.py),
-[src/openmusickit/graph/edges/edge.py](../src/openmusickit/graph/edges/edge.py).
+[src/openmusickit/graph/edge.py](../src/openmusickit/graph/edge.py).
 
 ## `rational_length` on the abstract TemporalElement (2026-09-18)
 

@@ -1,8 +1,8 @@
-from openmusickit.systems.wsmn.tonal import (
+from . import (
     chords,
     constants,
     interval_quality,
-    str_to_vec,
+    key,
     symbols,
     tonal_arithmetic,
     tonal_vector,
@@ -13,7 +13,7 @@ __all__ = [
     "chords",
     "constants",
     "interval_quality",
-    "str_to_vec",
+    "key",
     "symbols",
     "tonal_arithmetic",
     "tonal_vector",

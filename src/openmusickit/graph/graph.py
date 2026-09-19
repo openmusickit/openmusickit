@@ -3,11 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from openmusickit.graph.edges.edge import EdgeType, OmkEdge
+from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
-from openmusickit.objects.lyrics.lyrics import LyricSequence, LyricSyllable
-from openmusickit.objects.omk_object import OmkObject, SequentialObject, Spanner, TonalObject
+from openmusickit.objects.lyrics import LyricSequence, LyricSyllable
+from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
 from openmusickit.utils.id import OmkId
 from openmusickit.values.tone.tone import Tone
 
@@ -91,24 +91,24 @@ class OmkGraph:
 
     # Sequential Data
 
-    def add_next(self, current: SequentialObject, next: SequentialObject) -> None:
-        """Places a SequentialObject after another SequentialObject.
+    def add_next(self, current: SequentialEvent, next: SequentialEvent) -> None:
+        """Places a SequentialEvent after another SequentialEvent.
 
         Current node must be on the graph before adding a next node.
         Next node can be on the graph or not."""
         self.add_node(next)
         self.add_edge(current, next, EdgeType.NEXT)
 
-    def get_next(self, current: SequentialObject) -> SequentialObject | None:
+    def get_next(self, current: SequentialEvent) -> SequentialEvent | None:
         return self._graph.get_next(current)
 
-    def get_previous(self, current: SequentialObject) -> SequentialObject | None:
+    def get_previous(self, current: SequentialEvent) -> SequentialEvent | None:
         return self._graph.get_previous(current)
 
     def insert_event(
-        self, event: SequentialObject, prev: SequentialObject, next: SequentialObject
+        self, event: SequentialEvent, prev: SequentialEvent, next: SequentialEvent
     ) -> None:
-        """Insert a SequentialObject between two SequentialObjects.
+        """Insert a SequentialEvent between two SequentialEvents.
 
         It makes no difference if the inserted object was already part of the graph."""
         edge = self.get_edge(prev, next, EdgeType.NEXT)
@@ -116,7 +116,7 @@ class OmkGraph:
         self.add_next(prev, event)
         self.add_next(event, next)
 
-    def add_line(self, line: list[SequentialObject]) -> None:
+    def add_line(self, line: list[SequentialEvent]) -> None:
         """Create a new linear subgraph from a list of objects."""
         prev = None
         for obj in line:
@@ -127,7 +127,7 @@ class OmkGraph:
             prev = obj
 
     def insert_line_from_list(
-        self, line: list[SequentialObject], prev: SequentialObject, next: SequentialObject
+        self, line: list[SequentialEvent], prev: SequentialEvent, next: SequentialEvent
     ) -> None:
         """Create a new linear subgraph from a list of objects and insert it between prev and next."""
         edge = self.get_edge(prev, next, EdgeType.NEXT)
@@ -141,9 +141,9 @@ class OmkGraph:
         self.add_next(line[-1], next)
 
     def define_span(
-        self, start: SequentialObject, end: SequentialObject, spanner: Spanner | None = None
+        self, start: SequentialEvent, end: SequentialEvent, spanner: Spanner | None = None
     ) -> Spanner:
-        """Defines a span of SequentialObjects from start to end, inclusive."""
+        """Defines a span of SequentialEvents from start to end, inclusive."""
         spanner = spanner or Spanner()
         self.add_node(spanner)
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
@@ -152,8 +152,8 @@ class OmkGraph:
 
     def transform_tones(
         self,
-        start: SequentialObject,
-        end: SequentialObject | None,
+        start: SequentialEvent,
+        end: SequentialEvent | None,
         operation: Callable[..., Tone],
         *args,
         **kwargs,
@@ -164,9 +164,9 @@ class OmkGraph:
 
         Raises ValueError if the line ends before `end` is reached.
 
-        >>> from openmusickit.objects.note.note import NoteEvent
-        >>> from openmusickit.objects.chord.chord_event import ChordEvent
-        >>> from openmusickit.objects.context.context_event import KeySignatureEvent
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.objects.chord_event import ChordEvent
+        >>> from openmusickit.objects.context_event import KeySignatureEvent
         >>> from openmusickit.systems.wsmn.tonal.key import Key
         >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Gx, B, maj, M3, Major
@@ -203,9 +203,7 @@ class OmkGraph:
 
     # Spanners (slurs, crescendos, phrasing)
 
-    def add_spanner(
-        self, spanner: OmkObject, start: SequentialObject, end: SequentialObject
-    ) -> None:
+    def add_spanner(self, spanner: OmkObject, start: SequentialEvent, end: SequentialEvent) -> None:
         self.add_node(spanner)
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
@@ -229,7 +227,7 @@ class OmkGraph:
         # Do something with lyric sequence metadata once i have an annotation object
 
     def zip_lyrics_to_objects(
-        self, start_syllable: LyricSyllable, start_object: SequentialObject
+        self, start_syllable: LyricSyllable, start_object: SequentialEvent
     ) -> None:
         """Connects a sequence of lyric syllables to a sequence of musical objects in a one-to-one manner."""
         syllable = start_syllable

@@ -1,7 +1,8 @@
-from openmusickit.systems.wsmn.temporal import metrical_duration, symbols, time_signature
+from . import metrical_duration, symbols, time_signature, wsmn
 
 __all__ = [
     "metrical_duration",
     "symbols",
     "time_signature",
+    "wsmn",
 ]

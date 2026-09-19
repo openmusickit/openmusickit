@@ -1,12 +1,8 @@
-"""
-The `tones` module provides the foundational logic for pitch and interval operations.
+"""The `tone` package provides the abstract base classes for pitch and interval systems:
+`Tone`, `Interval`, their string representations, `SilentTone`, and `ToneCollection`.
+Concrete systems (for example `systems.wsmn.tonal.TonalVector`) subclass these."""
 
-It includes tools for transposing, inverting, and comparing tonal elements, as well as
-the `TonalVector` class—a core abstraction that encodes both pitches and intervals
-as direction-aware vectors suitable for algorithmic and music-theoretical analysis.
-"""
-
-from openmusickit.values.tone import interval, silent_tone, tone, tone_collection
+from . import interval, silent_tone, tone, tone_collection
 
 __all__ = [
     "interval",

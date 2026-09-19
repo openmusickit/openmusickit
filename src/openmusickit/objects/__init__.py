@@ -2,27 +2,30 @@
 
 Objects are (usually) mutable, and represent items found in a score, sketch, or other piece of music,
 such as notes, chords, sections, lyrics, articulations, markings, analysis figures, etc.
-Each instantiated object represents a single things: this note, that syllable, this staccato mark.
+Each instantiated object represents a single thing: this note, that syllable, this staccato mark.
 They are generally composed of immutable values.
 
 So a C-sharp in the tenor line of a chorale is represented by a single OmkObject instance
-(in this case, a Note, which is a SequentialObject),
-and has a tone attribute (the value of C# -- TonalVector(0, 1, 0)),
-and a duration (for example, the value of a quarter note -- TemporalDuration(1,4)).
+(in this case, a NoteEvent, which is a SequentialEvent),
+and has a `tones` attribute (containing the value C-sharp, `TonalVector((0, 1, 0))`),
+and a duration (for example, the value of a quarter note, `MetricalDuration(1, 4)`).
 
-To transpose the note, a new Note object is not needed --
-the tone attribute can simply be assigned a new value.
+To transpose the note, a new NoteEvent object is not needed:
+the tones can simply be replaced with new values.
 
-OmkObjects are connected to each other in the graph by edges (see the edges module).
+OmkObjects are connected to each other in the graph by edges (see `graph.edge`).
 In the case of our C-sharp above, the lyric syllable sung on that C-sharp
-is a LyricSyllable object (which is also a SequentialObject, and contains the syllable text),
-and is connected to the Note object by an edge of type LYRIC.
+is a LyricSyllable object (which contains the syllable text),
+and is connected to the NoteEvent by an edge of type LYRIC.
 """
 
-from openmusickit.objects import lyrics, note, omk_object
+from . import chord_event, context_event, errors, lyrics, note_event, omk_object
 
 __all__ = [
+    "chord_event",
+    "context_event",
+    "errors",
     "lyrics",
-    "note",
+    "note_event",
     "omk_object",
 ]

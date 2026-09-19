@@ -3,7 +3,14 @@ from __future__ import annotations
 from fractions import Fraction as F
 from numbers import Rational
 
-from openmusickit.values.time.duration import Duration, TemporalRatio, TemporalUnit, ZeroDuration
+from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
+from openmusickit.values.time.duration import (
+    Duration,
+    TemporalRatio,
+    TemporalSystem,
+    TemporalUnit,
+    ZeroDuration,
+)
 from openmusickit.values.time.errors import ScalingError
 
 
@@ -342,6 +349,10 @@ class MeteredDuration(Duration):
         return self._tr
 
     @property
+    def temporal_system(self) -> TemporalSystem:
+        return WSMN_TEMPORAL
+
+    @property
     def nominal_length(self) -> F:
         """The notated value, including dots but ignoring any tuplet ratio."""
         return F(*self.real_note_duration)
@@ -454,6 +465,10 @@ class TiedDuration(Duration):
 
     def __getitem__(self, index):
         return self._members[index]
+
+    @property
+    def temporal_system(self) -> TemporalSystem:
+        return WSMN_TEMPORAL
 
     @property
     def rational_length(self) -> F:

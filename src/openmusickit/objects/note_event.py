@@ -1,15 +1,15 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from openmusickit.objects.omk_object import SequentialObject, TonalObject
+from openmusickit.objects.omk_object import SequentialEvent, TonalObject
 from openmusickit.values.time.duration import Duration
 from openmusickit.values.tone.silent_tone import SilentTone
 from openmusickit.values.tone.tone import Tone
 
 
 @dataclass(kw_only=True)
-class NoteEvent(SequentialObject, TonalObject):
-    """A MultiNote is a SequentialObject that contains zero or more Tones played simultaneously within a single voice, line, or part.
+class NoteEvent(SequentialEvent, TonalObject):
+    """A MultiNote is a SequentialEvent that contains zero or more Tones played simultaneously within a single voice, line, or part.
 
     A NoteEvent with zero tones is not considered a rest, but rather a duration with unspecified tonal content ---
     either because the tonal content doesn't need to be specified (for example, a comping chart),

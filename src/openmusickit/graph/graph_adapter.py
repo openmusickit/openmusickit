@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
 
-from openmusickit.graph.edges.edge import EdgeType, OmkEdge
+from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.utils.id import OmkId
 

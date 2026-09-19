@@ -1,6 +1,6 @@
 import pytest
 
-from openmusickit.objects.note.note import NoteEvent, Rest
+from openmusickit.objects.note_event import NoteEvent, Rest
 from openmusickit.systems.wsmn.tonal.symbols import M3, B, C, E, G, Gx
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.tone.silent_tone import SilentTone

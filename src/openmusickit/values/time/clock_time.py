@@ -6,8 +6,16 @@ from dataclasses import dataclass
 from datetime import timedelta
 from fractions import Fraction
 
-from openmusickit.values.time.duration import Duration, TemporalElement, TemporalRatio, TemporalUnit
+from openmusickit.values.time.duration import (
+    Duration,
+    TemporalElement,
+    TemporalRatio,
+    TemporalSystem,
+    TemporalUnit,
+)
 from openmusickit.values.time.errors import TemporalCompatibilityError
+
+CLOCK_TIME = TemporalSystem("Clock time", "Real time, measured in microseconds.")
 
 
 @dataclass(frozen=True)
@@ -68,8 +76,8 @@ class ClockDuration(Duration):
         return hash(Fraction(self._microseconds))
 
     @property
-    def temporal_system(self):
-        return "RealTime"
+    def temporal_system(self) -> TemporalSystem:
+        return CLOCK_TIME
 
     def __repr__(self):
         return f"{type(self).__name__}({self._microseconds})"

@@ -2,7 +2,7 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from openmusickit.objects.omk_object import SequentialObject, TonalObject
+from openmusickit.objects.omk_object import SequentialEvent, TonalObject
 from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.utils.omk_warning import OmkWarning
@@ -10,7 +10,7 @@ from openmusickit.values.time.duration import Duration, ZeroDuration
 
 
 @dataclass(kw_only=True)
-class ContextEvent(SequentialObject):
+class ContextEvent(SequentialEvent):
     """An instantaneous event that changes the interpretation
     of subsequent material.
 

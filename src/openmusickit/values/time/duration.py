@@ -9,7 +9,19 @@ from openmusickit.values.time.errors import ScalingError
 
 
 class TemporalSystem:
-    """A named system of musical time"""
+    """A named system of musical time (see `TonalSystem` for the tonal counterpart)."""
+
+    def __init__(self, name: str, description: str):
+        self._name = name
+        self._description = description
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def description(self) -> str:
+        return self._description
 
     pass
 
@@ -54,12 +66,6 @@ class TemporalElement(ABC):
         as defined within the TemporalSystem."""
         raise NotImplementedError
 
-    # @property
-    # @abstractmethod
-    # def temporal_system(self) -> TemporalSystem:
-    #    """The Temporal System which the duration belongs to (for introspection purposes)."""
-    #    raise NotImplementedError
-
     @abstractmethod
     def scale(self, scalar: int | Fraction) -> TemporalElement:
         """Return a TemporalElement scaled by a positive scalar, according to its TemporalSystem.
@@ -101,14 +107,26 @@ class Duration(TemporalElement):
     are managed by MeteredDuration.
 
     WSMN only requires a single note duration type to cover standard note durations.
-    Some temporal systems will may need many different Duration types.
+    Some temporal systems may need many different Duration types.
     """
 
-    pass
+    @property
+    @abstractmethod
+    def temporal_system(self) -> TemporalSystem:
+        """The TemporalSystem this duration belongs to (for introspection)."""
+
+
+ANY_TEMPORAL_SYSTEM = TemporalSystem(
+    "Any", "Placeholder for durations that belong to no particular temporal system."
+)
 
 
 class ZeroDuration(Duration):
     """A Duration of zero length (instantaneous)."""
+
+    @property
+    def temporal_system(self) -> TemporalSystem:
+        return ANY_TEMPORAL_SYSTEM
 
     @property
     def rational_length(self) -> Fraction:

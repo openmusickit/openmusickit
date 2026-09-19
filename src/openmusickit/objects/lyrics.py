@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from openmusickit.objects.lyrics.errors import LyricConsistencyError
+from openmusickit.objects.errors import LyricConsistencyError
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.utils.id import OmkId
 

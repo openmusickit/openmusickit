@@ -1,6 +1,7 @@
-from openmusickit.systems.wsmn import temporal, tonal
+from . import scoring, temporal, tonal
 
 __all__ = [
+    "scoring",
     "temporal",
     "tonal",
 ]
