@@ -1,9 +1,30 @@
 # Plan: consistency audit — Tier 0 fixes
 
-Status: **Tier 0 completed 2026-09-18** (commits b6c61d6..d0539a8); Tiers 1–4 still to be discussed, so this plan stays open.
-`uv run pytest` → 2362 passed (was 2358; four new doctests).
+Status: **completed 2026-09-18.** Tier 0 in commits b6c61d6..d0539a8; Tiers 1–4 (steps A–R)
+in commits ddf3a2b..879df44 plus the revisit.md commit that follows.
+`uv run pytest` → 2369 passed (2358 at the start; the difference is new doctests).
+`uv run ruff check src tests` → clean (one per-file ignore on the deferred interval_quality.py).
 
-Deviations / notes from implementation:
+Deviations / notes from implementation (Tiers 1–4):
+
+- 1.6: `Rest` stays a CapWords factory (a subclass could be un-rested); `Tempo` became a
+  `TemporalRatio` subclass. Logged as a one-at-a-time question in revisit.md.
+- 2.1 went the other way from the table: the *class* was renamed (`MeteredDuration` →
+  `MetricalDuration`) because "metrical" is the musicians' word.
+- 2.7/2.8: user-facing pitch strings (`unicode`, `ascii`, `verbose`) now show middle C as
+  C4, matching `from_string`; `*_at(mid_c)` methods take another convention. Internal
+  octave numbering is unchanged (middle C = 0).
+- 2.10: the chord symbol `min` became `min_` with alias `m`; `min7` etc. unchanged.
+- 2.11: `Key.of` and `KeySignature.from_alts` were kept by decision.
+- 3.10 (TonalVector interning) and 3.12 (KeySignatureEvent layering) deferred to revisit.md.
+- 3.13: events compare by musical content (`_id` and `_meta` excluded), not by identity.
+- Step M: `ToneCollection`, `ChordType` and `Chord` keep hand-written `__init__`s inside
+  their frozen dataclasses so the public constructor signatures (`name=`, positional
+  order) are unchanged; `_ChordBase` uses `init=False`, `repr=False`.
+- Fenced examples were converted to doctests only where they ran as written or with
+  trivial edits; the abstract illustration in `Tone` and the `import *` usage notes stay.
+
+Deviations / notes from implementation (Tier 0):
 
 - 0.3 required an adjacent fix: `RustworkxAdapter.get_next`/`get_previous` raised
   `rustworkx.NoSuitableNeighbors` at the end of a line instead of returning `None`
