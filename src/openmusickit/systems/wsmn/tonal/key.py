@@ -353,9 +353,8 @@ class Key:
             >>> Key.of(C, Major, KeySignature.from_alts(-1)).signature
             KeySignature(b=-1)
         """
-        tones = mode.tones.transform(TonalVector.transpose, tonic)
-        if tones.root is None:
-            tones.root = tonic
+        transposed = mode.tones.transform(TonalVector.transpose, tonic)
+        tones = ToneCollection(transposed, root=tonic, name=transposed.name_template)
 
         if signature is None:
             alts: dict[int, int] = {}

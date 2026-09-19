@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from itertools import combinations
 
 from openmusickit.values.tone.tone import Tone
 
 
+@dataclass(frozen=True, slots=True)
 class ToneCollection:
     """An ordered collection of tones, with an optional root and optional name.
 
@@ -24,15 +26,19 @@ class ToneCollection:
     objects (`is` is unaffected).
     """
 
+    tones: tuple[Tone, ...]
+    root: Tone | None = None
+    name_template: str | None = field(default=None, compare=False)
+
     def __init__(
         self,
         tones: Iterable[Tone] = (),
         root: Tone | None = None,
         name: str | None = None,
     ):
-        self._tones = tuple(tones)
-        self.root = root
-        self._name_template = name
+        object.__setattr__(self, "tones", tuple(tones))
+        object.__setattr__(self, "root", root)
+        object.__setattr__(self, "name_template", name)
 
     @property
     def name(self) -> str | None:
@@ -48,43 +54,35 @@ class ToneCollection:
         >>> ToneCollection([Eb, G, Bb]).name is None
         True
         """
-        if self._name_template is None:
+        if self.name_template is None:
             return None
 
-        return self._name_template.format(root=self.root)
+        return self.name_template.format(root=self.root)
 
     def __iter__(self):
-        return iter(self._tones)
+        return iter(self.tones)
 
     def __len__(self):
-        return len(self._tones)
+        return len(self.tones)
 
     def __getitem__(self, index):
-        return self._tones[index]
+        return self.tones[index]
 
     def __contains__(self, tone) -> bool:
-        return tone in self._tones
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, ToneCollection):
-            return NotImplemented
-        return self._tones == other._tones and self.root == other.root
-
-    def __hash__(self) -> int:
-        return hash((self._tones, self.root))
+        return tone in self.tones
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({list(self._tones)!r}, root={self.root!r})"
+        return f"{type(self).__name__}({list(self.tones)!r}, root={self.root!r})"
 
     def combinations(self, k: int) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of k members."""
-        return [ToneCollection(c) for c in combinations(self._tones, k)]
+        return [ToneCollection(c) for c in combinations(self.tones, k)]
 
     def all_combinations(self) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of length `2` through `len(self)-1`."""
         combos = []
         for k in range(2, len(self)):
-            for c in combinations(self._tones, k):
+            for c in combinations(self.tones, k):
                 combos.append(ToneCollection(c))
         return combos
 
@@ -160,9 +158,9 @@ class ToneCollection:
             return new_tone
 
         new_root = None if self.root is None else apply(self.root)
-        new_tones = [apply(t) for t in self._tones]
+        new_tones = [apply(t) for t in self.tones]
 
         if new_name is None:
-            new_name = self._name_template
+            new_name = self.name_template
 
         return ToneCollection(new_tones, new_root, new_name)

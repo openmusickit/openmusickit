@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
-class Interval(ABC):
+class Interval(ABC):  # noqa: B024 -- a marker base: the contract is set by each tonal system
     """An Interval is a relationship between two tones,
     as defined within a specific tonal or sonic system.
 
@@ -21,11 +21,13 @@ class Interval(ABC):
 
     @classmethod
     def from_string(cls, s: str) -> Interval:
-        """Parses a string and returns an Interval."""
+        """Parses a string and returns an Interval.
+
+        An optional hook: systems with a string form override it; the base raises."""
         raise NotImplementedError
 
 
-class IntervalRepresentation:
+class IntervalRepresentation(ABC):
     """The representation of an Interval in a human-readable context,
     normally attached as an attribute of an Interval.
 
@@ -39,9 +41,9 @@ class IntervalRepresentation:
     @property
     @abstractmethod
     def unicode(self) -> str:
-        raise NotImplementedError
+        """The unicode representation."""
 
     @property
     @abstractmethod
     def ascii(self) -> str:
-        raise NotImplementedError
+        """The ascii representation."""

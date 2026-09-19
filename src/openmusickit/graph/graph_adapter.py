@@ -12,82 +12,67 @@ class GraphAdapter(ABC):
     @abstractmethod
     def add_node(self, node: OmkObject) -> None:
         """Add a node to the graph."""
-        raise NotImplementedError
 
     @abstractmethod
     def add_edge(self, source: OmkObject, target: OmkObject, edge: OmkEdge) -> None:
         """Add an edge from source to target to the graph.
 
         Raises an exception if there is already an edge of the same type between source and target."""
-        raise NotImplementedError
 
     @abstractmethod
     def remove_node(self, node: OmkObject) -> None:
         """Remove a node (and its incident edges) from the graph."""
-        raise NotImplementedError
 
     @abstractmethod
     def remove_edge(self, edge: OmkEdge) -> None:
         """Remove an edge from the graph."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_node(self, node_id: OmkId) -> OmkObject:
         """Return the node with the given OmkId."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:
         """Return the edge of the given type from source to target."""
-        raise NotImplementedError
 
     @abstractmethod
     def filter_edges(self, filter_function: Callable[[OmkEdge], bool]) -> list[OmkEdge]:
         """Returns a list of all edges for which filter_function(edge) returns True."""
-        raise NotImplementedError
 
     @abstractmethod
     def filter_nodes(self, filter_function: Callable[[OmkObject], bool]) -> list[OmkObject]:
         """Returns a list of all nodes for which filter_function(node) returns True."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_edge_endpoints(self, edge: OmkEdge) -> tuple[OmkObject, OmkObject]:
         """Return the source and target nodes of the given edge as a tuple (source, target)."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_source_of_edge(self, edge: OmkEdge) -> OmkObject:
         """Return the source node of the given edge."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_target_of_edge(self, edge: OmkEdge) -> OmkObject:
         """Return the target node of the given edge."""
-        raise NotImplementedError
 
     # Membership / counts
     @abstractmethod
     def has_node(self, node: OmkObject) -> bool:
         """Return True if node is present in the graph."""
-        raise NotImplementedError
 
     @abstractmethod
     def has_edge(
         self, source: OmkObject, target: OmkObject, edge_type: EdgeType | None = None
     ) -> bool:
         """Return True if an edge (optionally of the given type) exists from source to target."""
-        raise NotImplementedError
 
     @abstractmethod
     def num_nodes(self) -> int:
         """Return the total number of nodes in the graph."""
-        raise NotImplementedError
 
     @abstractmethod
     def num_edges(self) -> int:
         """Return the total number of edges in the graph."""
-        raise NotImplementedError
 
     # Iteration/query
     @abstractmethod
@@ -97,7 +82,6 @@ class GraphAdapter(ABC):
         predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes, optionally filtered by node_type and/or predicate."""
-        raise NotImplementedError
 
     @abstractmethod
     def edges(
@@ -106,7 +90,6 @@ class GraphAdapter(ABC):
         predicate: Callable[[OmkEdge], bool] | None = None,
     ) -> Iterator[OmkEdge]:
         """Iterate over edges, optionally filtered by edge_type and/or predicate."""
-        raise NotImplementedError
 
     @abstractmethod
     def edges_between(
@@ -116,7 +99,6 @@ class GraphAdapter(ABC):
         edge_type: EdgeType | None = None,
     ) -> Iterator[OmkEdge]:
         """Iterate over edges from source to target, optionally filtered by edge_type."""
-        raise NotImplementedError
 
     # Neighborhood
     @abstractmethod
@@ -128,7 +110,6 @@ class GraphAdapter(ABC):
         predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes reachable from node via an outgoing edge, optionally filtered."""
-        raise NotImplementedError
 
     @abstractmethod
     def predecessors(
@@ -139,17 +120,14 @@ class GraphAdapter(ABC):
         predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes that have an outgoing edge to node, optionally filtered."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_next(self, node: OmkObject) -> OmkObject | None:
         """Return the next node connected by an edge of type NEXT from the given node, if it exists."""
-        raise NotImplementedError
 
     @abstractmethod
     def get_previous(self, node: OmkObject) -> OmkObject | None:
         """Return the previous node connected by an edge of type NEXT to the given node, if it exists."""
-        raise NotImplementedError
 
     @abstractmethod
     def neighbors(
@@ -160,40 +138,33 @@ class GraphAdapter(ABC):
         predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over all nodes adjacent to node (predecessors and successors), optionally filtered."""
-        raise NotImplementedError
 
     @abstractmethod
     def out_edges(self, node: OmkObject, edge_type: EdgeType | None = None) -> Iterator[OmkEdge]:
         """Iterate over edges originating from node, optionally filtered by edge_type."""
-        raise NotImplementedError
 
     @abstractmethod
     def in_edges(self, node: OmkObject, edge_type: EdgeType | None = None) -> Iterator[OmkEdge]:
         """Iterate over edges terminating at node, optionally filtered by edge_type."""
-        raise NotImplementedError
 
     @abstractmethod
     def incident_edges(
         self, node: OmkObject, edge_type: EdgeType | None = None
     ) -> Iterator[OmkEdge]:
         """Iterate over all edges touching node (incoming and outgoing), optionally filtered by edge_type."""
-        raise NotImplementedError
 
     # Degree
     @abstractmethod
     def degree(self, node: OmkObject) -> int:
         """Return the total number of edges incident to node."""
-        raise NotImplementedError
 
     @abstractmethod
     def in_degree(self, node: OmkObject) -> int:
         """Return the number of edges terminating at node."""
-        raise NotImplementedError
 
     @abstractmethod
     def out_degree(self, node: OmkObject) -> int:
         """Return the number of edges originating from node."""
-        raise NotImplementedError
 
     # NOTE: subgraph/edge_subgraph/copy/merge previously lived here but were
     # removed pending a redesign that moves derived-graph construction to

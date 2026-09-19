@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 
+@dataclass(frozen=True, slots=True)
 class TonalSystem:
     """A named system of tones, pitches, and intervals.
 
@@ -35,20 +37,11 @@ class TonalSystem:
 
     """
 
-    def __init__(self, name: str, description: str):
-        self._name = name
-        self._description = description
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def description(self) -> str:
-        return self._description
+    name: str
+    description: str
 
 
-class Tone(ABC):
+class Tone(ABC):  # noqa: B024 -- a marker base: the contract is set by each tonal system
     """A Tone is a defined pitch or sound type within a TonalSystem.
 
     Subclasses of Tone define a type of musical sound, noise, or silence
@@ -81,7 +74,9 @@ class Tone(ABC):
 
     @classmethod
     def from_string(cls, s: str) -> Tone:
-        """Parses a string and returns a Tone."""
+        """Parses a string and returns a Tone.
+
+        An optional hook: systems with a string form override it; the base raises."""
         raise NotImplementedError
 
     @property
@@ -162,9 +157,9 @@ class PitchRepresentation(ABC):
     @property
     @abstractmethod
     def unicode(self) -> str:
-        raise NotImplementedError
+        """The unicode representation."""
 
     @property
     @abstractmethod
     def ascii(self) -> str:
-        raise NotImplementedError
+        """The ascii representation."""

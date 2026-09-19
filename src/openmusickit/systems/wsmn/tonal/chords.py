@@ -1,4 +1,5 @@
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from enum import StrEnum, auto
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
@@ -19,50 +20,21 @@ class ChordQuality(StrEnum):
     HDM = auto()  # half diminished
 
 
-class ChordType(ToneCollection):
-    """Chord definition, as an ordered collection of TonalVectors representing
-    intervals from the root (0,0).
+@dataclass(frozen=True, slots=True, init=False, repr=False)
+class _ChordBase(ToneCollection):
+    """What ChordType and Chord share: a bass tone, a lead-sheet suffix, and the
+    inversion/arpeggiation logic. Equality and hashing are by tones, root and bass;
+    name and suffix are ignored (as `name` is for ToneCollection).
 
-    Tone order is significant: it distinguishes chords that share the same
-    pitch classes but are conventionally named/voiced differently
-    (for example, an added 2nd vs. an added 9th)."""
+    >>> from openmusickit.systems.wsmn.tonal.symbols import maj, C, E, G
+    >>> maj == ChordType([C, E, G], name="anything"), maj == maj.inversion(1)
+    (True, False)
+    >>> C(maj) == C(maj), C(maj) == C(maj) / E
+    (True, False)
+    """
 
-    def __init__(
-        self,
-        tones: Iterable[TonalVector],
-        name: str,
-        bass: TonalVector | None = None,
-        quality: ChordQuality | None = None,
-        suffix: str | None = None,
-    ):
-
-        tones = tuple(tones)
-        if TonalVector(0, 0) not in tones:
-            raise ValueError("Include `TonalVector(0,0)` as root of chord type.")
-
-        super().__init__(tones, root=TonalVector(0, 0), name=name)
-
-        self.bass = bass or self.root
-        self.quality = quality
-        # Lead-sheet suffix, e.g. "maj7", "sus4", "7♭9". Empty string for a plain major triad.
-        self.suffix = suffix
-
-    def __eq__(self, other) -> bool:
-        """Equal when tones, root and bass all match; name, suffix and quality
-        are ignored (as `name` is for ToneCollection).
-
-        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, maj7, C, E, G
-        >>> maj == ChordType([C, E, G], name="anything")
-        True
-        >>> maj == maj.inversion(1)
-        False
-        """
-        if not isinstance(other, ChordType):
-            return NotImplemented
-        return super().__eq__(other) and self.bass == other.bass
-
-    def __hash__(self) -> int:
-        return hash((super().__hash__(), self.bass))
+    bass: TonalVector = field(kw_only=True)
+    suffix: str | None = field(default=None, kw_only=True, compare=False)
 
     def arpeggiate(self) -> ToneCollection:
         """Returns the chord's tones as a ToneCollection, rotated so that the
@@ -80,7 +52,7 @@ class ChordType(ToneCollection):
         >>> names(maj7.inversion(3).arpeggiate())
         ['B', 'C', 'E', 'G']
         """
-        return ChordType._rotate_to_bass(self)
+        return self._rotate_to_bass()
 
     def _rotate_to_bass(self) -> ToneCollection:
         """Shared logic for `arpeggiate()`: the tones rotated so the bass
@@ -88,7 +60,7 @@ class ChordType(ToneCollection):
         Used by both ChordType and Chord."""
         tones = list(self)
         i = tones.index(self.bass)
-        return ToneCollection(tones[i:] + tones[:i], root=self.root, name=self._name_template)
+        return ToneCollection(tones[i:] + tones[:i], root=self.root, name=self.name_template)
 
     def _resolve_inversion(
         self, inv: int | TonalVector, name: str | None
@@ -110,9 +82,40 @@ class ChordType(ToneCollection):
             raise TypeError("`inv` must be a TonalVector or an int.")
 
         if name is None:
-            name = self._name_template
+            name = self.name_template
 
         return bass, name
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class ChordType(_ChordBase):
+    """Chord definition, as an ordered collection of TonalVectors representing
+    intervals from the root (0,0).
+
+    Tone order is significant: it distinguishes chords that share the same
+    pitch classes but are conventionally named/voiced differently
+    (for example, an added 2nd vs. an added 9th)."""
+
+    quality: ChordQuality | None = field(default=None, kw_only=True, compare=False)
+
+    def __init__(
+        self,
+        tones: Iterable[TonalVector],
+        name: str,
+        bass: TonalVector | None = None,
+        quality: ChordQuality | None = None,
+        suffix: str | None = None,
+    ):
+
+        tones = tuple(tones)
+        if TonalVector(0, 0) not in tones:
+            raise ValueError("Include `TonalVector(0,0)` as root of chord type.")
+
+        super().__init__(tones, root=TonalVector(0, 0), name=name)
+        object.__setattr__(self, "bass", self.root if bass is None else bass)
+        object.__setattr__(self, "quality", quality)
+        # Lead-sheet suffix, e.g. "maj7", "sus4", "7♭9". Empty string for a plain major triad.
+        object.__setattr__(self, "suffix", suffix)
 
     def inversion(self, inv: int | TonalVector, name: str | None = None) -> "ChordType":
         """Returns a ChordType with the same tones, but a different bass tone."""
@@ -190,7 +193,7 @@ class ChordType(ToneCollection):
         root = tv
         bass = self.bass + tv
 
-        return Chord(root, tones, bass, self.name, self.suffix)
+        return Chord(root, tones, bass, self.name_template, self.suffix)
 
     def __truediv__(self, tv: TonalVector) -> "ChordType":
         """Returns a ChordType with the same tones, but a different bass tone.
@@ -202,7 +205,8 @@ class ChordType(ToneCollection):
         return self.inversion(tv)
 
 
-class Chord(ToneCollection):
+@dataclass(frozen=True, slots=True, repr=False)
+class Chord(_ChordBase):
     """A concrete realization of a ChordType at a specific root pitch.
 
     Unlike ChordType, a Chord's root is not necessarily `TonalVector(0,0)` --
@@ -219,45 +223,13 @@ class Chord(ToneCollection):
     ):
 
         super().__init__(tuple(tones), root=root, name=name)
-        self.bass = bass or self.root
-        self.suffix = suffix
-
-    def __eq__(self, other) -> bool:
-        """Equal when tones, root and bass all match; name and suffix are ignored.
-
-        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, C, E
-        >>> C(maj) == C(maj), C(maj) == C(maj) / E
-        (True, False)
-        """
-        if not isinstance(other, Chord):
-            return NotImplemented
-        return super().__eq__(other) and self.bass == other.bass
-
-    def __hash__(self) -> int:
-        return hash((super().__hash__(), self.bass))
+        object.__setattr__(self, "bass", self.root if bass is None else bass)
+        object.__setattr__(self, "suffix", suffix)
 
     def inversion(self, inv: int | TonalVector, name: str | None = None) -> "Chord":
         """Returns a Chord with the same tones and root, but a different bass tone."""
-        bass, name = ChordType._resolve_inversion(self, inv, name)
+        bass, name = self._resolve_inversion(inv, name)
         return Chord(self.root, self, bass, name, self.suffix)
-
-    def arpeggiate(self) -> ToneCollection:
-        """Returns the chord's tones as a ToneCollection, rotated so that the
-        bass tone comes first and the remaining tones follow in their
-        original (cyclic) order. Root and name are preserved.
-
-        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, maj7
-        >>> def names(tc): return [t.pitch.unicode for t in tc]
-        >>> names(C(maj7).arpeggiate())
-        ['C', 'E', 'G', 'B']
-        >>> names((C(maj7) / E).arpeggiate())
-        ['E', 'G', 'B', 'C']
-        >>> names((C(maj7) / G).arpeggiate())
-        ['G', 'B', 'C', 'E']
-        >>> names(C(maj7).inversion(3).arpeggiate())
-        ['B', 'C', 'E', 'G']
-        """
-        return ChordType._rotate_to_bass(self)
 
     def transform(
         self,
@@ -322,7 +294,7 @@ class Chord(ToneCollection):
         bass = operation(self.bass, *args, **kwargs)
 
         if new_name is None:
-            new_name = self._name_template
+            new_name = self.name_template
         if new_suffix is None:
             new_suffix = self.suffix
 
