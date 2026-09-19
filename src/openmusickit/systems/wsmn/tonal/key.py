@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from numbers import Real
 
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality
-from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES, SHARP_ORDER
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection, apply_tone_operation
 
@@ -81,8 +81,7 @@ class KeySignature(tuple):
             >>> KeySignature.from_alts(5).fifths
             5
         """
-        sharp_order = [3, 0, 4, 1, 5, 2, 6]
-        order = sharp_order if alts > 0 else sharp_order[::-1]
+        order = SHARP_ORDER if alts > 0 else SHARP_ORDER[::-1]
         step = 1 if alts > 0 else -1
 
         values = [0] * 7
@@ -124,7 +123,7 @@ class KeySignature(tuple):
         """Returns the MusicXML representation of the key signature, which walks around the circle of fifths.
         For example, C major has 0 fifths, G major has 1 fifth, F major has -1 fifth, etc.
 
-        Raises AttributeError if self is a non-standard keysignature
+        Raises ValueError if self is a non-standard keysignature
         (for example, if the signature mixes sharps and flats or
         they do not go in the standard order [F# C# G# D# A# E# B# | Bb Eb Ab Db Gb Cb Fb]).
         This error should be caught by callers and another key signature resolution strategy should be used.
@@ -146,12 +145,11 @@ class KeySignature(tuple):
             >>> KeySignature(f=1, b=-1).fifths
             Traceback (most recent call last):
                 ...
-            AttributeError: This KeySignature has no valid fifths property.
+            ValueError: This KeySignature is non-standard and has no fifths value.
         """
-        sharp_order = [3, 0, 4, 1, 5, 2, 6]
-        error = AttributeError("This KeySignature has no valid fifths property.")
+        error = ValueError("This KeySignature is non-standard and has no fifths value.")
 
-        ordered = [self[i] for i in sharp_order]
+        ordered = [self[i] for i in SHARP_ORDER]
 
         if any(not isinstance(value, int) or not -3 <= value <= 3 for value in ordered):
             raise error

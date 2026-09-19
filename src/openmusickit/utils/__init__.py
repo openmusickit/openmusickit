@@ -1,7 +1,6 @@
-from openmusickit.utils import id, number_names, omk_warning
+from . import id, number_names
 
 __all__ = [
     "id",
     "number_names",
-    "omk_warning",
 ]

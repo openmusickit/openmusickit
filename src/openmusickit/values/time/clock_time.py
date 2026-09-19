@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from fractions import Fraction
 
+from openmusickit.errors import TemporalCompatibilityError
 from openmusickit.values.time.duration import (
     Duration,
     TemporalElement,
@@ -13,7 +14,6 @@ from openmusickit.values.time.duration import (
     TemporalSystem,
     TemporalUnit,
 )
-from openmusickit.values.time.errors import TemporalCompatibilityError
 
 CLOCK_TIME = TemporalSystem("Clock time", "Real time, measured in microseconds.")
 

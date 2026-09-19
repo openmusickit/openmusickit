@@ -1,4 +1,4 @@
-from openmusickit.systems import wsmn
+from . import wsmn
 
 __all__ = [
     "wsmn",

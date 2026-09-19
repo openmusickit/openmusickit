@@ -3,6 +3,7 @@ from collections.abc import Callable, Iterator
 import rustworkx as rx
 from bidict import bidict
 
+from openmusickit.errors import GraphError
 from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.objects.omk_object import OmkObject
@@ -83,11 +84,11 @@ class RustworkxAdapter(GraphAdapter):
         Raises an exception if there is already an edge of the same type between source and target.
         Raises an exception if edge_type is NEXT and source already has an outgoing edge of type NEXT."""
         if self.has_edge(source, target, edge.type):
-            raise ValueError(
+            raise GraphError(
                 f"An edge of type {edge.type!r} already exists between {source!r} and {target!r}."
             )
         if edge.type == EdgeType.NEXT and any(self.out_edges(source, EdgeType.NEXT)):
-            raise ValueError(f"Source {source!r} already has an outgoing edge of type NEXT.")
+            raise GraphError(f"Source {source!r} already has an outgoing edge of type NEXT.")
         rxid = self.graph.add_edge(self._rxid(source), self._rxid(target), edge)
         self._register_edge(edge, rxid)
 
@@ -118,9 +119,7 @@ class RustworkxAdapter(GraphAdapter):
         for edge in self.graph.get_all_edge_data(self._rxid(source), self._rxid(target)):
             if edge.type == edge_type:
                 return edge
-        raise rx.NoEdgeBetweenNodes(
-            f"No edge of type {edge_type!r} between {source!r} and {target!r}."
-        )
+        raise GraphError(f"No edge of type {edge_type!r} between {source!r} and {target!r}.")
 
     def filter_edges(self, filter_function: Callable[[OmkEdge], bool]) -> list[OmkEdge]:
         """Returns a list of all edges for which filter_function(edge) returns True."""

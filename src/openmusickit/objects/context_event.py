@@ -2,10 +2,10 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from openmusickit.errors import OmkWarning
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
 from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
-from openmusickit.utils.omk_warning import OmkWarning
 from openmusickit.values.time.duration import Duration, ZeroDuration
 
 

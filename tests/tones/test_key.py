@@ -193,8 +193,8 @@ def test_from_alts_rejects_more_than_triple_alterations(n):
     ],
 )
 def test_fifths_raises_for_nonstandard_signatures(ks):
-    with pytest.raises(AttributeError):
-        ks.fifths
+    with pytest.raises(ValueError):
+        _ = ks.fifths
 
 
 # --------------------------------------------------------------------------

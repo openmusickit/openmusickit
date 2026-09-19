@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum, auto
 
-from openmusickit.objects.errors import LyricConsistencyError
+from openmusickit.errors import LyricConsistencyError
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.utils.id import OmkId
 
@@ -56,7 +56,7 @@ class LyricSyllable(OmkObject):
                 f"Syllable should be in word. {self.text} is not in {self.word}."
             )
         if not isinstance(self.location, int) or self.location < 0:
-            raise ValueError("location must be 0 or a positive integer")
+            raise LyricConsistencyError("location must be 0 or a positive integer")
         if self.text == self.word:
             if self.location > 0:
                 raise LyricConsistencyError(

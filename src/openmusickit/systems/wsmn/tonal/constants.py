@@ -4,6 +4,10 @@ from enum import Enum, StrEnum, auto
 D_LEN = 7  # "Diatonic Length" - The number of tones in a diatonic scale.
 C_LEN = 12  # "Chromatic Length" - The number of tones in a chromatic scale.
 
+# Letter names (as diatonic values) in the order sharps are added to a key signature:
+# F C G D A E B. Flats are added in the reverse order.
+SHARP_ORDER = (3, 0, 4, 1, 5, 2, 6)
+
 
 class QualityType(Enum):
     """All Diatones are either Perfect or Major/Minor.

@@ -3,12 +3,12 @@ from fractions import Fraction as F
 
 import pytest
 
+from openmusickit.errors import ScalingError, TemporalCompatibilityError
 from openmusickit.systems.wsmn.temporal import metrical_duration as md
 from openmusickit.systems.wsmn.temporal import symbols as sym
 from openmusickit.systems.wsmn.temporal import time_signature as ts
 from openmusickit.values.time.clock_time import ClockDuration, Tempo
 from openmusickit.values.time.duration import CompoundTemporalUnit, TemporalRatio, TemporalUnit
-from openmusickit.values.time.errors import ScalingError, TemporalCompatibilityError
 
 standard_duration_denominators = [1, 2, 4, 8, 16, 32, 64]
 reasonable_tuple_ratios = [(3, 2), (5, 4), (7, 6), (11, 10)]

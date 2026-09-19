@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from functools import total_ordering
 
-from openmusickit.values.time.errors import ScalingError
+from openmusickit.errors import ScalingError
 
 
 @dataclass(frozen=True, slots=True)

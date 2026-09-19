@@ -17,7 +17,7 @@ class GraphAdapter(ABC):
     def add_edge(self, source: OmkObject, target: OmkObject, edge: OmkEdge) -> None:
         """Add an edge from source to target to the graph.
 
-        Raises an exception if there is already an edge of the same type between source and target."""
+        Raises GraphError if there is already an edge of the same type between source and target."""
 
     @abstractmethod
     def remove_node(self, node: OmkObject) -> None:
@@ -33,7 +33,7 @@ class GraphAdapter(ABC):
 
     @abstractmethod
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:
-        """Return the edge of the given type from source to target."""
+        """Return the edge of the given type from source to target; raises GraphError if there is none."""
 
     @abstractmethod
     def filter_edges(self, filter_function: Callable[[OmkEdge], bool]) -> list[OmkEdge]:

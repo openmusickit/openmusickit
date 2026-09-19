@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from fractions import Fraction
 from math import lcm
 
+from openmusickit.errors import ScalingError
 from openmusickit.values.time.duration import CompoundTemporalUnit, TemporalUnit
-from openmusickit.values.time.errors import ScalingError
 
 
 @dataclass(frozen=True, slots=True, eq=False)

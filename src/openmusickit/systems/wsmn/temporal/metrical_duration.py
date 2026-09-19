@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from fractions import Fraction as F
 from numbers import Rational
 
+from openmusickit.errors import ScalingError
 from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
 from openmusickit.values.time.duration import (
     Duration,
@@ -13,7 +14,6 @@ from openmusickit.values.time.duration import (
     TemporalUnit,
     ZeroDuration,
 )
-from openmusickit.values.time.errors import ScalingError
 
 
 @dataclass(frozen=True, slots=True, eq=False)
