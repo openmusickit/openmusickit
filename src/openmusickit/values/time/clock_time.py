@@ -22,7 +22,7 @@ CLOCK_TIME = TemporalSystem("Clock time", "Real time, measured in microseconds."
 class ClockDuration(Duration):
     """A duration measured in microseconds of real time.
 
-    The stored value may be a Fraction so that conversions from metered time
+    The stored value may be a Fraction so that conversions from metrical time
     (e.g. a triplet eighth at quarter = 100) stay exact; the accessors
     (`microseconds`, `seconds`, `str()`) present ordinary numbers.
     """
@@ -58,7 +58,7 @@ class ClockDuration(Duration):
     def __truediv__(self, scalar):
         return ClockDuration(self._microseconds / scalar)
 
-    # Clock time is deliberately not comparable to metered time: `rational_length`
+    # Clock time is deliberately not comparable to metrical time: `rational_length`
     # is a WSMN notion (the named fractional value), whereas here it is a count of
     # microseconds. To compare or combine the two, convert first with
     # `ClockDuration.from_duration(duration, ratio)` using a TemporalRatio/Tempo.
@@ -135,11 +135,11 @@ class ClockDuration(Duration):
         """Convert any metered TemporalElement (a note value, a TemporalUnit,
         a time signature, a tied duration...) into clock time.
 
-        `ratio` relates metered time to clock time; it is usually built with `Tempo`:
+        `ratio` relates metrical time to clock time; it is usually built with `Tempo`:
 
         ```
-        quarter = MeteredDuration(1, 4)
-        ClockDuration.from_duration(MeteredDuration(1, 2, dots=1), Tempo(120, quarter))
+        quarter = MetricalDuration(1, 4)
+        ClockDuration.from_duration(MetricalDuration(1, 2, dots=1), Tempo(120, quarter))
         # -> 1.5 seconds
         ```
 
@@ -161,8 +161,8 @@ def Tempo(
     """Returns a TemporalRatio representing a tempo of n beats per clock_time (default: one minute).
 
     ```
-    Tempo(120, MeteredDuration(1, 4))           # quarter = 120
-    Tempo(60, MeteredDuration(1, 4, dots=1))    # dotted quarter = 60
+    Tempo(120, MetricalDuration(1, 4))           # quarter = 120
+    Tempo(60, MetricalDuration(1, 4, dots=1))    # dotted quarter = 60
     ```
     """
     return TemporalRatio(TemporalUnit(n, beat), TemporalUnit(1, clock_time))

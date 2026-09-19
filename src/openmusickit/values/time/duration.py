@@ -73,7 +73,7 @@ class TemporalElement(ABC):
         The result's ``rational_length`` must equal ``self.rational_length * scalar``.
         Implementations should return an element of the same type where the system
         allows it, and otherwise the closest thing the system offers: WSMN's
-        ``MeteredDuration`` returns a ``MeteredDuration`` for powers of two and may
+        ``MetricalDuration`` returns a ``MetricalDuration`` for powers of two and may
         return a tuplet member or a ``TiedDuration`` for other scalars.
 
         Raises:
@@ -104,7 +104,7 @@ class Duration(TemporalElement):
 
     Subclass Duration to create the specific duration unit(s) of a particular system.
     For example, WSMN's note durations (quarter, half note, tuplets, etc),
-    are managed by MeteredDuration.
+    are managed by MetricalDuration.
 
     WSMN only requires a single note duration type to cover standard note durations.
     Some temporal systems may need many different Duration types.
@@ -156,23 +156,23 @@ class TemporalUnit(TemporalElement):
 
     A time signature has:
      - a numerator (top number),
-       which defines "how many" of some MeteredDuration.
+       which defines "how many" of some MetricalDuration.
      - a denominator (bottom number),
-       which defines some MeteredDuration.
+       which defines some MetricalDuration.
 
     So 4/4 time is 4 quarter notes and is expressed as:
 
     ```
-    TemporalUnit(4, MeteredDuration(1,4))
+    TemporalUnit(4, MetricalDuration(1,4))
     ```
 
     Compound meters such as 6/8 can be expressed using
     the dotted duration or the base duration:
 
     ```
-    TemporalUnit(6, MeteredDuration(1,8))
+    TemporalUnit(6, MetricalDuration(1,8))
 
-    TemporalUnit(2, MeteredDuration(1,4, dots=1))
+    TemporalUnit(2, MetricalDuration(1,4, dots=1))
     ```
 
     More exotic time signatures can be achieved
@@ -311,7 +311,7 @@ class TemporalRatio:
     Used for the following:
 
     - In WSMN, tuplets are a ratio of n number of nominal units which take place during d number of contextual (or actual units).
-    - In WSMN, a metronome marking or tempo is ratio of n number of MeteredDurations during d number of ClockTime seconds.
+    - In WSMN, a metronome marking or tempo is ratio of n number of MetricalDurations during d number of ClockTime seconds.
     - In mixed-system contexts, a ratio of n TemporalUnits in one system to d TemporalUnits of another system can be used for syncing.
       (For example, one puntum in Gregorian chant may equal one quarter note in WSMN)
 
@@ -324,7 +324,7 @@ class TemporalRatio:
     So, for example, a standard quarter note triplet (3 quarters in the time/space of 2 quarters) would be:
 
     ```python
-    quarter = MeteredDuration(1, 4)
+    quarter = MetricalDuration(1, 4)
     three_quarters = TemporalUnit(3, quarter)
     two_quarters = TemporalUnit(2, quarter)
     triplet = TemporalRatio(nominal=three_quarters, contextual=two_quarters)

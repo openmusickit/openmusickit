@@ -37,7 +37,7 @@ variable-length tuples and has a bare `except:` in `_tonal_unmodulo`).
 
 `ZeroDuration.__sub__` returns `-other` but no `Duration` defines `__neg__`;
 `Next.nudge(BACKWARD, amount)` does `self.displacement -= amount` but
-`MeteredDuration` has no `__sub__`. Both raise `TypeError` on first use; neither
+`MetricalDuration` has no `__sub__`. Both raise `TypeError` on first use; neither
 is called anywhere yet. Question: are durations signed quantities (add
 `__neg__`/`__sub__` to the `Duration` contract), or is displacement a signed
 offset stored on the `Next` edge with durations staying positive lengths?
@@ -46,7 +46,7 @@ Files: [src/openmusickit/values/time/duration.py](../src/openmusickit/values/tim
 
 ## `rational_length` on the abstract TemporalElement (2026-09-18)
 
-`rational_length` is a WSMN notion (the named fractional value of a metered
+`rational_length` is a WSMN notion (the named fractional value of a metrical
 duration), yet it is declared abstract on the system-agnostic
 `TemporalElement` in `values/time/duration.py` and should probably not be.
 It is load-bearing on the base contract, so removing it is a redesign rather
@@ -54,11 +54,11 @@ than a cleanup:
 
 - `TemporalElement.__eq__`, `__lt__`, `__hash__` and `_length_of` compare by it;
 - `TemporalRatio.r` divides the two sides' `rational_length`, including the
-  metered-over-clock ratios built by `Tempo`;
+  metrical-over-clock ratios built by `Tempo`;
 - `ClockDuration.from_duration`, `ClockDuration.rational_length` (microseconds);
 - `CompoundTemporalUnit.remainder` / `first_out_of_bounds`;
 - `TemporalUnit.rational_length`.
 
 Removing it means redefining how elements compare and how `TemporalRatio`
 computes its multiplier across systems. `ClockDuration` currently keeps
-`__eq__`/`__lt__` overrides so it is never compared to metered time directly.
+`__eq__`/`__lt__` overrides so it is never compared to metrical time directly.

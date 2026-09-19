@@ -8,7 +8,7 @@ relevant `symbols` module, by name, so a test can iterate over the whole set
 import pytest
 
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
-from openmusickit.systems.wsmn.temporal.metrical_duration import MeteredDuration
+from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
 from openmusickit.systems.wsmn.tonal import symbols as tonal_symbols
 from openmusickit.systems.wsmn.tonal.chords import ChordType
@@ -78,9 +78,9 @@ def key_symbols():
 
 @pytest.fixture
 def duration_symbols():
-    """All the MeteredDuration symbols (`quarter`, `dotted_half`, `eighth_in_triplet`, ...)
+    """All the MetricalDuration symbols (`quarter`, `dotted_half`, `eighth_in_triplet`, ...)
     in `temporal.symbols`, by name."""
-    return _symbols_of(temporal_symbols, MeteredDuration)
+    return _symbols_of(temporal_symbols, MetricalDuration)
 
 
 @pytest.fixture

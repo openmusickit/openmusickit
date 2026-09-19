@@ -14,7 +14,7 @@ from openmusickit.values.time.duration import (
 from openmusickit.values.time.errors import ScalingError
 
 
-class MeteredDuration(Duration):
+class MetricalDuration(Duration):
     """The duration of notes, rests, or other temporal musical items
     as understood and notated in Western Standard Music Notation.
 
@@ -39,14 +39,14 @@ class MeteredDuration(Duration):
             )
         )
 
-    MeteredDurations compare, sort, and hash by their real length,
-    so ``MeteredDuration(3, 8) == MeteredDuration(1, 4, dots=1)``.
+    MetricalDurations compare, sort, and hash by their real length,
+    so ``MetricalDuration(3, 8) == MetricalDuration(1, 4, dots=1)``.
 
     """
 
     def __init__(self, n: int, d: int, dots: int = 0, tr: TemporalRatio | None = None):
         """
-        MeteredDuration is created with a two-argument nominal note value,
+        MetricalDuration is created with a two-argument nominal note value,
         which may optionally include dots,
         and an optional ``TemporalRatio`` that defines timing and placement
         within a tuplet figure.
@@ -56,20 +56,20 @@ class MeteredDuration(Duration):
         --------
 
         ```
-        quarter_note = MeteredDuration(1, 4)
+        quarter_note = MetricalDuration(1, 4)
 
-        dotted_half_note = MeteredDuration(1, 2, 1)
-        also_dotted_half = MeteredDuration(3, 4)
+        dotted_half_note = MetricalDuration(1, 2, 1)
+        also_dotted_half = MetricalDuration(3, 4)
 
-        breve = MeteredDuration(2, 1)
-        dotted_breve = MeteredDuration(2, 1, dots=1)
-        also_dotted_breve = MeteredDuration(3, 1)
+        breve = MetricalDuration(2, 1)
+        dotted_breve = MetricalDuration(2, 1, dots=1)
+        also_dotted_breve = MetricalDuration(3, 1)
 
         triplet_ratio = TemporalRatio(
             TemporalUnit(3, quarter_note),
             TemporalUnit(2, quarter_note)
         )
-        quarter_note_in_triplet = MeteredDuration(1, 4, tr=triplet_ratio)
+        quarter_note_in_triplet = MetricalDuration(1, 4, tr=triplet_ratio)
         ```
 
         Parameters
@@ -155,8 +155,8 @@ class MeteredDuration(Duration):
         self._tr = tr or None
 
     @classmethod
-    def from_fraction(cls, value: Rational, tr: TemporalRatio | None = None) -> MeteredDuration:
-        """Create a MeteredDuration from its full nominal value (e.g. 3/8 -> dotted quarter).
+    def from_fraction(cls, value: Rational, tr: TemporalRatio | None = None) -> MetricalDuration:
+        """Create a MetricalDuration from its full nominal value (e.g. 3/8 -> dotted quarter).
 
         Raises ValueError if the value is not a single notatable symbol."""
         value = F(value)
@@ -165,9 +165,9 @@ class MeteredDuration(Duration):
     @classmethod
     def from_length(
         cls, length: Rational, *, tr: TemporalRatio | None = None
-    ) -> MeteredDuration | TiedDuration:
+    ) -> MetricalDuration | TiedDuration:
         """Resolve *any* positive rational length into notation:
-        a single ``MeteredDuration`` where one exists, a tuplet member where the
+        a single ``MetricalDuration`` where one exists, a tuplet member where the
         length needs one, and a ``TiedDuration`` where it needs a tie.
 
         This is the front door for lengths that arrive as *numbers* rather than
@@ -185,17 +185,17 @@ class MeteredDuration(Duration):
 
         A notatable length comes back as one symbol (equivalent to ``from_fraction``):
 
-        >>> MeteredDuration.from_length(F(3, 8))
-        MeteredDuration(1, 4, dots=1)
-        >>> MeteredDuration.from_length(2)
-        MeteredDuration(2, 1)
+        >>> MetricalDuration.from_length(F(3, 8))
+        MetricalDuration(1, 4, dots=1)
+        >>> MetricalDuration.from_length(2)
+        MetricalDuration(2, 1)
 
         An odd factor in the denominator means a tuplet.
         1/3 is a half note in a half-note triplet (3 halves in the time of 2):
 
-        >>> third = MeteredDuration.from_length(F(1, 3))
+        >>> third = MetricalDuration.from_length(F(1, 3))
         >>> third
-        MeteredDuration(1, 2, tr=TemporalRatio(TemporalUnit(3, MeteredDuration(1, 2)), TemporalUnit(2, MeteredDuration(1, 2))))
+        MetricalDuration(1, 2, tr=TemporalRatio(TemporalUnit(3, MetricalDuration(1, 2)), TemporalUnit(2, MetricalDuration(1, 2))))
         >>> third.rational_length
         Fraction(1, 3)
         >>> third == half_in_triplet
@@ -204,24 +204,24 @@ class MeteredDuration(Duration):
         1/6 is a quarter in a quarter-note triplet, 1/5 a quarter in a 5:4 quintuplet,
         1/7 a quarter in a 7:4 septuplet, 1/9 an eighth in a 9:8 tuplet:
 
-        >>> MeteredDuration.from_length(F(1, 6)) == quarter_in_triplet
+        >>> MetricalDuration.from_length(F(1, 6)) == quarter_in_triplet
         True
-        >>> [MeteredDuration.from_length(F(1, k)).tr.r for k in (5, 7, 9)]
+        >>> [MetricalDuration.from_length(F(1, k)).tr.r for k in (5, 7, 9)]
         [Fraction(4, 5), Fraction(4, 7), Fraction(8, 9)]
 
         Lengths that need a tie come back as a ``TiedDuration``, split greedily
         largest-first (dotted values included):
 
-        >>> MeteredDuration.from_length(F(5, 8))
-        TiedDuration([MeteredDuration(1, 2), MeteredDuration(1, 8)])
-        >>> MeteredDuration.from_length(F(13, 16))
-        TiedDuration([MeteredDuration(1, 2, dots=1), MeteredDuration(1, 16)])
-        >>> MeteredDuration.from_length(F(5, 8)).rational_length
+        >>> MetricalDuration.from_length(F(5, 8))
+        TiedDuration([MetricalDuration(1, 2), MetricalDuration(1, 8)])
+        >>> MetricalDuration.from_length(F(13, 16))
+        TiedDuration([MetricalDuration(1, 2, dots=1), MetricalDuration(1, 16)])
+        >>> MetricalDuration.from_length(F(5, 8)).rational_length
         Fraction(5, 8)
 
         Ties and tuplets combine: 5/24 is a tied quarter + sixteenth inside a triplet.
 
-        >>> tied = MeteredDuration.from_length(F(5, 24))
+        >>> tied = MetricalDuration.from_length(F(5, 24))
         >>> [m.nominal_length for m in tied], tied[0].tr.r, tied.rational_length
         ([Fraction(1, 4), Fraction(1, 16)], Fraction(2, 3), Fraction(5, 24))
 
@@ -229,15 +229,15 @@ class MeteredDuration(Duration):
         (as in the constructor), so no new ratio is synthesized unless that
         notated value itself needs one (which produces a nested tuplet):
 
-        >>> MeteredDuration.from_length(F(1, 4), tr=triplet(quarter)) == quarter_in_triplet
+        >>> MetricalDuration.from_length(F(1, 4), tr=triplet(quarter)) == quarter_in_triplet
         True
-        >>> nested = MeteredDuration.from_length(F(1, 12), tr=triplet(quarter))
+        >>> nested = MetricalDuration.from_length(F(1, 12), tr=triplet(quarter))
         >>> nested.rational_length
         Fraction(1, 18)
 
         Dividing a bar of 4/4 into five equal parts:
 
-        >>> part = MeteredDuration.from_length(four_four.rational_length / 5)
+        >>> part = MetricalDuration.from_length(four_four.rational_length / 5)
         >>> part.rational_length
         Fraction(1, 5)
         >>> part.tr.r
@@ -258,7 +258,7 @@ class MeteredDuration(Duration):
 
         When not to use
         ---------------
-        - **You already know the notation.** ``MeteredDuration(1, 4, dots=1)``
+        - **You already know the notation.** ``MetricalDuration(1, 4, dots=1)``
           says exactly what is written; ``from_length(F(3, 8))`` merely
           happens to agree. Prefer the constructor (or ``from_fraction``,
           which raises if the value is not one symbol) whenever the spelling
@@ -274,8 +274,8 @@ class MeteredDuration(Duration):
           Notation-quality spelling is a job for a meter-aware layer built
           on top of this.
 
-          >>> MeteredDuration.from_length(six_eight.rational_length / 4)
-          MeteredDuration(1, 8, dots=1)
+          >>> MetricalDuration.from_length(six_eight.rational_length / 4)
+          MetricalDuration(1, 8, dots=1)
 
         - **Floats.** Pass ``Fraction`` or ``int``. A float is converted
           exactly, and binary floats have power-of-two denominators, so
@@ -379,7 +379,7 @@ class MeteredDuration(Duration):
         f = F(self.n * (2 ** (self.dots + 1) - 1), self.d * (2**self.dots))
         return f.numerator, f.denominator
 
-    def scale(self, scalar: int | F) -> MeteredDuration | TiedDuration:
+    def scale(self, scalar: int | F) -> MetricalDuration | TiedDuration:
         """Returns this duration augmented or diminished by ``scalar``.
 
         A power of two keeps the same spelling (a dotted eighth doubled is a dotted quarter).
@@ -394,20 +394,20 @@ class MeteredDuration(Duration):
         try:
             scalar = F(scalar)
         except (TypeError, ValueError) as e:
-            raise ScalingError(f"Cannot scale a MeteredDuration by {scalar!r}.") from e
+            raise ScalingError(f"Cannot scale a MetricalDuration by {scalar!r}.") from e
         if scalar <= 0:
-            raise ScalingError("A MeteredDuration can only be scaled by a positive scalar.")
+            raise ScalingError("A MetricalDuration can only be scaled by a positive scalar.")
 
         if _is_power_of_two(scalar):
             base = F(self.n, self.d) * scalar
-            return MeteredDuration(base.numerator, base.denominator, self.dots, self._tr)
+            return MetricalDuration(base.numerator, base.denominator, self.dots, self._tr)
 
-        return MeteredDuration.from_length(self.nominal_length * scalar, tr=self._tr)
+        return MetricalDuration.from_length(self.nominal_length * scalar, tr=self._tr)
 
     def __add__(self, other):
         """Add two durations.
 
-        Returns a single MeteredDuration when the sum is notatable as one symbol
+        Returns a single MetricalDuration when the sum is notatable as one symbol
         (quarter + eighth = dotted quarter), otherwise a TiedDuration.
         Durations in different tuplets always produce a TiedDuration."""
         if isinstance(other, ZeroDuration):
@@ -440,9 +440,9 @@ class TiedDuration(Duration):
     """A single sounding duration notated as two or more tied symbols,
     e.g. quarter tied to sixteenth (5/16).
 
-    Produced by adding MeteredDurations whose sum is not a single notatable value.
+    Produced by adding MetricalDurations whose sum is not a single notatable value.
     Adding to a TiedDuration merges neighbouring members wherever possible,
-    and collapses back to a plain MeteredDuration when the total becomes notatable.
+    and collapses back to a plain MetricalDuration when the total becomes notatable.
     """
 
     def __init__(self, members: list[Duration]):
@@ -516,14 +516,14 @@ class TiedDuration(Duration):
         return f"{type(self).__name__}({self._members!r})"
 
 
-def _merge(a: Duration, b: Duration) -> MeteredDuration | None:
-    """Return a single MeteredDuration equal to a + b, or None if there isn't one."""
-    if not (isinstance(a, MeteredDuration) and isinstance(b, MeteredDuration)):
+def _merge(a: Duration, b: Duration) -> MetricalDuration | None:
+    """Return a single MetricalDuration equal to a + b, or None if there isn't one."""
+    if not (isinstance(a, MetricalDuration) and isinstance(b, MetricalDuration)):
         return None
     if a.tr != b.tr:
         return None
     try:
-        return MeteredDuration.from_fraction(a.nominal_length + b.nominal_length, tr=a.tr)
+        return MetricalDuration.from_fraction(a.nominal_length + b.nominal_length, tr=a.tr)
     except ValueError:
         return None
 

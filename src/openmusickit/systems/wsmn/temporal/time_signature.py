@@ -14,7 +14,7 @@ class TimeSignature(CompoundTemporalUnit):
     with an optional presentation (the numbers as printed).
 
     ```
-    four_four = TimeSignature(TemporalUnit(4, MeteredDuration(1, 4)), presentation=("4", "4"))
+    four_four = TimeSignature(TemporalUnit(4, MetricalDuration(1, 4)), presentation=("4", "4"))
     seven_eight = TimeSignature(
         [TemporalUnit(2, eighth), TemporalUnit(2, eighth), TemporalUnit(3, eighth)],
         presentation=("2+2+3", "8"))

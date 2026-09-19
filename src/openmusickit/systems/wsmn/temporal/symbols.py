@@ -8,13 +8,13 @@ Examples
 --------
 
 >>> quarter
-MeteredDuration(1, 4)
+MetricalDuration(1, 4)
 
 >>> dotted_half
-MeteredDuration(1, 2, dots=1)
+MetricalDuration(1, 2, dots=1)
 
 >>> breve
-MeteredDuration(2, 1)
+MetricalDuration(2, 1)
 
 >>> eighth_in_triplet.rational_length
 Fraction(1, 12)
@@ -29,54 +29,54 @@ True
 True
 """
 
-from openmusickit.systems.wsmn.temporal.metrical_duration import MeteredDuration
+from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
 from openmusickit.values.time.duration import TemporalRatio, TemporalUnit
 
 # --- plain note values -------------------------------------------------------
 
-maxima = MeteredDuration(8, 1)
-longa = MeteredDuration(4, 1)
-breve = MeteredDuration(2, 1)
-whole = semibreve = MeteredDuration(1, 1)
-half = minim = MeteredDuration(1, 2)
-quarter = crotchet = MeteredDuration(1, 4)
-eighth = quaver = MeteredDuration(1, 8)
-sixteenth = semiquaver = MeteredDuration(1, 16)
-thirtysecond = demisemiquaver = MeteredDuration(1, 32)
-sixtyfourth = hemidemisemiquaver = MeteredDuration(1, 64)
-onehundredtwentyeighth = semihemidemisemiquaver = MeteredDuration(1, 128)
+maxima = MetricalDuration(8, 1)
+longa = MetricalDuration(4, 1)
+breve = MetricalDuration(2, 1)
+whole = semibreve = MetricalDuration(1, 1)
+half = minim = MetricalDuration(1, 2)
+quarter = crotchet = MetricalDuration(1, 4)
+eighth = quaver = MetricalDuration(1, 8)
+sixteenth = semiquaver = MetricalDuration(1, 16)
+thirtysecond = demisemiquaver = MetricalDuration(1, 32)
+sixtyfourth = hemidemisemiquaver = MetricalDuration(1, 64)
+onehundredtwentyeighth = semihemidemisemiquaver = MetricalDuration(1, 128)
 
 # --- dotted ------------------------------------------------------------------
 
-dotted_maxima = MeteredDuration(8, 1, dots=1)
-dotted_longa = MeteredDuration(4, 1, dots=1)
-dotted_breve = MeteredDuration(2, 1, dots=1)
-dotted_whole = dotted_semibreve = MeteredDuration(1, 1, dots=1)
-dotted_half = dotted_minim = MeteredDuration(1, 2, dots=1)
-dotted_quarter = dotted_crotchet = MeteredDuration(1, 4, dots=1)
-dotted_eighth = dotted_quaver = MeteredDuration(1, 8, dots=1)
-dotted_sixteenth = dotted_semiquaver = MeteredDuration(1, 16, dots=1)
-dotted_thirtysecond = dotted_demisemiquaver = MeteredDuration(1, 32, dots=1)
-dotted_sixtyfourth = dotted_hemidemisemiquaver = MeteredDuration(1, 64, dots=1)
+dotted_maxima = MetricalDuration(8, 1, dots=1)
+dotted_longa = MetricalDuration(4, 1, dots=1)
+dotted_breve = MetricalDuration(2, 1, dots=1)
+dotted_whole = dotted_semibreve = MetricalDuration(1, 1, dots=1)
+dotted_half = dotted_minim = MetricalDuration(1, 2, dots=1)
+dotted_quarter = dotted_crotchet = MetricalDuration(1, 4, dots=1)
+dotted_eighth = dotted_quaver = MetricalDuration(1, 8, dots=1)
+dotted_sixteenth = dotted_semiquaver = MetricalDuration(1, 16, dots=1)
+dotted_thirtysecond = dotted_demisemiquaver = MetricalDuration(1, 32, dots=1)
+dotted_sixtyfourth = dotted_hemidemisemiquaver = MetricalDuration(1, 64, dots=1)
 
 # --- double dotted -----------------------------------------------------------
 
-double_dotted_maxima = MeteredDuration(8, 1, dots=2)
-double_dotted_longa = MeteredDuration(4, 1, dots=2)
-double_dotted_breve = MeteredDuration(2, 1, dots=2)
-double_dotted_whole = double_dotted_semibreve = MeteredDuration(1, 1, dots=2)
-double_dotted_half = double_dotted_minim = MeteredDuration(1, 2, dots=2)
-double_dotted_quarter = double_dotted_crotchet = MeteredDuration(1, 4, dots=2)
-double_dotted_eighth = double_dotted_quaver = MeteredDuration(1, 8, dots=2)
-double_dotted_sixteenth = double_dotted_semiquaver = MeteredDuration(1, 16, dots=2)
-double_dotted_thirtysecond = double_dotted_demisemiquaver = MeteredDuration(1, 32, dots=2)
-double_dotted_sixtyfourth = double_dotted_hemidemisemiquaver = MeteredDuration(1, 64, dots=2)
+double_dotted_maxima = MetricalDuration(8, 1, dots=2)
+double_dotted_longa = MetricalDuration(4, 1, dots=2)
+double_dotted_breve = MetricalDuration(2, 1, dots=2)
+double_dotted_whole = double_dotted_semibreve = MetricalDuration(1, 1, dots=2)
+double_dotted_half = double_dotted_minim = MetricalDuration(1, 2, dots=2)
+double_dotted_quarter = double_dotted_crotchet = MetricalDuration(1, 4, dots=2)
+double_dotted_eighth = double_dotted_quaver = MetricalDuration(1, 8, dots=2)
+double_dotted_sixteenth = double_dotted_semiquaver = MetricalDuration(1, 16, dots=2)
+double_dotted_thirtysecond = double_dotted_demisemiquaver = MetricalDuration(1, 32, dots=2)
+double_dotted_sixtyfourth = double_dotted_hemidemisemiquaver = MetricalDuration(1, 64, dots=2)
 
 # --- tuplet ratios -----------------------------------------------------------
 
 
-def tuplet(nominal_count: int, contextual_count: int, base: MeteredDuration) -> TemporalRatio:
+def tuplet(nominal_count: int, contextual_count: int, base: MetricalDuration) -> TemporalRatio:
     """`nominal_count` notes of `base` in the time of `contextual_count` notes of `base`.
 
     >>> tuplet(3, 2, quarter).r
@@ -85,43 +85,43 @@ def tuplet(nominal_count: int, contextual_count: int, base: MeteredDuration) -> 
     return TemporalRatio(TemporalUnit(nominal_count, base), TemporalUnit(contextual_count, base))
 
 
-def triplet(base: MeteredDuration) -> TemporalRatio:
+def triplet(base: MetricalDuration) -> TemporalRatio:
     """3 in the time of 2."""
     return tuplet(3, 2, base)
 
 
-def duplet(base: MeteredDuration) -> TemporalRatio:
+def duplet(base: MetricalDuration) -> TemporalRatio:
     """2 in the time of 3 (for compound meters)."""
     return tuplet(2, 3, base)
 
 
-def quintuplet(base: MeteredDuration) -> TemporalRatio:
+def quintuplet(base: MetricalDuration) -> TemporalRatio:
     """5 in the time of 4."""
     return tuplet(5, 4, base)
 
 
-def sextuplet(base: MeteredDuration) -> TemporalRatio:
+def sextuplet(base: MetricalDuration) -> TemporalRatio:
     """6 in the time of 4."""
     return tuplet(6, 4, base)
 
 
-def septuplet(base: MeteredDuration) -> TemporalRatio:
+def septuplet(base: MetricalDuration) -> TemporalRatio:
     """7 in the time of 4 (the common simple-meter septuplet; use tuplet(7, 6, ...) for the other)."""
     return tuplet(7, 4, base)
 
 
 # --- notes inside a standard triplet of their own value ----------------------
 
-breve_in_triplet = MeteredDuration(2, 1, tr=triplet(breve))
-whole_in_triplet = semibreve_in_triplet = MeteredDuration(1, 1, tr=triplet(whole))
-half_in_triplet = minim_in_triplet = MeteredDuration(1, 2, tr=triplet(half))
-quarter_in_triplet = crotchet_in_triplet = MeteredDuration(1, 4, tr=triplet(quarter))
-eighth_in_triplet = quaver_in_triplet = MeteredDuration(1, 8, tr=triplet(eighth))
-sixteenth_in_triplet = semiquaver_in_triplet = MeteredDuration(1, 16, tr=triplet(sixteenth))
-thirtysecond_in_triplet = demisemiquaver_in_triplet = MeteredDuration(
+breve_in_triplet = MetricalDuration(2, 1, tr=triplet(breve))
+whole_in_triplet = semibreve_in_triplet = MetricalDuration(1, 1, tr=triplet(whole))
+half_in_triplet = minim_in_triplet = MetricalDuration(1, 2, tr=triplet(half))
+quarter_in_triplet = crotchet_in_triplet = MetricalDuration(1, 4, tr=triplet(quarter))
+eighth_in_triplet = quaver_in_triplet = MetricalDuration(1, 8, tr=triplet(eighth))
+sixteenth_in_triplet = semiquaver_in_triplet = MetricalDuration(1, 16, tr=triplet(sixteenth))
+thirtysecond_in_triplet = demisemiquaver_in_triplet = MetricalDuration(
     1, 32, tr=triplet(thirtysecond)
 )
-sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MeteredDuration(
+sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MetricalDuration(
     1, 64, tr=triplet(sixtyfourth)
 )
 
@@ -132,9 +132,9 @@ def time_signature(n: int, d: int) -> TimeSignature:
     """A simple time signature n/d, presented as written.
 
     >>> time_signature(3, 4)
-    TimeSignature([TemporalUnit(3, MeteredDuration(1, 4))], ('3', '4'))
+    TimeSignature([TemporalUnit(3, MetricalDuration(1, 4))], ('3', '4'))
     """
-    return TimeSignature(TemporalUnit(n, MeteredDuration(1, d)), presentation=(str(n), str(d)))
+    return TimeSignature(TemporalUnit(n, MetricalDuration(1, d)), presentation=(str(n), str(d)))
 
 
 def additive_time_signature(groups: list[int], d: int) -> TimeSignature:
@@ -143,7 +143,7 @@ def additive_time_signature(groups: list[int], d: int) -> TimeSignature:
     >>> additive_time_signature([2, 2, 3], 8).n
     '2+2+3'
     """
-    base = MeteredDuration(1, d)
+    base = MetricalDuration(1, d)
     return TimeSignature(
         [TemporalUnit(g, base) for g in groups],
         presentation=("+".join(str(g) for g in groups), str(d)),
