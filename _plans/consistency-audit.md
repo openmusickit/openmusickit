@@ -91,7 +91,131 @@ Note for `_plans/revisit.md` (user, mid-session): `rational_length` is a WSMN co
 
 ---
 
-> **Status of Tiers 1–4:** not yet discussed — these remain the raw audit inventory (tables). They will be walked through in dialog the same way as Tier 0 before anything in them is implemented.
+## Tiers 1–4 — DECIDED (2026-09-18 dialog)
+
+The reference tables below are the original inventory; this list is what was agreed.
+Implementation order is chosen so mechanical/formatting changes land before renames,
+and renames before semantic changes. One commit per step; `uv run pytest` after each.
+For anything touching the arithmetic core (constants.py, tonal_vector.py,
+tonal_arithmetic.py, interval_quality.py): commit first, and if the tonal arithmetic
+or TonalVector tests break unexpectedly, revert and log in revisit.md.
+
+**Step A — tooling (1.10, 1.2, most of 1.1).** Add `[tool.ruff]` (select E, F, I, UP, B, FA;
+line-length 100; target py312; isort `known-first-party = ["openmusickit"]`, force absolute
+imports) and ruff to the dev group. Run `ruff check --fix` and `ruff format` once.
+Absolute imports everywhere; `Fraction as F` alias dropped.
+
+**Step B — typing by hand (rest of 1.1).** Implicit `x: T = None` → `T | None`;
+`tuple[int]` → `tuple[int, ...]`; `dict[int:str]` → `dict[int, str]`; `_diatone -> Diatone`;
+PEP 8 spacing around `=` in annotated defaults; add missing return types in tonal_vector,
+metrical_duration, clock_time, duration, note, tone, interval, time_signature.
+
+**Step C — exceptions (1.3).** Typed excepts everywhere including interval_quality.py and
+tonal_arithmetic.py; `raise … from e` / `from None` on every re-raise; `raise
+NotImplementedError` in the OmkGraph load/import/export stubs.
+
+**Step D — eq/is (1.4, 1.5).** Delete `SilentTone.__eq__`/`__repr__`; `type(a) is not type(b)`;
+`is None`.
+
+**Step E — repr (1.8).** `type(self).__name__` in every `__repr__`. `NoteEvent.__repr__`
+keeps its `Rest(...)` path (user likes the semantics).
+
+**Step F — layout (2.2, 2.3, 2.4, 2.5, 3.11).** Flatten to `objects/omk_object.py`,
+`objects/note_event.py`, `objects/chord_event.py`, `objects/context_event.py`,
+`objects/lyrics.py`, `graph/edge.py`. Every `__init__.py` re-exports all its submodules;
+add `values/scoring/__init__.py`, `systems/wsmn/scoring/__init__.py`. Delete
+`str_to_vec.py`, `meter.py`. `TemporalSystem` gets `name`/`description` like `TonalSystem`;
+`Duration.temporal_system` restored as abstract; `MetricalDuration.temporal_system` →
+`WSMN_TEMPORAL` (in `systems/wsmn/temporal/wsmn.py`), `ClockDuration.temporal_system` →
+`CLOCK_TIME` instance. Rename `SequentialObject` → `SequentialEvent`. Graph method names
+unchanged. LyricSyllable stays as is (lyrics design → revisit.md).
+
+**Step G — MetricalDuration (2.1).** `MeteredDuration` → `MetricalDuration` (class, all
+references, docstrings); `tests/.../test_metered_duration.py` → `test_metrical_duration.py`.
+Whole-word replace of a unique identifier; verify with grep for any remaining `Metered`.
+
+**Step H — constructors (1.6, 2.11, 2.11a).** `Tempo` becomes `class Tempo(TemporalRatio)`
+(`__init__(n, beat, clock_time=one minute)`), room for tempo helpers later. `Rest` stays a
+CapWords factory (special case, not a convention). `OmkId.parse` → `from_string`;
+`OmkGraph.load_from_json/load_from_file` → `from_json/from_file`; `import_*` stay;
+`ClockDuration.to_timedelta` → `timedelta` property; `tr` keyword-only in `from_fraction`.
+`Key.of` and `from_alts` stay. Graph: delete `get_edges_by_type` (use `edges(t)`); fold
+`get_edges` into `edges_between` (directed iterator); `get_` stays for lookups.
+
+**Step I — public fields (1.7, 3.3–3.6, 3.13, 2.18).** `OmkEdge.type` field (drop property
+and the `Next.type` override); `KeySignatureEvent.key`/`key_signature` fields with the
+XOR check in `__post_init__`, `set_key`/`set_key_signature` kept; `Key.mode: ModePattern | None`
+and `name: str | None` fields, computed fallback name via a `display_name`-style property
+(`Key.mode` no longer returns a string; callers use `.mode.name`); `ClockDuration.microseconds`
+field (int-rounding accessor renamed `whole_microseconds`); `OmkObject._id`/`_meta` and
+`OmkEdge._id`/`_meta` → `field(init=False, compare=False, repr=False)` keeping the `id`/`meta`
+properties, so `==` on events means same musical content. `_meta: dict[str, Any]` on OmkEdge.
+Drop redundant `ClockDuration.__hash__`/`__repr__` (eq/lt stay). `slots=True` on every
+frozen leaf value type, never in the OmkObject hierarchy. Delete `TemporalRatio._nominal`/
+`_contextual`. `ChordEvent.chord` stays `ToneCollection` (objects/ must not import wsmn).
+
+**Step J — arithmetic-core naming (2.6, 2.7, 2.8, 4.5a, 4.6, 4.11).** `MS` → `DIATONES`,
+`AC` → `ACCIDENTALS` built from direct literals; `ordinals` → `ORDINALS`; delete unused
+`fractionals`. `Diatone` fields: `degree, chromatic, quality_type, interval_name, letter,
+solfege, function, dissonance` (spelling fixed). `Accidental`: `offset, name, unicode, ascii,
+ly`. `TemporalRatio.multiplier` (for `r`), `MetricalDuration.numerator/denominator/ratio`,
+`TonalSystem.description`, `LyricSyllable.text`; drop `TimeSignature.n/d`. Pitch
+representation: `letter`, `accidental`, `alteration` public; `unicode_at(mid_c)`/
+`ascii_at(mid_c)` methods, `unicode`/`ascii`/`verbose` properties **display middle C as
+C4** (user-facing strings default to 4; internal octave 0 is unchanged; `from_string`
+keeps `mid_c=4`; `repr`/`str` debug forms untouched); delete `unicode_C4`/`ascii_C4`,
+`show_nat`; `ly_absolute` property, `ly_relative(prev)`; interval representation gains
+`ascii`. One public `TonalVector.has_octave`; f-strings instead of `"".join`. `% D_LEN`
+instead of `% 7`.
+
+**Step K — spelling/shadowing (2.9, 2.10).** `arpeggiate`; typos; `node_id`, `following`,
+`octave`, `total`; `Mark.kind`; chord symbol `min` → `min_` with alias `m` (`min7` etc.
+unchanged).
+
+**Step L — predicates/enums (2.12, 2.13, 2.14).** Properties for arg-less predicates,
+public `has_octave`; `Quality` → `ChordQuality`; every vocabulary enum is `StrEnum` with
+`auto()` (`QualityType` stays numeric); member names unchanged.
+
+**Step M — freeze value objects (3.1, 3.2, 3.8, 3.9, 4.3).** `@dataclass(frozen=True,
+slots=True)` for `TonalSystem`, `TemporalSystem`, `Diatone`, `Accidental`, `TemporalUnit`,
+`TemporalRatio`, `CompoundTemporalUnit`, `TiedDuration`, `ToneCollection` (tones tuple; `Key.of`
+passes the root instead of mutating), `MetricalDuration` (normalise in `__post_init__`),
+and a `_ChordBase(ToneCollection)` that `ChordType`/`Chord` share (bass/quality/suffix
+fields; eq/hash by tones, root, bass). `IntervalQuality` and TonalVector interning untouched
+(revisit.md). `IntervalRepresentation(ABC)`; abstract bodies are docstring-only;
+`from_string` documented as an optional hook.
+
+**Step N — dedupe (4.1, 4.2).** `_apply_to_tone` helper shared by the five transform sites
+(Chord validates every tone); `add_lyric_sequence` → `add_line`; `insert_line_from_list`
+uses `add_line`; delete `define_span` (keep `add_spanner`).
+
+**Step O — errors (4.4, 4.5).** `openmusickit/errors.py`: `OmkError`, `OmkWarning`,
+`TemporalError(OmkError)`, `ScalingError`, `TemporalCompatibilityError`,
+`LyricConsistencyError(OmkError, ValueError)`, `GraphError(OmkError)`; delete the three old
+modules; adapter raises `GraphError` (never rustworkx exceptions); `KeySignature.fifths`
+raises `ValueError`; `LyricSyllable` uses one exception type; `SHARP_ORDER` in constants.
+
+**Step P — idioms/docs (1.9, 4.7–4.13, 4.8).** Truthiness → `is None`; delete dead code,
+commented code, string-literal comments, duplicated NOTE; fix stale docstrings; one banner
+style `# --- x ---`; drop `real_n/real_d/real_note_duration/scalar_length`; NumPy docstring
+sections; fenced examples → doctests only where runnable as-is or with minimal edits
+(pseudocode/abstract illustrations stay fenced); drop unreachable `else: raise` on enum
+dispatch.
+
+**Step Q — tests (2.16, 2.17).** `tests/conftest.py` with one fixture per symbol family
+(pitch/interval vectors, chord types, mode patterns, keys, durations, tuplet ratios, time
+signatures — marks excluded), each collected by type from its `symbols` module; directories
+mirror `src`; replace test helpers duplicating `symbols.tuplet`/`time_signature`; use `.id`
+and public attributes instead of `_id`/`_units`/`_modifier_value`.
+
+**Step R — revisit.md.** Add: factory functions one at a time (`Rest` is a special case);
+lyrics design (LyricEvent vs syllable-as-event; `LyricSequence(list)`); TonalVector
+`__new__`/`__init__`/interning walkthrough; `KeySignatureEvent` layering.
+
+**Deferred (already in revisit.md):** interval_quality.py internals, `_tonal_modulo`, signed
+durations, `rational_length` on the abstract base, OmkId design. `alter_duration` rename
+(4.14) waits for rhythmic transforms.
+
 
 ## Tier 1 — Cross-cutting conventions (mechanical, high value)
 
