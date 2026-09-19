@@ -95,7 +95,7 @@ for number, name in q_vals.items():
     IntervalQuality(name, number)
 
 
-###########
+# --- lookup by number, tuple or name ---
 
 
 @functools.singledispatch

@@ -10,7 +10,7 @@ import pytest
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
-### No octave mark, no prev_note: defaults to Lilypond's default octave (0) ###
+# --- No octave mark, no prev_note: defaults to Lilypond's default octave (0) ---
 
 
 @pytest.mark.parametrize(
@@ -39,7 +39,7 @@ def test_ly_default_octave(s, expected):
     assert TonalVector.from_ly(s) == TonalVector(expected)
 
 
-### Dutch contractions: Lilypond accepts "as" for "aes" and "es" for "ees" ###
+# --- Dutch contractions: Lilypond accepts "as" for "aes" and "es" for "ees" ---
 # (and likewise "ases"/"eses" for the double flats), alongside the long forms.
 
 
@@ -62,7 +62,7 @@ def test_ly_dutch_contractions(s, expected):
     assert TonalVector.from_ly(s) == TonalVector(expected)
 
 
-### Absolute octave marks: ' raises an octave, , lowers an octave ###
+# --- Absolute octave marks: ' raises an octave, , lowers an octave ---
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_ly_absolute_octave_marks(s, expected):
     assert TonalVector.from_ly(s) == TonalVector(expected)
 
 
-### Relative octave, resolved against prev_note ###
+# --- Relative octave, resolved against prev_note ---
 # Lilypond's relative-octave convention: an unmarked note is placed in
 # whichever octave puts its letter name within a fourth of the previous
 # note's letter name (accidentals are ignored); ' and , then shift that by
@@ -109,7 +109,7 @@ def test_ly_relative_octave(s, prev, expected):
     assert TonalVector.from_ly(s, prev_note=prev_note) == TonalVector(expected)
 
 
-### Relative octave ignores accidentals ###
+# --- Relative octave ignores accidentals ---
 # Per the Lilypond docs, the interval to the previous note "is determined
 # without considering accidentals": after C, F-sharp is a fourth (placed
 # above) and G-flat is a fifth (placed below), even though both are a
@@ -133,7 +133,7 @@ def test_ly_relative_octave_ignores_accidentals(s, prev, expected):
     assert TonalVector.from_ly(s, prev_note=prev_note) == TonalVector(expected)
 
 
-### Invalid input should raise, not silently guess ###
+# --- Invalid input should raise, not silently guess ---
 
 
 @pytest.mark.parametrize(

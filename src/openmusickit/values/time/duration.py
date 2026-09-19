@@ -68,10 +68,12 @@ class TemporalElement(ABC):
         ``MetricalDuration`` returns a ``MetricalDuration`` for powers of two and may
         return a tuplet member or a ``TiedDuration`` for other scalars.
 
-        Raises:
-            ScalingError: If ``scalar`` is not a positive rational, or if the
-                scaled value cannot be represented in this TemporalSystem at all.
-                Callers may catch this and fall back to an alternate strategy.
+        Raises
+        ------
+        ScalingError
+            If ``scalar`` is not a positive rational, or if the scaled value cannot be
+            represented in this TemporalSystem at all. Callers may catch this and fall
+            back to an alternate strategy.
         """
 
     def __eq__(self, other) -> bool:
@@ -154,18 +156,15 @@ class TemporalUnit(TemporalElement):
 
     So 4/4 time is 4 quarter notes and is expressed as:
 
-    ```
-    TemporalUnit(4, MetricalDuration(1,4))
-    ```
+    >>> from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
+    >>> TemporalUnit(4, MetricalDuration(1, 4)).rational_length
+    Fraction(1, 1)
 
     Compound meters such as 6/8 can be expressed using
     the dotted duration or the base duration:
 
-    ```
-    TemporalUnit(6, MetricalDuration(1,8))
-
-    TemporalUnit(2, MetricalDuration(1,4, dots=1))
-    ```
+    >>> TemporalUnit(6, MetricalDuration(1, 8)) == TemporalUnit(2, MetricalDuration(1, 4, dots=1))
+    True
 
     More exotic time signatures can be achieved
     by using tupleted durations as the denominator.
@@ -212,9 +211,10 @@ class TemporalUnit(TemporalElement):
         (3 eighths / 2 = 3 sixteenths; 1 quarter * 3/2 = 3 eighths;
         4 quarters / 3 = 4 triplet eighths, if the base supports tuplets).
 
-        Raises:
-            ScalingError: if the scalar is not positive,
-                or if the base cannot absorb the leftover factor.
+        Raises
+        ------
+        ScalingError
+            if the scalar is not positive, or if the base cannot absorb the leftover factor.
         """
         scalar = Fraction(scalar)
         if scalar <= 0:
@@ -320,12 +320,11 @@ class TemporalRatio:
 
     So, for example, a standard quarter note triplet (3 quarters in the time/space of 2 quarters) would be:
 
-    ```python
-    quarter = MetricalDuration(1, 4)
-    three_quarters = TemporalUnit(3, quarter)
-    two_quarters = TemporalUnit(2, quarter)
-    triplet = TemporalRatio(nominal=three_quarters, contextual=two_quarters)
-    ```
+    >>> from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
+    >>> quarter = MetricalDuration(1, 4)
+    >>> triplet = TemporalRatio(nominal=TemporalUnit(3, quarter), contextual=TemporalUnit(2, quarter))
+    >>> triplet.multiplier
+    Fraction(2, 3)
 
     Note that this only defines the relationship, and is not the tuplet itself.
     The ratio is then used in the definition of a Duration instance.

@@ -62,22 +62,19 @@ class MetricalDuration(Duration):
         Examples
         --------
 
-        ```
-        quarter_note = MetricalDuration(1, 4)
+        >>> quarter_note = MetricalDuration(1, 4)
 
-        dotted_half_note = MetricalDuration(1, 2, 1)
-        also_dotted_half = MetricalDuration(3, 4)
+        >>> MetricalDuration(1, 2, 1) == MetricalDuration(3, 4)  # dotted half, two ways
+        True
 
-        breve = MetricalDuration(2, 1)
-        dotted_breve = MetricalDuration(2, 1, dots=1)
-        also_dotted_breve = MetricalDuration(3, 1)
+        >>> MetricalDuration(2, 1)  # breve
+        MetricalDuration(2, 1)
+        >>> MetricalDuration(2, 1, dots=1) == MetricalDuration(3, 1)  # dotted breve, two ways
+        True
 
-        triplet_ratio = TemporalRatio(
-            TemporalUnit(3, quarter_note),
-            TemporalUnit(2, quarter_note)
-        )
-        quarter_note_in_triplet = MetricalDuration(1, 4, ratio=triplet_ratio)
-        ```
+        >>> triplet_ratio = TemporalRatio(TemporalUnit(3, quarter_note), TemporalUnit(2, quarter_note))
+        >>> MetricalDuration(1, 4, ratio=triplet_ratio).rational_length
+        Fraction(1, 6)
 
         Parameters
         ----------
@@ -364,8 +361,10 @@ class MetricalDuration(Duration):
         a tuplet member (quarter * 2/3 = triplet quarter), or a ``TiedDuration``
         (quarter * 5 = whole tied to quarter). An existing tuplet ratio is kept.
 
-        Raises:
-            ScalingError: if ``scalar`` is not a positive rational.
+        Raises
+        ------
+        ScalingError
+            if ``scalar`` is not a positive rational.
         """
         try:
             scalar = F(scalar)

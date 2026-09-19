@@ -131,14 +131,14 @@ class ClockDuration(Duration):
 
         `ratio` relates metrical time to clock time; it is usually built with `Tempo`:
 
-        ```
-        quarter = MetricalDuration(1, 4)
-        ClockDuration.from_duration(MetricalDuration(1, 2, dots=1), Tempo(120, quarter))
-        # -> 1.5 seconds
-        ```
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, dotted_half
+        >>> ClockDuration.from_duration(dotted_half, Tempo(120, quarter)).seconds
+        Fraction(3, 2)
 
-        Raises:
-            TemporalCompatibilityError: if the contextual side of `ratio` is not clock time.
+        Raises
+        ------
+        TemporalCompatibilityError
+            if the contextual side of `ratio` is not clock time.
         """
         contextual = ratio.contextual
         contextual_base = getattr(contextual, "base", contextual)

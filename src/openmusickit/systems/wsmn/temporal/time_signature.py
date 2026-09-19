@@ -15,15 +15,20 @@ class TimeSignature(CompoundTemporalUnit):
     (one for simple meters, several for additive meters such as 2+2+3/8),
     with an optional presentation (the numbers as printed).
 
-    ```
-    four_four = TimeSignature(TemporalUnit(4, MetricalDuration(1, 4)), presentation=("4", "4"))
-    seven_eight = TimeSignature(
-        [TemporalUnit(2, eighth), TemporalUnit(2, eighth), TemporalUnit(3, eighth)],
-        presentation=("2+2+3", "8"))
-    ```
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+    >>> four_four = TimeSignature(TemporalUnit(4, quarter), presentation=("4", "4"))
+    >>> seven_eight = TimeSignature(
+    ...     [TemporalUnit(2, eighth), TemporalUnit(2, eighth), TemporalUnit(3, eighth)],
+    ...     presentation=("2+2+3", "8"))
+    >>> seven_eight.rational_length
+    Fraction(7, 8)
 
     A TimeSignature compares equal to anything of the same total length,
     so 4/4 == 2/2 == 8/8.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import two_two
+    >>> four_four == two_two
+    True
     """
 
     presentation: tuple[str, str] | None
@@ -47,8 +52,10 @@ class TimeSignature(CompoundTemporalUnit):
         The presentation is scaled the same way when it is numeric and the
         result can be written as plain numbers; otherwise it is dropped.
 
-        Raises:
-            ScalingError: if the scalar is not positive.
+        Raises
+        ------
+        ScalingError
+            if the scalar is not positive.
         """
         scalar = Fraction(scalar)
         if scalar <= 0:

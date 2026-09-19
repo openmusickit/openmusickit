@@ -20,27 +20,28 @@ class KeySignature(tuple):
     Positional order is C, D, E, F, G, A, B;
     each letter name is also available as a property.
 
-    Examples:
+    Examples
+    --------
 
-        >>> ks = KeySignature()
-        >>> ks.c, ks.b
-        (0, 0)
+    >>> ks = KeySignature()
+    >>> ks.c, ks.b
+    (0, 0)
 
-        >>> ks = KeySignature(c=1, f=1)
-        >>> ks.f, ks.g
-        (1, 0)
+    >>> ks = KeySignature(c=1, f=1)
+    >>> ks.f, ks.g
+    (1, 0)
 
-        >>> ks = KeySignature(e=-1, a=-1, b=-1)
-        >>> ks.e, ks.d
-        (-1, 0)
+    >>> ks = KeySignature(e=-1, a=-1, b=-1)
+    >>> ks.e, ks.d
+    (-1, 0)
 
-        >>> ks = KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2) # double flats
-        >>> ks.e, ks.f
-        (-2, -1)
+    >>> ks = KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2) # double flats
+    >>> ks.e, ks.f
+    (-2, -1)
 
-        >>> ks = KeySignature(f=1, b=-1) # non-standard key signatures
-        >>> ks.f, ks.b
-        (1, -1)
+    >>> ks = KeySignature(f=1, b=-1) # non-standard key signatures
+    >>> ks.f, ks.b
+    (1, -1)
     """
 
     def __new__(
@@ -67,19 +68,20 @@ class KeySignature(tuple):
         """Create a key signature by specifying the number of sharps (positive int) or flats (negative int).
         Assumes normal ordering (F C G D A E B | B E A D G C F) and should be symmetrical to `fifths`.
 
-        Examples:
+        Examples
+        --------
 
-            >>> KeySignature.from_alts(2)
-            KeySignature(c=1, f=1)
+        >>> KeySignature.from_alts(2)
+        KeySignature(c=1, f=1)
 
-            >>> KeySignature.from_alts(-3)
-            KeySignature(e=-1, a=-1, b=-1)
+        >>> KeySignature.from_alts(-3)
+        KeySignature(e=-1, a=-1, b=-1)
 
-            >>> KeySignature.from_alts(-10)
-            KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2)
+        >>> KeySignature.from_alts(-10)
+        KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2)
 
-            >>> KeySignature.from_alts(5).fifths
-            5
+        >>> KeySignature.from_alts(5).fifths
+        5
         """
         order = SHARP_ORDER if alts > 0 else SHARP_ORDER[::-1]
         step = 1 if alts > 0 else -1
@@ -128,24 +130,25 @@ class KeySignature(tuple):
         they do not go in the standard order [F# C# G# D# A# E# B# | Bb Eb Ab Db Gb Cb Fb]).
         This error should be caught by callers and another key signature resolution strategy should be used.
 
-        Examples:
+        Examples
+        --------
 
-            >>> KeySignature().fifths
-            0
+        >>> KeySignature().fifths
+        0
 
-            >>> KeySignature(c=1, f=1).fifths
-            2
+        >>> KeySignature(c=1, f=1).fifths
+        2
 
-            >>> KeySignature(e=-1, a=-1, b=-1).fifths
-            -3
+        >>> KeySignature(e=-1, a=-1, b=-1).fifths
+        -3
 
-            >>> KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2).fifths
-            -10
+        >>> KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2).fifths
+        -10
 
-            >>> KeySignature(f=1, b=-1).fifths
-            Traceback (most recent call last):
-                ...
-            ValueError: This KeySignature is non-standard and has no fifths value.
+        >>> KeySignature(f=1, b=-1).fifths
+        Traceback (most recent call last):
+            ...
+        ValueError: This KeySignature is non-standard and has no fifths value.
         """
         error = ValueError("This KeySignature is non-standard and has no fifths value.")
 
@@ -179,31 +182,32 @@ class KeySignature(tuple):
         is raised. Alterations must be integers (the letter-pitches must be
         expressible as TonalVectors); otherwise a ValueError is raised.
 
-        Examples:
+        Examples
+        --------
 
-            >>> from openmusickit.systems.wsmn.tonal.symbols import M2
+        >>> from openmusickit.systems.wsmn.tonal.symbols import M2
 
-            Transposition, including of a non-standard signature
-            (C D E F♯ G A B♭ up a major second is D E F♯ G♯ A B C):
+        Transposition, including of a non-standard signature
+        (C D E F♯ G A B♭ up a major second is D E F♯ G♯ A B C):
 
-            >>> KeySignature().transform(TonalVector.transpose, M2)
-            KeySignature(c=1, f=1)
-            >>> KeySignature(f=1, b=-1).transform(TonalVector.transpose, M2)
-            KeySignature(f=1, g=1)
+        >>> KeySignature().transform(TonalVector.transpose, M2)
+        KeySignature(c=1, f=1)
+        >>> KeySignature(f=1, b=-1).transform(TonalVector.transpose, M2)
+        KeySignature(f=1, g=1)
 
-            An operation that needs no operand:
+        An operation that needs no operand:
 
-            >>> def sharpen(tv):
-            ...     return tv + TonalVector((0, 1))
-            >>> KeySignature().transform(sharpen)
-            KeySignature(c=1, d=1, e=1, f=1, g=1, a=1, b=1)
+        >>> def sharpen(tv):
+        ...     return tv + TonalVector((0, 1))
+        >>> KeySignature().transform(sharpen)
+        KeySignature(c=1, d=1, e=1, f=1, g=1, a=1, b=1)
 
-            An operation that does not produce a TonalVector is rejected:
+        An operation that does not produce a TonalVector is rejected:
 
-            >>> KeySignature().transform(str)
-            Traceback (most recent call last):
-                ...
-            TypeError: ...
+        >>> KeySignature().transform(str)
+        Traceback (most recent call last):
+            ...
+        TypeError: ...
         """
         if any(not isinstance(alt, int) for alt in self):
             raise ValueError("Only a KeySignature with integer alterations can be transformed.")
@@ -229,39 +233,41 @@ class KeySignature(tuple):
         as if it were the signature of a key whose tonic is transposed by `x`.
         (Since relative keys share a signature, this is equally correct for any mode.)
 
-        Examples:
+        Examples
+        --------
 
-            >>> from openmusickit.systems.wsmn.tonal.symbols import M2, m3, P5, a4
-            >>> KeySignature().transpose(M2)
-            KeySignature(c=1, f=1)
+        >>> from openmusickit.systems.wsmn.tonal.symbols import M2, m3, P5, a4
+        >>> KeySignature().transpose(M2)
+        KeySignature(c=1, f=1)
 
-            >>> KeySignature().transpose(m3)
-            KeySignature(e=-1, a=-1, b=-1)
+        >>> KeySignature().transpose(m3)
+        KeySignature(e=-1, a=-1, b=-1)
 
-            >>> KeySignature(f=1).transpose(P5, TonalDirection.DOWN)
-            KeySignature()
+        >>> KeySignature(f=1).transpose(P5, TonalDirection.DOWN)
+        KeySignature()
 
-            >>> KeySignature.from_alts(3).transpose(a4).fifths
-            9
+        >>> KeySignature.from_alts(3).transpose(a4).fifths
+        9
 
-            >>> KeySignature(f=1, b=-1).transpose(M2)
-            KeySignature(f=1, g=1)
+        >>> KeySignature(f=1, b=-1).transpose(M2)
+        KeySignature(f=1, g=1)
         """
         return self.transform(TonalVector.transpose, x, direction)
 
     def __repr__(self) -> str:
         """Only non-zero alterations are shown, matching how a KeySignature is typically constructed.
 
-        Examples:
+        Examples
+        --------
 
-            >>> KeySignature()
-            KeySignature()
+        >>> KeySignature()
+        KeySignature()
 
-            >>> KeySignature(c=1, f=1)
-            KeySignature(c=1, f=1)
+        >>> KeySignature(c=1, f=1)
+        KeySignature(c=1, f=1)
 
-            >>> KeySignature(e=-1, a=-1, b=-1)
-            KeySignature(e=-1, a=-1, b=-1)
+        >>> KeySignature(e=-1, a=-1, b=-1)
+        KeySignature(e=-1, a=-1, b=-1)
         """
         alts = ", ".join(
             f"{name}={value!r}" for name, value in zip("cdefgab", self, strict=False) if value
@@ -322,29 +328,30 @@ class Key:
         Raises ValueError if the same letter occurs with different alterations
         (e.g. a mode containing both F and F#); pass `signature` explicitly in that case.
 
-        Examples:
+        Examples
+        --------
 
-            >>> from openmusickit.systems.wsmn.tonal.symbols import C, Eb, Fx, Major, Minor
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, Eb, Fx, Major, Minor
 
-            >>> c = Key.of(C, Major)
-            >>> c.name, c.mode.name, c.signature
-            ('C Major', 'Major', KeySignature())
-            >>> [t.pitch.unicode for t in c.tones]
-            ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+        >>> c = Key.of(C, Major)
+        >>> c.name, c.mode.name, c.signature
+        ('C Major', 'Major', KeySignature())
+        >>> [t.pitch.unicode for t in c.tones]
+        ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 
-            >>> Key.of(Eb, Major).signature
-            KeySignature(e=-1, a=-1, b=-1)
+        >>> Key.of(Eb, Major).signature
+        KeySignature(e=-1, a=-1, b=-1)
 
-            >>> fs = Key.of(Fx, Minor)
-            >>> fs.name, fs.signature.fifths
-            ('F♯ Minor', 3)
-            >>> fs.tones.root is Fx
-            True
+        >>> fs = Key.of(Fx, Minor)
+        >>> fs.name, fs.signature.fifths
+        ('F♯ Minor', 3)
+        >>> fs.tones.root is Fx
+        True
 
         An explicit signature is used as given, without inspection:
 
-            >>> Key.of(C, Major, KeySignature.from_alts(-1)).signature
-            KeySignature(b=-1)
+        >>> Key.of(C, Major, KeySignature.from_alts(-1)).signature
+        KeySignature(b=-1)
         """
         transposed = mode.tones.transform(TonalVector.transpose, tonic)
         tones = ToneCollection(transposed, root=tonic, name=transposed.name_template)
@@ -381,13 +388,14 @@ class Key:
         the tones" can disagree (C Major inverted about C is C Major by the
         first rule and C Phrygian by the second); the mode is kept.
 
-        Examples:
+        Examples
+        --------
 
-            >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, Major, NoKey
-            >>> Key.of(C, Major).transform(TonalVector.transpose, M2).name
-            'D Major'
-            >>> NoKey.transform(TonalVector.transpose, M2) is NoKey
-            True
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, Major, NoKey
+        >>> Key.of(C, Major).transform(TonalVector.transpose, M2).name
+        'D Major'
+        >>> NoKey.transform(TonalVector.transpose, M2) is NoKey
+        True
         """
         if self.tonic is None:
             return self

@@ -20,7 +20,7 @@ from openmusickit.utils.number_names import ORDINALS
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from openmusickit.values.tone.tone import PitchRepresentation, Tone
 
-### Vocabulary and grammar for TonalVector.from_string / from_ly ###
+# --- Vocabulary and grammar for TonalVector.from_string / from_ly ---
 #
 # from_string strips all whitespace from its input, then matches it against
 # regular expressions built from the lookup tables below. The tables are the
@@ -41,7 +41,7 @@ def _alternation(spellings) -> str:
     return "|".join(re.escape(s) for s in sorted(spellings, key=len, reverse=True))
 
 
-## Pitches ##
+# --- Pitches ---
 
 _LETTERS = {diatone.letter: diatone.degree for diatone in DIATONES}  # 'c' -> 0, 'd' -> 1, ...
 
@@ -142,7 +142,7 @@ def _pitch_from_match(m: re.Match, names: dict, mid_c: int) -> tuple:
     return (d, c, int(m["octave"]) - mid_c)
 
 
-## Intervals ##
+# --- Intervals ---
 
 # Quality words, mapped to a canonical kind. Bare 'M' (major) and bare 'm'
 # (minor) are the only case-sensitive spellings; see _quality_kind.
@@ -540,7 +540,7 @@ class TonalVector(tuple, Tone, Interval):
         octave_shift = m["octave_marks"].count("'") - m["octave_marks"].count(",")
         return cls((d, c, octave + octave_shift))
 
-    ### Util ###
+    # --- Util ---
 
     def __repr__(self) -> str:
         """
@@ -574,7 +574,7 @@ class TonalVector(tuple, Tone, Interval):
         """
         return f"{repr(self)} # {self.pitch.unicode}"
 
-    ### Tonal Arithmetic ###
+    # --- Tonal Arithmetic ---
 
     def __add__(self, x: tuple[int, ...]) -> TonalVector:
         """
@@ -835,7 +835,7 @@ class TonalVector(tuple, Tone, Interval):
 
         return TonalVector((self.d, self.c))
 
-    ### Represent as a pitch ###
+    # --- Represent as a pitch ---
 
     class _PitchRepresentation(PitchRepresentation):
         """A TonalVector's pitch representation,

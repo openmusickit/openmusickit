@@ -10,7 +10,7 @@ import pytest
 from openmusickit.systems.wsmn.tonal.constants import SolfegeStyle
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
-### Pitches: bare letters, no accidental, no octave ###
+# --- Pitches: bare letters, no accidental, no octave ---
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ def test_bare_letter_pitches(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Pitches: ASCII accidentals ###
+# --- Pitches: ASCII accidentals ---
 
 
 @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ def test_ascii_accidental_pitches(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Pitches: Unicode accidentals ###
+# --- Pitches: Unicode accidentals ---
 
 
 @pytest.mark.parametrize(
@@ -71,7 +71,7 @@ def test_unicode_accidental_pitches(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Lilypond-style spellings are NOT accepted by from_string ###
+# --- Lilypond-style spellings are NOT accepted by from_string ---
 # Lilypond note names ("is"/"es" accidental suffixes, "'"/"," octave marks)
 # are handled by the separate TonalVector.from_ly classmethod (see
 # test_from_ly.py), because Lilypond has no notion of an "abstract"
@@ -94,7 +94,7 @@ def test_lilypond_style_strings_are_rejected(s):
         TonalVector.from_string(s)
 
 
-### Pitches: word modifiers ###
+# --- Pitches: word modifiers ---
 
 
 @pytest.mark.parametrize(
@@ -114,7 +114,7 @@ def test_word_modifier_pitches(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Pitches: with numeric octave designation ###
+# --- Pitches: with numeric octave designation ---
 # mid_c defaults to 4: C4 is middle C == internal octave 0.
 
 
@@ -151,7 +151,7 @@ def test_pitches_with_octave_mid_c_zero():
     assert TonalVector.from_string("D1", mid_c=0) == TonalVector((1, 2, 1))
 
 
-### Pitches: case sensitivity edge cases ###
+# --- Pitches: case sensitivity edge cases ---
 # Capital A/D followed directly by a number is always a pitch (regardless of
 # case). Interval augmented/diminished qualities must be spelled "aug"/"dim"
 # (or "augmented"/"diminished"), never a bare "a"/"d" letter.
@@ -170,7 +170,7 @@ def test_bare_a_d_letters_are_always_pitches(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Pitches: solfege, default style (EURO_FIXED) ###
+# --- Pitches: solfege, default style (EURO_FIXED) ---
 # EURO_FIXED assigns one syllable per diatonic letter name; there are no
 # dedicated chromatic syllables, so "Si" is simply the fixed name for B
 # (matching Latin/French solfege convention), not "so-sharp".
@@ -195,7 +195,7 @@ def test_euro_fixed_solfege_is_default(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Pitches: EURO_FIXED solfege with an explicit accidental ###
+# --- Pitches: EURO_FIXED solfege with an explicit accidental ---
 # accidentals are appended just like they are to a letter name, since
 # EURO_FIXED syllables have no chromatic variants of their own.
 
@@ -216,7 +216,7 @@ def test_euro_fixed_solfege_with_accidental(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Pitches: OMK_MOVEABLE solfege, chromatic ###
+# --- Pitches: OMK_MOVEABLE solfege, chromatic ---
 # OMK_MOVEABLE uses moveable-do syllables with dedicated chromatic
 # variants; here "Si" means so-sharp, not B, and accidentals are not
 # appended separately -- the chromatic alteration is baked into the
@@ -246,7 +246,7 @@ def test_omk_moveable_solfege(s, expected):
     )
 
 
-### Intervals: letter/abbreviation quality + number ###
+# --- Intervals: letter/abbreviation quality + number ---
 
 
 @pytest.mark.parametrize(
@@ -269,7 +269,7 @@ def test_abbreviated_quality_intervals(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Intervals: aug/dim (spelled out, not bare letters) ###
+# --- Intervals: aug/dim (spelled out, not bare letters) ---
 
 
 @pytest.mark.parametrize(
@@ -293,7 +293,7 @@ def test_aug_dim_word_intervals(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Intervals: spelled-out quality words ###
+# --- Intervals: spelled-out quality words ---
 
 
 @pytest.mark.parametrize(
@@ -312,7 +312,7 @@ def test_spelled_out_quality_intervals(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Intervals: ordinal-suffixed numbers ###
+# --- Intervals: ordinal-suffixed numbers ---
 
 
 @pytest.mark.parametrize(
@@ -330,7 +330,7 @@ def test_ordinal_suffixed_intervals(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Intervals: compound (8-13), octave-qualified result ###
+# --- Intervals: compound (8-13), octave-qualified result ---
 
 
 @pytest.mark.parametrize(
@@ -350,7 +350,7 @@ def test_compound_intervals(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Case sensitivity: bare capital M / lowercase m ###
+# --- Case sensitivity: bare capital M / lowercase m ---
 # Standalone "M" means major; standalone "m" means minor.
 
 
@@ -367,7 +367,7 @@ def test_bare_m_case_sensitivity(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Whitespace / punctuation robustness ###
+# --- Whitespace / punctuation robustness ---
 
 
 @pytest.mark.parametrize(
@@ -383,7 +383,7 @@ def test_extra_whitespace_is_tolerated(s, expected):
     assert TonalVector.from_string(s) == TonalVector(expected)
 
 
-### Invalid input should raise, not silently guess ###
+# --- Invalid input should raise, not silently guess ---
 
 
 @pytest.mark.parametrize(
@@ -402,7 +402,7 @@ def test_invalid_strings_raise(s):
         TonalVector.from_string(s)
 
 
-### Invalid interval quality/number combinations should raise ###
+# --- Invalid interval quality/number combinations should raise ---
 # Unisons, 4ths, 5ths, and octaves (and their compounds) are always
 # Perfect-type: they can be perfect, augmented, or diminished, but never
 # major/minor. 2nds, 3rds, 6ths, and 7ths (and their compounds) are always

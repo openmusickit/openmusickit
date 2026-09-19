@@ -35,7 +35,7 @@ QUALIFIED_VECTORS = [TonalVector(t) for t in _octave_qualified_tuples()]
 ALL_VECTORS = ABSTRACT_VECTORS + QUALIFIED_VECTORS
 
 
-### pitch.unicode / pitch.ascii / pitch.verbose round-trip through from_string ###
+# --- pitch.unicode / pitch.ascii / pitch.verbose round-trip through from_string ---
 # The display properties and from_string both default to middle C == C4;
 # the *_at(mid_c) forms round-trip when from_string is given the same mid_c.
 
@@ -63,7 +63,7 @@ def test_custom_mid_c_roundtrip(tv, mid_c):
     assert TonalVector.from_string(tv.pitch.verbose_at(mid_c), mid_c=mid_c) == tv
 
 
-### interval.unicode round-trip through from_string ###
+# --- interval.unicode round-trip through from_string ---
 # interval.unicode ("major 3", "augmented 4") does not encode an octave at
 # all (compound/octave-qualified intervals print the same as their
 # unqualified equivalent), so it only round-trips for abstract vectors.
@@ -74,7 +74,7 @@ def test_interval_unicode_roundtrip(tv):
     assert TonalVector.from_string(tv.interval.unicode) == tv
 
 
-### interval.abbr round-trip through from_string ###
+# --- interval.abbr round-trip through from_string ---
 # interval.abbr ("maj3", "aug4+1", "per1-2") does encode an octave, as a
 # "+N"/"-N" suffix, so it round-trips for both abstract and
 # octave-qualified vectors.
@@ -85,7 +85,7 @@ def test_interval_abbr_roundtrip(tv):
     assert TonalVector.from_string(tv.interval.abbr) == tv
 
 
-### pitch.ly round-trip through from_ly ###
+# --- pitch.ly round-trip through from_ly ---
 # pitch.ly never includes an octave designation, so from_ly always returns
 # an octave-qualified vector at octave 0. Abstract vectors therefore do NOT
 # round-trip to themselves via ly/from_ly -- this is an accepted, documented
@@ -99,7 +99,7 @@ def test_ly_roundtrip_abstract_qualifies_at_octave_zero(tv):
     assert TonalVector.from_ly(tv.pitch.ly) == tv.qualify_octave(0)
 
 
-### pitch.ly_absolute round-trip through from_ly ###
+# --- pitch.ly_absolute round-trip through from_ly ---
 # ly_absolute does encode an absolute octave (via ' and , marks), so
 # octave-qualified vectors round-trip exactly.
 
@@ -109,7 +109,7 @@ def test_ly_absolute_roundtrip(tv):
     assert TonalVector.from_ly(tv.pitch.ly_absolute) == tv
 
 
-### pitch.ly_relative round-trip through from_ly, using prev_note ###
+# --- pitch.ly_relative round-trip through from_ly, using prev_note ---
 
 
 @pytest.mark.parametrize("tv", QUALIFIED_VECTORS)

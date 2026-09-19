@@ -84,7 +84,7 @@ def test_abs_int_diff(tonal_tuples):
             assert z < 7
 
 
-#### Testing internal functions ####
+# --- Testing internal functions ---
 
 from openmusickit.systems.wsmn.tonal.tonal_arithmetic import _negative_tuple, _tonal_modulo
 
