@@ -22,10 +22,10 @@ class ClockDuration(Duration):
     _microseconds: int | Fraction
 
     @property
-    def rational_length(self):
+    def rational_length(self) -> Fraction:
         return Fraction(self._microseconds)
 
-    def scale(self, scalar):
+    def scale(self, scalar: int | Fraction) -> ClockDuration:
         return ClockDuration(self._microseconds * scalar)
 
     def __add__(self, other):
@@ -106,19 +106,19 @@ class ClockDuration(Duration):
         return timedelta(microseconds=self.microseconds)
 
     @classmethod
-    def from_minutes(cls, n):
+    def from_minutes(cls, n: int | Fraction) -> ClockDuration:
         return cls(n * 60_000_000)
 
     @classmethod
-    def from_seconds(cls, n):
+    def from_seconds(cls, n: int | Fraction) -> ClockDuration:
         return cls(n * 1_000_000)
 
     @classmethod
-    def from_milliseconds(cls, n):
+    def from_milliseconds(cls, n: int | Fraction) -> ClockDuration:
         return cls(n * 1_000)
 
     @classmethod
-    def from_timedelta(cls, td: timedelta):
+    def from_timedelta(cls, td: timedelta) -> ClockDuration:
         total_microseconds = (td.days * 86_400 + td.seconds) * 1_000_000 + td.microseconds
         return cls(total_microseconds)
 

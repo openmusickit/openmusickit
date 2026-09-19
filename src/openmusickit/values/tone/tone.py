@@ -35,16 +35,16 @@ class TonalSystem:
 
     """
 
-    def __init__(self, name, desc):
+    def __init__(self, name: str, desc: str):
         self._name = name
         self._desc = desc
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def desc(self):
+    def desc(self) -> str:
         return self._desc
 
 
@@ -80,7 +80,7 @@ class Tone(ABC):
     rather than concrete instance of a note in a score."""
 
     @classmethod
-    def from_string(cls, s) -> Tone:
+    def from_string(cls, s: str) -> Tone:
         """Parses a string and returns a Tone."""
         raise NotImplementedError
 
@@ -161,10 +161,10 @@ class PitchRepresentation(ABC):
 
     @property
     @abstractmethod
-    def unicode(self):
+    def unicode(self) -> str:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def ascii(self):
+    def ascii(self) -> str:
         raise NotImplementedError

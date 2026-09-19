@@ -38,10 +38,10 @@ class IntervalRepresentation:
 
     @property
     @abstractmethod
-    def unicode(self):
+    def unicode(self) -> str:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def ascii(self):
+    def ascii(self) -> str:
         raise NotImplementedError

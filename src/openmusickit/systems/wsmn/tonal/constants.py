@@ -94,7 +94,7 @@ class Diatone:
         return self._ln
 
     @property
-    def sf(self) -> dict[int:str]:
+    def sf(self) -> dict[int, str]:
         return self._sf
 
     @property

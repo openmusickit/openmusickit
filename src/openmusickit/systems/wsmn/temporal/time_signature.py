@@ -27,7 +27,7 @@ class TimeSignature(CompoundTemporalUnit):
     def __init__(
         self,
         spec: TemporalUnit | Iterable[TemporalUnit] | CompoundTemporalUnit,
-        presentation: tuple[str, str] = None,
+        presentation: tuple[str, str] | None = None,
     ):
 
         if isinstance(spec, TemporalUnit):

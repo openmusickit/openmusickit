@@ -61,7 +61,7 @@ class TemporalElement(ABC):
     #    raise NotImplementedError
 
     @abstractmethod
-    def scale(self, scalar: int | Fraction):
+    def scale(self, scalar: int | Fraction) -> TemporalElement:
         """Return a TemporalElement scaled by a positive scalar, according to its TemporalSystem.
 
         The result's ``rational_length`` must equal ``self.rational_length * scalar``.
@@ -114,7 +114,7 @@ class ZeroDuration(Duration):
     def rational_length(self) -> Fraction:
         return Fraction(0, 1)
 
-    def scale(self, scalar: int | Fraction):
+    def scale(self, scalar: int | Fraction) -> ZeroDuration:
         return self
 
     def __add__(self, other: Duration):
@@ -247,17 +247,17 @@ class CompoundTemporalUnit(TemporalElement):
     def __contains__(self, item):
         return item in self._units
 
-    def index(self, item):
+    def index(self, item: TemporalElement) -> int:
         return self._units.index(item)
 
-    def count(self, item):
+    def count(self, item: TemporalElement) -> int:
         return self._units.count(item)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._units!r})"
 
     @property
-    def rational_length(self):
+    def rational_length(self) -> Fraction:
         return sum((tu.rational_length for tu in self._units), Fraction(0))
 
     def remainder(self, series: Iterable[TemporalElement]) -> Fraction:
@@ -265,7 +265,7 @@ class CompoundTemporalUnit(TemporalElement):
         Negative if `series` overflows self."""
         return self.rational_length - sum((s.rational_length for s in series), Fraction(0))
 
-    def first_out_of_bounds(self, series: Iterable[TemporalElement]):
+    def first_out_of_bounds(self, series: Iterable[TemporalElement]) -> int | None:
         """Returns the index of the first items in `series`
         that exceeds the length of self.
         Returns None if the total length of series is <= length of self."""
@@ -277,7 +277,7 @@ class CompoundTemporalUnit(TemporalElement):
                 return i
         return None
 
-    def scale(self, scalar):
+    def scale(self, scalar: int | Fraction) -> CompoundTemporalUnit:
         try:
             new_units = [tu.scale(scalar) for tu in self._units]
         except ScalingError as e:

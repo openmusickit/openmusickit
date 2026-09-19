@@ -76,7 +76,7 @@ class ToneCollection:
     def __repr__(self) -> str:
         return f"{type(self).__name__}({list(self._tones)!r}, root={self.root!r})"
 
-    def combinations(self, k) -> list[ToneCollection]:
+    def combinations(self, k: int) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of k members."""
         return [ToneCollection(c) for c in combinations(self._tones, k)]
 

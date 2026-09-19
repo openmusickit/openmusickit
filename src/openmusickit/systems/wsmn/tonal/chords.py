@@ -29,9 +29,9 @@ class ChordType(ToneCollection):
         self,
         tones: Iterable[TonalVector],
         name: str,
-        bass: TonalVector = None,
-        quality: Quality = None,
-        suffix: str = None,
+        bass: TonalVector | None = None,
+        quality: Quality | None = None,
+        suffix: str | None = None,
     ):
 
         tones = tuple(tones)
@@ -112,7 +112,7 @@ class ChordType(ToneCollection):
 
         return bass, name
 
-    def inversion(self, inv: int | TonalVector, name: str = None) -> "ChordType":
+    def inversion(self, inv: int | TonalVector, name: str | None = None) -> "ChordType":
         """Returns a ChordType with the same tones, but a different bass tone."""
         bass, name = self._resolve_inversion(inv, name)
         return ChordType(self, name, bass, self.quality, self.suffix)
@@ -211,9 +211,9 @@ class Chord(ToneCollection):
         self,
         root: TonalVector,
         tones: Iterable[TonalVector],
-        bass: TonalVector = None,
-        name: str = None,
-        suffix: str = None,
+        bass: TonalVector | None = None,
+        name: str | None = None,
+        suffix: str | None = None,
     ):
 
         super().__init__(tuple(tones), root=root, name=name)
@@ -234,7 +234,7 @@ class Chord(ToneCollection):
     def __hash__(self) -> int:
         return hash((super().__hash__(), self.bass))
 
-    def inversion(self, inv: int | TonalVector, name: str = None) -> "Chord":
+    def inversion(self, inv: int | TonalVector, name: str | None = None) -> "Chord":
         """Returns a Chord with the same tones and root, but a different bass tone."""
         bass, name = ChordType._resolve_inversion(self, inv, name)
         return Chord(self.root, self, bass, name, self.suffix)
@@ -261,8 +261,8 @@ class Chord(ToneCollection):
         self,
         operation: Callable[..., TonalVector],
         *args,
-        new_name: str = None,
-        new_suffix: str = None,
+        new_name: str | None = None,
+        new_suffix: str | None = None,
         **kwargs,
     ) -> "Chord":
         """Returns a new Chord made by applying `operation` to every tone

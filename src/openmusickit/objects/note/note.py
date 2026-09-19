@@ -49,7 +49,7 @@ class NoteEvent(SequentialObject, TonalObject):
         """
         return SilentTone() in self.tones
 
-    def add_tone(self, tone: Tone):
+    def add_tone(self, tone: Tone) -> None:
         """Adds a tone. Adding a pitched tone to a rest un-rests it;
         adding a SilentTone to a pitched NoteEvent is a no-op.
 
@@ -66,17 +66,17 @@ class NoteEvent(SequentialObject, TonalObject):
         if self.is_rest and len(self.tones) > 1:
             self.tones.remove(SilentTone())
 
-    def remove_tone(self, tone: Tone):
+    def remove_tone(self, tone: Tone) -> None:
         self.tones.remove(tone)
 
-    def clear_tones(self):
+    def clear_tones(self) -> None:
         self.tones.clear()
 
-    def make_rest(self):
+    def make_rest(self) -> None:
         self.tones.clear()
         self.tones.add(SilentTone())
 
-    def swap_tone(self, old_tone: Tone, new_tone: Tone):
+    def swap_tone(self, old_tone: Tone, new_tone: Tone) -> None:
         self.remove_tone(old_tone)
         self.add_tone(new_tone)
 

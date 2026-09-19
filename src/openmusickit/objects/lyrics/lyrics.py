@@ -73,7 +73,7 @@ class LyricSyllable(OmkObject):
     def __str__(self):
         return self.syl_str()
 
-    def syl_str(self, hyphen: str = "-"):
+    def syl_str(self, hyphen: str = "-") -> str:
         if self.placement in [SyllablePlacement.WHOLE, None]:
             return self.s
         if self.placement is SyllablePlacement.BEGINNING:
@@ -104,6 +104,6 @@ class LyricSequence(list):
         self.__id = OmkId(id)
 
     @property
-    def id(self):
+    def id(self) -> OmkId:
         """The stable identity of the LyricSequence, across sessions and storage."""
         return self.__id

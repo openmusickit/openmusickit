@@ -12,6 +12,7 @@ from openmusickit.systems.wsmn.tonal.constants import (
     EURO_SF,
     MS,
     Accidental,
+    Diatone,
     QualityType,
     SolfegeStyle,
 )
@@ -385,7 +386,7 @@ class TonalVector(tuple, Tone, Interval):
             raise AttributeError("This TonalVector does not have an octave designation.")
 
     @property
-    def _diatone(self) -> dict:
+    def _diatone(self) -> Diatone:
         return MS[self.d]
 
     @property
@@ -433,7 +434,9 @@ class TonalVector(tuple, Tone, Interval):
         return (2 * self.d + 1) % 7 - 1 + 7 * self.pitch._modifier_value
 
     @classmethod
-    def from_string(cls, s, mid_c=4, solfege_style=SolfegeStyle.EURO_FIXED):
+    def from_string(
+        cls, s: str, mid_c: int = 4, solfege_style: SolfegeStyle = SolfegeStyle.EURO_FIXED
+    ) -> TonalVector:
         """Creates and returns a TonalVector,
         given a parsable string representation of a pitch or interval.
 
@@ -487,7 +490,7 @@ class TonalVector(tuple, Tone, Interval):
         raise ValueError(f"{s!r} is not a recognized pitch or interval.")
 
     @classmethod
-    def from_ly(cls, s, prev_note=None):
+    def from_ly(cls, s: str, prev_note: tuple[int, ...] | None = None) -> TonalVector:
         """Creates and returns an octave-qualified TonalVector,
         given a Lilypond-style pitch string.
 
@@ -576,7 +579,7 @@ class TonalVector(tuple, Tone, Interval):
 
     ### Tonal Arithmetic ###
 
-    def __add__(self, x: tuple[int]) -> TonalVector:
+    def __add__(self, x: tuple[int, ...]) -> TonalVector:
         """
 
         Examples
@@ -591,7 +594,7 @@ class TonalVector(tuple, Tone, Interval):
         """
         return TonalVector(ta.tonal_sum(self, x))
 
-    def __sub__(self, x: tuple[int]) -> TonalVector:
+    def __sub__(self, x: tuple[int, ...]) -> TonalVector:
         """
 
         Examples
@@ -608,7 +611,7 @@ class TonalVector(tuple, Tone, Interval):
         """
         return TonalVector(ta.tonal_diff(self, x))
 
-    def distance(self, x: tuple[int]) -> TonalVector:
+    def distance(self, x: tuple[int, ...]) -> TonalVector:
         """Returns the smallest difference
 
         Examples
@@ -625,7 +628,7 @@ class TonalVector(tuple, Tone, Interval):
         """
         return TonalVector(ta.tonal_abs_diff(self, x))
 
-    def nearest_instance(self, x: tuple[int]) -> TonalVector:
+    def nearest_instance(self, x: tuple[int, ...]) -> TonalVector:
         """Returns a Tonal Vector that has the same pitch class or interval type as x,
         closest to self.
 
@@ -675,7 +678,7 @@ class TonalVector(tuple, Tone, Interval):
         """
         return ta.tonal_int(self)
 
-    def __gt__(self, x: tuple[int]) -> bool:
+    def __gt__(self, x: tuple[int, ...]) -> bool:
         """Returns True if self is higher (in pitch)
         or larger (in interval size) than x,
         otherwise False.
@@ -697,7 +700,7 @@ class TonalVector(tuple, Tone, Interval):
         except TypeError:
             return int(self) > ta.tonal_int(x)
 
-    def __lt__(self, x: tuple[int]) -> bool:
+    def __lt__(self, x: tuple[int, ...]) -> bool:
         """Returns True if self is lower (in pitch)
         or smaller (in interval size) than x,
         otherwise False.
@@ -720,7 +723,7 @@ class TonalVector(tuple, Tone, Interval):
             return int(self) < ta.tonal_int(x)
 
     def transpose(
-        self, x: tuple[int], direction: TonalDirection = TonalDirection.UP
+        self, x: tuple[int, ...], direction: TonalDirection = TonalDirection.UP
     ) -> TonalVector:
         """Returns a TonalVector transposed by x, in the given direction.
 
@@ -737,7 +740,7 @@ class TonalVector(tuple, Tone, Interval):
         else:
             raise ValueError(f"Invalid TonalDirection: {direction}.")
 
-    def inversion(self, x: tuple[int] = (0, 0)) -> TonalVector:
+    def inversion(self, x: tuple[int, ...] = (0, 0)) -> TonalVector:
         """Returns the inversion of self over x.
 
         When x is unspecified, returns the inversion of self over the origin,
@@ -797,7 +800,7 @@ class TonalVector(tuple, Tone, Interval):
         except TypeError:
             raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector")
 
-    def qualify_octave(self, oct: int = 0):
+    def qualify_octave(self, oct: int = 0) -> TonalVector:
         """Returns a TonalVector with an octave designation set to `oct`.
 
         Example
@@ -818,14 +821,14 @@ class TonalVector(tuple, Tone, Interval):
         """
         return TonalVector((self.d, self.c, oct))
 
-    def conditional_qualify_octave(self, oct: int = 0):
+    def conditional_qualify_octave(self, oct: int = 0) -> TonalVector:
         """Returns a TonalVector with an octave designation set to `oct`,
         but does not change an existing octave designation if present."""
         if len(self) == 3:
             return self
         return TonalVector((self.d, self.c, oct))
 
-    def unqualify_octave(self):
+    def unqualify_octave(self) -> TonalVector:
         """Returns a TonalVector without an octave designation.
 
         Example
@@ -996,7 +999,7 @@ class TonalVector(tuple, Tone, Interval):
             return astr
 
         @property
-        def ascii(self):
+        def ascii(self) -> str:
             """A human readable representation of the pitch, with Ascii modifiers (#, b).
             If the pitch has an octave designation, middle C == C0.
 
@@ -1028,7 +1031,7 @@ class TonalVector(tuple, Tone, Interval):
             return self._ascii(octave_modifier=4)
 
         @property
-        def ly(self):
+        def ly(self) -> str:
             """The Lilypond representation of the pitch name,
             without an octave designation.
 
@@ -1123,7 +1126,7 @@ class TonalVector(tuple, Tone, Interval):
             return "".join([self.ly, ostr * abs(octave_distance)])
 
         @property
-        def verbose(self):
+        def verbose(self) -> str:
             """
             >>> TonalVector((0,0)).pitch.verbose
             'C'
@@ -1163,7 +1166,7 @@ class TonalVector(tuple, Tone, Interval):
             return "".join([self.unicode, " | ", str(tuple(self._v))])
 
     class _IntervalRepresentation(IntervalRepresentation):
-        def __init__(self, vector):
+        def __init__(self, vector: TonalVector):
             """
             >>> TonalVector((0, 0)).interval._v
             TonalVector((0, 0))
@@ -1185,7 +1188,7 @@ class TonalVector(tuple, Tone, Interval):
                 self.o = ""
 
         @property
-        def abbr(self):
+        def abbr(self) -> str:
             """Returns the abbreviated quality and interval number, followed
             by a signed octave suffix if the vector is octave-qualified.
 
@@ -1215,7 +1218,7 @@ class TonalVector(tuple, Tone, Interval):
             return "".join([self._v.__repr__(), ".interval"])
 
         @property
-        def unicode(self):
+        def unicode(self) -> str:
             """
             >>> TonalVector((0,0)).interval.unicode
             'perfect 1'

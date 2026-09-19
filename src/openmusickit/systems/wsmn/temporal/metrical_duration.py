@@ -37,7 +37,7 @@ class MeteredDuration(Duration):
 
     """
 
-    def __init__(self, n: int, d: int, dots: int = 0, tr: TemporalRatio = None):
+    def __init__(self, n: int, d: int, dots: int = 0, tr: TemporalRatio | None = None):
         """
         MeteredDuration is created with a two-argument nominal note value,
         which may optionally include dots,
@@ -148,7 +148,7 @@ class MeteredDuration(Duration):
         self._tr = tr or None
 
     @classmethod
-    def from_fraction(cls, value: Rational, tr: TemporalRatio = None) -> MeteredDuration:
+    def from_fraction(cls, value: Rational, tr: TemporalRatio | None = None) -> MeteredDuration:
         """Create a MeteredDuration from its full nominal value (e.g. 3/8 -> dotted quarter).
 
         Raises ValueError if the value is not a single notatable symbol."""
@@ -157,7 +157,7 @@ class MeteredDuration(Duration):
 
     @classmethod
     def from_length(
-        cls, length: Rational, *, tr: TemporalRatio = None
+        cls, length: Rational, *, tr: TemporalRatio | None = None
     ) -> MeteredDuration | TiedDuration:
         """Resolve *any* positive rational length into notation:
         a single ``MeteredDuration`` where one exists, a tuplet member where the
@@ -326,15 +326,15 @@ class MeteredDuration(Duration):
         return self.real_note_duration[1]
 
     @property
-    def n(self):
+    def n(self) -> int:
         return self._n
 
     @property
-    def d(self):
+    def d(self) -> int:
         return self._d
 
     @property
-    def dots(self):
+    def dots(self) -> int:
         return self._dots
 
     @property
@@ -347,7 +347,7 @@ class MeteredDuration(Duration):
         return F(*self.real_note_duration)
 
     @property
-    def rational_length(self):
+    def rational_length(self) -> F:
         if self._tr is None:
             return self.nominal_length
         return self.nominal_length * self._tr.r
