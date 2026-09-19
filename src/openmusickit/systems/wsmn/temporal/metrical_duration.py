@@ -44,7 +44,13 @@ class MetricalDuration(Duration):
 
     """
 
-    def __init__(self, n: int, d: int, dots: int = 0, tr: TemporalRatio | None = None):
+    def __init__(
+        self,
+        numerator: int,
+        denominator: int,
+        dots: int = 0,
+        ratio: TemporalRatio | None = None,
+    ):
         """
         MetricalDuration is created with a two-argument nominal note value,
         which may optionally include dots,
@@ -69,7 +75,7 @@ class MetricalDuration(Duration):
             TemporalUnit(3, quarter_note),
             TemporalUnit(2, quarter_note)
         )
-        quarter_note_in_triplet = MetricalDuration(1, 4, tr=triplet_ratio)
+        quarter_note_in_triplet = MetricalDuration(1, 4, ratio=triplet_ratio)
         ```
 
         Parameters
@@ -100,7 +106,7 @@ class MetricalDuration(Duration):
 
             These two cannot be mixed.
 
-        tr: TemporalRatio (optional)
+        ratio: TemporalRatio (optional)
             The tuplet ratio of notated durations within the tuplet
             against the nominal values of the context.
 
@@ -114,10 +120,14 @@ class MetricalDuration(Duration):
 
         """
 
-        if isinstance(d, bool) or not isinstance(d, int) or not _is_power_of_two(d):
+        if (
+            isinstance(denominator, bool)
+            or not isinstance(denominator, int)
+            or not _is_power_of_two(denominator)
+        ):
             raise ValueError("The denominator must be a positive integer power of 2.")
 
-        if isinstance(n, bool) or not isinstance(n, int) or n <= 0:
+        if isinstance(numerator, bool) or not isinstance(numerator, int) or numerator <= 0:
             raise ValueError(
                 "The numerator must be a positive integer. (Use ZeroDuration for a zero-length duration.)"
             )
@@ -127,14 +137,14 @@ class MetricalDuration(Duration):
 
         # reduce, then split the numerator into (power of two) * (odd part).
         # The odd part encodes the dots: 1 -> none, 3 -> one, 7 -> two, 15 -> three...
-        value = F(n, d)
+        value = F(numerator, denominator)
         odd = value.numerator
         while odd % 2 == 0:
             odd //= 2
 
         if not _is_power_of_two(odd + 1):
             raise ValueError(
-                f"{n}/{d} is not a single notatable duration. "
+                f"{numerator}/{denominator} is not a single notatable duration. "
                 "The numerator must be 1 less than a power of 2 (a dotted value), "
                 "or a power of two over 1 (breve, longa, maxima)."
             )
@@ -149,22 +159,24 @@ class MetricalDuration(Duration):
         # the base (undotted) value: strip the dot factor back out
         base = value * (2**implied_dots) / odd
 
-        self._n = base.numerator
-        self._d = base.denominator
+        self._numerator = base.numerator
+        self._denominator = base.denominator
         self._dots = dots + implied_dots
-        self._tr = tr or None
+        self._ratio = ratio
 
     @classmethod
-    def from_fraction(cls, value: Rational, *, tr: TemporalRatio | None = None) -> MetricalDuration:
+    def from_fraction(
+        cls, value: Rational, *, ratio: TemporalRatio | None = None
+    ) -> MetricalDuration:
         """Create a MetricalDuration from its full nominal value (e.g. 3/8 -> dotted quarter).
 
         Raises ValueError if the value is not a single notatable symbol."""
         value = F(value)
-        return cls(value.numerator, value.denominator, tr=tr)
+        return cls(value.numerator, value.denominator, ratio=ratio)
 
     @classmethod
     def from_length(
-        cls, length: Rational, *, tr: TemporalRatio | None = None
+        cls, length: Rational, *, ratio: TemporalRatio | None = None
     ) -> MetricalDuration | TiedDuration:
         """Resolve *any* positive rational length into notation:
         a single ``MetricalDuration`` where one exists, a tuplet member where the
@@ -195,7 +207,7 @@ class MetricalDuration(Duration):
 
         >>> third = MetricalDuration.from_length(F(1, 3))
         >>> third
-        MetricalDuration(1, 2, tr=TemporalRatio(TemporalUnit(3, MetricalDuration(1, 2)), TemporalUnit(2, MetricalDuration(1, 2))))
+        MetricalDuration(1, 2, ratio=TemporalRatio(TemporalUnit(3, MetricalDuration(1, 2)), TemporalUnit(2, MetricalDuration(1, 2))))
         >>> third.rational_length
         Fraction(1, 3)
         >>> third == half_in_triplet
@@ -206,7 +218,7 @@ class MetricalDuration(Duration):
 
         >>> MetricalDuration.from_length(F(1, 6)) == quarter_in_triplet
         True
-        >>> [MetricalDuration.from_length(F(1, k)).tr.r for k in (5, 7, 9)]
+        >>> [MetricalDuration.from_length(F(1, k)).ratio.multiplier for k in (5, 7, 9)]
         [Fraction(4, 5), Fraction(4, 7), Fraction(8, 9)]
 
         Lengths that need a tie come back as a ``TiedDuration``, split greedily
@@ -222,16 +234,16 @@ class MetricalDuration(Duration):
         Ties and tuplets combine: 5/24 is a tied quarter + sixteenth inside a triplet.
 
         >>> tied = MetricalDuration.from_length(F(5, 24))
-        >>> [m.nominal_length for m in tied], tied[0].tr.r, tied.rational_length
+        >>> [m.nominal_length for m in tied], tied[0].ratio.multiplier, tied.rational_length
         ([Fraction(1, 4), Fraction(1, 16)], Fraction(2, 3), Fraction(5, 24))
 
-        With ``tr``, ``length`` is the *notated* value inside an existing tuplet
+        With ``ratio``, ``length`` is the *notated* value inside an existing tuplet
         (as in the constructor), so no new ratio is synthesized unless that
         notated value itself needs one (which produces a nested tuplet):
 
-        >>> MetricalDuration.from_length(F(1, 4), tr=triplet(quarter)) == quarter_in_triplet
+        >>> MetricalDuration.from_length(F(1, 4), ratio=triplet(quarter)) == quarter_in_triplet
         True
-        >>> nested = MetricalDuration.from_length(F(1, 12), tr=triplet(quarter))
+        >>> nested = MetricalDuration.from_length(F(1, 12), ratio=triplet(quarter))
         >>> nested.rational_length
         Fraction(1, 18)
 
@@ -240,7 +252,7 @@ class MetricalDuration(Duration):
         >>> part = MetricalDuration.from_length(four_four.rational_length / 5)
         >>> part.rational_length
         Fraction(1, 5)
-        >>> part.tr.r
+        >>> part.ratio.multiplier
         Fraction(4, 5)
         >>> TemporalUnit(5, part) == four_four
         True
@@ -264,7 +276,7 @@ class MetricalDuration(Duration):
           which raises if the value is not one symbol) whenever the spelling
           is known.
         - **The tuplet already exists.** Members of a tuplet should share the
-          group's ``TemporalRatio``; pass it as ``tr`` rather than letting this
+          group's ``TemporalRatio``; pass it as ``ratio`` rather than letting this
           method invent a ratio that nothing else references.
         - **Metrical context matters.** The greedy tie split (5/8 = half +
           eighth) and the simple-meter tuplet convention (7:4 rather than 7:6)
@@ -296,7 +308,7 @@ class MetricalDuration(Duration):
 
         # rule 1
         try:
-            return cls(length.numerator, length.denominator, tr=tr)
+            return cls(length.numerator, length.denominator, ratio=ratio)
         except ValueError:
             pass
 
@@ -309,18 +321,18 @@ class MetricalDuration(Duration):
             notated = length * odd / contextual_count  # power-of-two denominator now
             unit_length = _largest_plain_value_at_most(notated)
             unit = cls(unit_length.numerator, unit_length.denominator)
-            unit_in_context = cls(unit_length.numerator, unit_length.denominator, tr=tr)
+            unit_in_context = cls(unit_length.numerator, unit_length.denominator, ratio=ratio)
             ratio = TemporalRatio(
                 TemporalUnit(odd, unit), TemporalUnit(contextual_count, unit_in_context)
             )
-            return cls.from_length(notated, tr=ratio)
+            return cls.from_length(notated, ratio=ratio)
 
         # rule 3: greedy tie
         members = []
         remaining = length
         while remaining > 0:
             piece = _largest_single_value_at_most(remaining)
-            members.append(cls(piece.numerator, piece.denominator, tr=tr))
+            members.append(cls(piece.numerator, piece.denominator, ratio=ratio))
             remaining -= piece
         return TiedDuration(members)
 
@@ -333,20 +345,21 @@ class MetricalDuration(Duration):
         return self.real_note_duration[1]
 
     @property
-    def n(self) -> int:
-        return self._n
+    def numerator(self) -> int:
+        return self._numerator
 
     @property
-    def d(self) -> int:
-        return self._d
+    def denominator(self) -> int:
+        return self._denominator
 
     @property
     def dots(self) -> int:
         return self._dots
 
     @property
-    def tr(self) -> TemporalRatio | None:
-        return self._tr
+    def ratio(self) -> TemporalRatio | None:
+        """The tuplet ratio this duration is notated inside, if any."""
+        return self._ratio
 
     @property
     def temporal_system(self) -> TemporalSystem:
@@ -359,9 +372,9 @@ class MetricalDuration(Duration):
 
     @property
     def rational_length(self) -> F:
-        if self._tr is None:
+        if self._ratio is None:
             return self.nominal_length
-        return self.nominal_length * self._tr.r
+        return self.nominal_length * self._ratio.multiplier
 
     @property
     def scalar_length(self):
@@ -376,7 +389,7 @@ class MetricalDuration(Duration):
         Returns:
             (int, int): Tuple of (numerator, denominator) of the total duration.
         """
-        f = F(self.n * (2 ** (self.dots + 1) - 1), self.d * (2**self.dots))
+        f = F(self.numerator * (2 ** (self.dots + 1) - 1), self.denominator * (2**self.dots))
         return f.numerator, f.denominator
 
     def scale(self, scalar: int | F) -> MetricalDuration | TiedDuration:
@@ -399,10 +412,10 @@ class MetricalDuration(Duration):
             raise ScalingError("A MetricalDuration can only be scaled by a positive scalar.")
 
         if _is_power_of_two(scalar):
-            base = F(self.n, self.d) * scalar
-            return MetricalDuration(base.numerator, base.denominator, self.dots, self._tr)
+            base = F(self.numerator, self.denominator) * scalar
+            return MetricalDuration(base.numerator, base.denominator, self.dots, self._ratio)
 
-        return MetricalDuration.from_length(self.nominal_length * scalar, tr=self._tr)
+        return MetricalDuration.from_length(self.nominal_length * scalar, ratio=self._ratio)
 
     def __add__(self, other):
         """Add two durations.
@@ -426,14 +439,14 @@ class MetricalDuration(Duration):
         return NotImplemented
 
     def __repr__(self):
-        if self.dots == 0 and self._tr is None:
-            return f"{type(self).__name__}({self.n}, {self.d})"
+        if self.dots == 0 and self._ratio is None:
+            return f"{type(self).__name__}({self.numerator}, {self.denominator})"
         elif self.dots == 0:
-            return f"{type(self).__name__}({self.n}, {self.d}, tr={self._tr!r})"
-        elif self._tr is None:
-            return f"{type(self).__name__}({self.n}, {self.d}, dots={self.dots})"
+            return f"{type(self).__name__}({self.numerator}, {self.denominator}, ratio={self._ratio!r})"
+        elif self._ratio is None:
+            return f"{type(self).__name__}({self.numerator}, {self.denominator}, dots={self.dots})"
         else:
-            return f"{type(self).__name__}({self.n}, {self.d}, dots={self.dots}, tr={self._tr!r})"
+            return f"{type(self).__name__}({self.numerator}, {self.denominator}, dots={self.dots}, ratio={self._ratio!r})"
 
 
 class TiedDuration(Duration):
@@ -520,10 +533,10 @@ def _merge(a: Duration, b: Duration) -> MetricalDuration | None:
     """Return a single MetricalDuration equal to a + b, or None if there isn't one."""
     if not (isinstance(a, MetricalDuration) and isinstance(b, MetricalDuration)):
         return None
-    if a.tr != b.tr:
+    if a.ratio != b.ratio:
         return None
     try:
-        return MetricalDuration.from_fraction(a.nominal_length + b.nominal_length, tr=a.tr)
+        return MetricalDuration.from_fraction(a.nominal_length + b.nominal_length, ratio=a.ratio)
     except ValueError:
         return None
 

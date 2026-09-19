@@ -35,8 +35,8 @@ class LyricSyllable(OmkObject):
 
     The syllable string should not include hyphens."""
 
-    s: str
-    word: str | None  # The full word. Identical to `s` in single-syllable words.
+    text: str
+    word: str | None  # The full word. Identical to `text` in single-syllable words.
     location: int | None = (
         0  # The zero-indexed location of the syllable in the word. `0` for single-syllable words.
     )
@@ -47,15 +47,15 @@ class LyricSyllable(OmkObject):
     def __post_init__(self):
         """Validates syllable placement/location is consistent."""
         if self.word is None:
-            self.word = self.s
+            self.word = self.text
 
-        if self.s not in self.word:
+        if self.text not in self.word:
             raise LyricConsistencyError(
-                f"Syllable should be in word. {self.s} is not in {self.word}."
+                f"Syllable should be in word. {self.text} is not in {self.word}."
             )
         if not isinstance(self.location, int) or self.location < 0:
             raise ValueError("location must be 0 or a positive integer")
-        if self.s == self.word:
+        if self.text == self.word:
             if self.location > 0:
                 raise LyricConsistencyError(
                     f"Syllables representing an entire word should have location of 0, got {self.location}."
@@ -67,7 +67,7 @@ class LyricSyllable(OmkObject):
         else:
             if self.placement is SyllablePlacement.WHOLE:
                 raise LyricConsistencyError(
-                    f"placement='whole', but {self.s} is not the whole word {self.word}"
+                    f"placement='whole', but {self.text} is not the whole word {self.word}"
                 )
 
     def __str__(self):
@@ -75,13 +75,13 @@ class LyricSyllable(OmkObject):
 
     def syl_str(self, hyphen: str = "-") -> str:
         if self.placement in [SyllablePlacement.WHOLE, None]:
-            return self.s
+            return self.text
         if self.placement is SyllablePlacement.BEGINNING:
-            return f"{self.s} {hyphen}"
+            return f"{self.text} {hyphen}"
         if self.placement is SyllablePlacement.MIDDLE:
-            return f"{hyphen} {self.s} {hyphen}"
+            return f"{hyphen} {self.text} {hyphen}"
         if self.placement is SyllablePlacement.END:
-            return f"{self.s} {hyphen}"
+            return f"{self.text} {hyphen}"
 
 
 class LyricSequence(list):

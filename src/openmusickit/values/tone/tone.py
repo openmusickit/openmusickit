@@ -35,17 +35,17 @@ class TonalSystem:
 
     """
 
-    def __init__(self, name: str, desc: str):
+    def __init__(self, name: str, description: str):
         self._name = name
-        self._desc = desc
+        self._description = description
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def desc(self) -> str:
-        return self._desc
+    def description(self) -> str:
+        return self._description
 
 
 class Tone(ABC):

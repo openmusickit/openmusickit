@@ -79,7 +79,7 @@ double_dotted_sixtyfourth = double_dotted_hemidemisemiquaver = MetricalDuration(
 def tuplet(nominal_count: int, contextual_count: int, base: MetricalDuration) -> TemporalRatio:
     """`nominal_count` notes of `base` in the time of `contextual_count` notes of `base`.
 
-    >>> tuplet(3, 2, quarter).r
+    >>> tuplet(3, 2, quarter).multiplier
     Fraction(2, 3)
     """
     return TemporalRatio(TemporalUnit(nominal_count, base), TemporalUnit(contextual_count, base))
@@ -112,17 +112,17 @@ def septuplet(base: MetricalDuration) -> TemporalRatio:
 
 # --- notes inside a standard triplet of their own value ----------------------
 
-breve_in_triplet = MetricalDuration(2, 1, tr=triplet(breve))
-whole_in_triplet = semibreve_in_triplet = MetricalDuration(1, 1, tr=triplet(whole))
-half_in_triplet = minim_in_triplet = MetricalDuration(1, 2, tr=triplet(half))
-quarter_in_triplet = crotchet_in_triplet = MetricalDuration(1, 4, tr=triplet(quarter))
-eighth_in_triplet = quaver_in_triplet = MetricalDuration(1, 8, tr=triplet(eighth))
-sixteenth_in_triplet = semiquaver_in_triplet = MetricalDuration(1, 16, tr=triplet(sixteenth))
+breve_in_triplet = MetricalDuration(2, 1, ratio=triplet(breve))
+whole_in_triplet = semibreve_in_triplet = MetricalDuration(1, 1, ratio=triplet(whole))
+half_in_triplet = minim_in_triplet = MetricalDuration(1, 2, ratio=triplet(half))
+quarter_in_triplet = crotchet_in_triplet = MetricalDuration(1, 4, ratio=triplet(quarter))
+eighth_in_triplet = quaver_in_triplet = MetricalDuration(1, 8, ratio=triplet(eighth))
+sixteenth_in_triplet = semiquaver_in_triplet = MetricalDuration(1, 16, ratio=triplet(sixteenth))
 thirtysecond_in_triplet = demisemiquaver_in_triplet = MetricalDuration(
-    1, 32, tr=triplet(thirtysecond)
+    1, 32, ratio=triplet(thirtysecond)
 )
 sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MetricalDuration(
-    1, 64, tr=triplet(sixtyfourth)
+    1, 64, ratio=triplet(sixtyfourth)
 )
 
 # --- time signatures ---------------------------------------------------------
@@ -140,8 +140,8 @@ def time_signature(n: int, d: int) -> TimeSignature:
 def additive_time_signature(groups: list[int], d: int) -> TimeSignature:
     """An additive time signature such as 2+2+3/8.
 
-    >>> additive_time_signature([2, 2, 3], 8).n
-    '2+2+3'
+    >>> additive_time_signature([2, 2, 3], 8).presentation
+    ('2+2+3', '8')
     """
     base = MetricalDuration(1, d)
     return TimeSignature(

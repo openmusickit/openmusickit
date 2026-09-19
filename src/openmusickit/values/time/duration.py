@@ -351,7 +351,7 @@ class TemporalRatio:
         return self._c
 
     @property
-    def r(self) -> Fraction:
+    def multiplier(self) -> Fraction:
         """The multiplier that converts a nominal length into a contextual length:
         contextual_length / nominal_length.
 
@@ -362,10 +362,10 @@ class TemporalRatio:
     def __eq__(self, other):
         if not isinstance(other, TemporalRatio):
             return NotImplemented
-        return self.r == other.r
+        return self.multiplier == other.multiplier
 
     def __hash__(self):
-        return hash(self.r)
+        return hash(self.multiplier)
 
     def __repr__(self):
         return f"{type(self).__name__}({self._n!r}, {self._c!r})"

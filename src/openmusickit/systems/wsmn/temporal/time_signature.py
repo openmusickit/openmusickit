@@ -49,18 +49,6 @@ class TimeSignature(CompoundTemporalUnit):
     def presentation(self) -> tuple[str, str] | None:
         return self._presentation
 
-    @property
-    def n(self):
-        if self._presentation:
-            return self._presentation[0]
-        return None
-
-    @property
-    def d(self):
-        if self._presentation:
-            return self._presentation[1]
-        return None
-
     def scale(self, scalar) -> TimeSignature:
         """Scale the time signature.
 

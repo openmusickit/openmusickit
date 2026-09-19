@@ -146,7 +146,7 @@ class ClockDuration(Duration):
             raise TemporalCompatibilityError(
                 "The contextual side of the ratio must be a ClockDuration. (Use Tempo to build one.)"
             )
-        return cls(Fraction(duration.rational_length) * ratio.r)
+        return cls(Fraction(duration.rational_length) * ratio.multiplier)
 
 
 ONE_MINUTE = ClockDuration.from_minutes(1)
@@ -159,7 +159,7 @@ class Tempo(TemporalRatio):
     --------
 
     >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, dotted_quarter
-    >>> Tempo(120, quarter).r  # microseconds per whole note
+    >>> Tempo(120, quarter).multiplier  # microseconds per whole note
     Fraction(2000000, 1)
     >>> ClockDuration.from_duration(quarter, Tempo(120, quarter)).seconds
     Fraction(1, 2)
