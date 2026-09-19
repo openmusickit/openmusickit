@@ -110,7 +110,7 @@ class ClockDuration(Duration):
         return int(round(self._microseconds))
 
     @property
-    def to_timedelta(self) -> timedelta:
+    def timedelta(self) -> timedelta:
         return timedelta(microseconds=self.microseconds)
 
     @classmethod
@@ -155,14 +155,23 @@ class ClockDuration(Duration):
         return cls(Fraction(duration.rational_length) * ratio.r)
 
 
-def Tempo(
-    n: int, beat: Duration, clock_time: ClockDuration = ClockDuration.from_minutes(1)
-) -> TemporalRatio:
-    """Returns a TemporalRatio representing a tempo of n beats per clock_time (default: one minute).
+ONE_MINUTE = ClockDuration.from_minutes(1)
 
-    ```
-    Tempo(120, MetricalDuration(1, 4))           # quarter = 120
-    Tempo(60, MetricalDuration(1, 4, dots=1))    # dotted quarter = 60
-    ```
+
+class Tempo(TemporalRatio):
+    """A TemporalRatio of `n` beats per `clock_time` (default: one minute).
+
+    Examples
+    --------
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, dotted_quarter
+    >>> Tempo(120, quarter).r  # microseconds per whole note
+    Fraction(2000000, 1)
+    >>> ClockDuration.from_duration(quarter, Tempo(120, quarter)).seconds
+    0.5
+    >>> ClockDuration.from_duration(dotted_quarter, Tempo(60, dotted_quarter)).seconds
+    1.0
     """
-    return TemporalRatio(TemporalUnit(n, beat), TemporalUnit(1, clock_time))
+
+    def __init__(self, n: int, beat: Duration, clock_time: ClockDuration = ONE_MINUTE):
+        super().__init__(TemporalUnit(n, beat), TemporalUnit(1, clock_time))

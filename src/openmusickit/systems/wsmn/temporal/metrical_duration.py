@@ -155,7 +155,7 @@ class MetricalDuration(Duration):
         self._tr = tr or None
 
     @classmethod
-    def from_fraction(cls, value: Rational, tr: TemporalRatio | None = None) -> MetricalDuration:
+    def from_fraction(cls, value: Rational, *, tr: TemporalRatio | None = None) -> MetricalDuration:
         """Create a MetricalDuration from its full nominal value (e.g. 3/8 -> dotted quarter).
 
         Raises ValueError if the value is not a single notatable symbol."""

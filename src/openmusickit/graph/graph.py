@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from openmusickit.graph.edge import EdgeType, OmkEdge
@@ -28,12 +28,12 @@ class OmkGraph:
     # Load and import
 
     @classmethod
-    def load_from_json(cls, js_graph, graph_engine: GraphAdapter | None = None) -> OmkGraph:
+    def from_json(cls, js_graph, graph_engine: GraphAdapter | None = None) -> OmkGraph:
         """Returns an OmkGraph built from a JSON serialization."""
         raise NotImplementedError
 
     @classmethod
-    def load_from_file(cls, f: Path, graph_engine: GraphAdapter | None = None) -> OmkGraph:
+    def from_file(cls, f: Path, graph_engine: GraphAdapter | None = None) -> OmkGraph:
         raise NotImplementedError
 
     def import_json_graph(self, js_graph) -> None:
@@ -74,13 +74,15 @@ class OmkGraph:
     def get_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> OmkEdge:
         return self._graph.get_edge(from_obj, to_obj, edge_type)
 
-    def get_edges(
-        self, from_obj: OmkObject, to_obj: OmkObject
-    ) -> tuple[list[OmkEdge], list[OmkEdge]]:
-        return self._graph.get_edges(from_obj, to_obj)
+    def edges_between(
+        self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType | None = None
+    ) -> Iterator[OmkEdge]:
+        """Iterates over the edges from from_obj to to_obj, optionally filtered by edge_type."""
+        return self._graph.edges_between(from_obj, to_obj, edge_type)
 
-    def get_edges_by_type(self, edge_type: EdgeType) -> list[OmkEdge]:
-        return [edge for edge in self._graph.edges(edge_type)]
+    def edges(self, edge_type: EdgeType | None = None) -> Iterator[OmkEdge]:
+        """Iterates over all edges, optionally filtered by edge_type."""
+        return self._graph.edges(edge_type)
 
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
         edge = OmkEdge(_type=edge_type)

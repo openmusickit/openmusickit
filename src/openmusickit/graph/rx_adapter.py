@@ -122,25 +122,6 @@ class RustworkxAdapter(GraphAdapter):
             f"No edge of type {edge_type!r} between {source!r} and {target!r}."
         )
 
-    def get_edges(
-        self, source: OmkObject, target: OmkObject
-    ) -> tuple[list[OmkEdge], list[OmkEdge]]:
-        """Returns all edges between source and target, in two lists:
-        return_tuple[0] --> edges from source to target
-        return_tuple[1] --> edges from target to source
-        """
-        source_rxid = self._rxid(source)
-        target_rxid = self._rxid(target)
-        try:
-            forward = self.graph.get_all_edge_data(source_rxid, target_rxid)
-        except rx.NoEdgeBetweenNodes:
-            forward = []
-        try:
-            backward = self.graph.get_all_edge_data(target_rxid, source_rxid)
-        except rx.NoEdgeBetweenNodes:
-            backward = []
-        return (forward, backward)
-
     def filter_edges(self, filter_function: Callable[[OmkEdge], bool]) -> list[OmkEdge]:
         """Returns a list of all edges for which filter_function(edge) returns True."""
         return [self._get_edge_by_rxid(rxid) for rxid in self.graph.filter_edges(filter_function)]

@@ -772,8 +772,8 @@ def test_clock_time_simple():
     # timedelta interop
     td = timedelta(minutes=2, seconds=3, microseconds=4)
     assert ClockDuration.from_timedelta(td).microseconds == 123_000_004
-    assert ClockDuration.from_timedelta(td).to_timedelta == td
-    assert ClockDuration.from_seconds(1).to_timedelta == timedelta(seconds=1)
+    assert ClockDuration.from_timedelta(td).timedelta == td
+    assert ClockDuration.from_seconds(1).timedelta == timedelta(seconds=1)
 
 
 def test_tempo_creation():

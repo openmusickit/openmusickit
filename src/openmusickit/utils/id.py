@@ -40,7 +40,7 @@ class OmkId:
         return cls(uuid4())
 
     @classmethod
-    def parse(cls, value: str) -> OmkId:
+    def from_string(cls, value: str) -> OmkId:
         return cls(UUID(value))
 
     def __str__(self) -> str:
