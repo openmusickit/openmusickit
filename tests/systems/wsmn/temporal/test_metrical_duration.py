@@ -29,18 +29,6 @@ common_time_signature = [
 # --- helpers ---------------------------------------------------------------
 
 
-def _tuplet(nominal_count: int, contextual_count: int, base: md.MetricalDuration) -> TemporalRatio:
-    """nominal_count notes of `base` in the time of contextual_count notes of `base`."""
-    return TemporalRatio(TemporalUnit(nominal_count, base), TemporalUnit(contextual_count, base))
-
-
-def _sig(n: int, d: int) -> ts.TimeSignature:
-    """A simple time signature n/d built from a single TemporalUnit."""
-    return ts.TimeSignature(
-        TemporalUnit(n, md.MetricalDuration(1, d)), presentation=(str(n), str(d))
-    )
-
-
 def _real_time(dur, tempo: TemporalRatio) -> ClockDuration:
     return ClockDuration.from_duration(dur, tempo)
 
@@ -174,11 +162,11 @@ def test_breve_fills_measures():
     """A breve fills a bar of 4/2 or 2/1; a dotted breve fills 6/2 or 3/1."""
     breve = md.MetricalDuration(2, 1)
     dotted_breve = md.MetricalDuration(2, 1, dots=1)
-    assert breve.rational_length == _sig(4, 2).rational_length
-    assert breve.rational_length == _sig(2, 1).rational_length
-    assert breve.rational_length == _sig(8, 4).rational_length
-    assert dotted_breve.rational_length == _sig(6, 2).rational_length
-    assert dotted_breve.rational_length == _sig(3, 1).rational_length
+    assert breve.rational_length == sym.time_signature(4, 2).rational_length
+    assert breve.rational_length == sym.time_signature(2, 1).rational_length
+    assert breve.rational_length == sym.time_signature(8, 4).rational_length
+    assert dotted_breve.rational_length == sym.time_signature(6, 2).rational_length
+    assert dotted_breve.rational_length == sym.time_signature(3, 1).rational_length
 
 
 # --- tuplets ----------------------------------------------------------------
@@ -206,27 +194,27 @@ def test_tuplets():
     half = md.MetricalDuration(1, 2)
 
     # quarter-note triplet: 3 in the time of 2
-    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=_tuplet(3, 2, quarter))
+    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(3, 2, quarter))
     assert quarter_in_triplet.rational_length == F(1, 6)
 
     # eighth-note triplet
-    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=_tuplet(3, 2, eighth))
+    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=sym.tuplet(3, 2, eighth))
     assert eighth_in_triplet.rational_length == F(1, 12)
 
     # sixteenth quintuplet: 5 in the time of 4
-    sixteenth_in_quintuplet = md.MetricalDuration(1, 16, ratio=_tuplet(5, 4, sixteenth))
+    sixteenth_in_quintuplet = md.MetricalDuration(1, 16, ratio=sym.tuplet(5, 4, sixteenth))
     assert sixteenth_in_quintuplet.rational_length == F(1, 20)
 
     # half-note triplet fills a bar of 4/4
-    half_in_triplet = md.MetricalDuration(1, 2, ratio=_tuplet(3, 2, half))
+    half_in_triplet = md.MetricalDuration(1, 2, ratio=sym.tuplet(3, 2, half))
     assert TemporalUnit(3, half_in_triplet).rational_length == F(1, 1)
 
     # a quarter-note quintuplet fills a bar of 4/4
-    quarter_in_quintuplet = md.MetricalDuration(1, 4, ratio=_tuplet(5, 4, quarter))
+    quarter_in_quintuplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(5, 4, quarter))
     assert TemporalUnit(5, quarter_in_quintuplet).rational_length == F(1, 1)
 
     # duplet in 6/8: 2 eighths in the time of 3 eighths
-    eighth_in_duplet = md.MetricalDuration(1, 8, ratio=_tuplet(2, 3, eighth))
+    eighth_in_duplet = md.MetricalDuration(1, 8, ratio=sym.tuplet(2, 3, eighth))
     assert eighth_in_duplet.rational_length == F(3, 16)
     assert (
         TemporalUnit(2, eighth_in_duplet).rational_length
@@ -235,12 +223,12 @@ def test_tuplets():
 
     # the ratio of a tuplet is independent of which member note is queried:
     # a quarter inside an eighth-note triplet is two triplet eighths
-    quarter_in_eighth_triplet = md.MetricalDuration(1, 4, ratio=_tuplet(3, 2, eighth))
+    quarter_in_eighth_triplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(3, 2, eighth))
     assert quarter_in_eighth_triplet.rational_length == 2 * eighth_in_triplet.rational_length
 
     # a dotted quarter takes up an entire eighth-note triplet (i.e. one quarter of real time)
     dotted_quarter_in_eighth_triplet = md.MetricalDuration(
-        1, 4, dots=1, ratio=_tuplet(3, 2, eighth)
+        1, 4, dots=1, ratio=sym.tuplet(3, 2, eighth)
     )
     assert dotted_quarter_in_eighth_triplet.rational_length == F(1, 4)
 
@@ -276,7 +264,7 @@ def test_nested_tuplets():
     quarter = md.MetricalDuration(1, 4)
     eighth = md.MetricalDuration(1, 8)
 
-    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=_tuplet(3, 2, quarter))
+    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(3, 2, quarter))
     assert quarter_in_triplet.rational_length == F(1, 6)
 
     # 3 eighths in the time of one (tupleted) quarter
@@ -289,7 +277,7 @@ def test_nested_tuplets():
 def test_tuplet_scaling():
     """Scaling a tupleted duration by a power of two scales its real length by the same amount."""
     eighth = md.MetricalDuration(1, 8)
-    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=_tuplet(3, 2, eighth))
+    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=sym.tuplet(3, 2, eighth))
 
     assert eighth_in_triplet.scale(2).rational_length == F(1, 6)
     assert eighth_in_triplet.scale(F(1, 2)).rational_length == F(1, 24)
@@ -552,7 +540,7 @@ def test_compound_temporal_unit_scaling():
 def test_common_time_signature_creation():
     """Test that common time signatures can be created"""
     for n, d in common_time_signature:
-        sig = _sig(n, d)
+        sig = sym.time_signature(n, d)
         assert sig.rational_length == F(n, d)
         assert sig.presentation == (str(n), str(d))
         assert len(sig.units) == 1
@@ -587,15 +575,15 @@ def test_compound_meter_equivalent_forms():
 
     assert (
         ts.TimeSignature(TemporalUnit(3, dotted_quarter)).rational_length
-        == _sig(9, 8).rational_length
+        == sym.time_signature(9, 8).rational_length
     )
     assert (
         ts.TimeSignature(TemporalUnit(1, dotted_quarter)).rational_length
-        == _sig(3, 8).rational_length
+        == sym.time_signature(3, 8).rational_length
     )
     assert (
         ts.TimeSignature(TemporalUnit(4, dotted_quarter)).rational_length
-        == _sig(12, 8).rational_length
+        == sym.time_signature(12, 8).rational_length
     )
 
 
@@ -614,7 +602,7 @@ def test_additive_time_signature():
     )
     assert seven_eight_223.rational_length == F(7, 8)
     assert seven_eight_322.rational_length == F(7, 8)
-    assert seven_eight_223.rational_length == _sig(7, 8).rational_length
+    assert seven_eight_223.rational_length == sym.time_signature(7, 8).rational_length
     assert len(seven_eight_223.units) == 3
     assert seven_eight_223.presentation == ("2+2+3", "8")
 
@@ -624,7 +612,7 @@ def test_additive_time_signature():
 
 def test_time_signature_repr():
     """repr() should be well-formed with or without a presentation."""
-    with_pres = repr(_sig(4, 4))
+    with_pres = repr(sym.time_signature(4, 4))
     without_pres = repr(ts.TimeSignature(TemporalUnit(4, md.MetricalDuration(1, 4))))
     for r in (with_pres, without_pres):
         assert r.startswith("TimeSignature(")
@@ -635,16 +623,16 @@ def test_time_signature_scaling():
     """Scaling a time signature scales its total length: 3/4 doubled is as long as 3/2,
     6/8 halved is as long as 6/16, etc."""
     for n, d in common_time_signature:
-        sig = _sig(n, d)
+        sig = sym.time_signature(n, d)
         doubled = sig.scale(2)
         assert doubled.rational_length == F(n, d) * 2
         assert doubled.rational_length == F(n * 2, d)
         if d > 1:
-            assert doubled.rational_length == _sig(n, d // 2).rational_length
+            assert doubled.rational_length == sym.time_signature(n, d // 2).rational_length
 
         halved = sig.scale(F(1, 2))
         assert halved.rational_length == F(n, d) / 2
-        assert halved.rational_length == _sig(n, d * 2).rational_length
+        assert halved.rational_length == sym.time_signature(n, d * 2).rational_length
 
         assert isinstance(doubled, CompoundTemporalUnit)
         assert len(doubled) == len(sig)
@@ -664,7 +652,7 @@ def test_common_time_signature_filling():
     """Test that 4/4 is same length as 4 quarters, or eight 8ths, etc.
     (For all common time signatures and standard durations)"""
     for n, d_sig in common_time_signature:
-        sig = _sig(n, d_sig)
+        sig = sym.time_signature(n, d_sig)
         for d in standard_duration_denominators:
             how_many = F(n, d_sig) / F(1, d)
             if how_many.denominator != 1:
@@ -691,13 +679,19 @@ def test_time_signature_filling_with_dotted_values():
     dotted_half = md.MetricalDuration(1, 2, dots=1)
     quarter = md.MetricalDuration(1, 4)
 
-    assert _sig(6, 8).first_out_of_bounds([dotted_quarter, dotted_quarter]) is None
-    assert TemporalUnit(2, dotted_quarter).rational_length == _sig(6, 8).rational_length
-    assert TemporalUnit(3, dotted_quarter).rational_length == _sig(9, 8).rational_length
-    assert TemporalUnit(1, dotted_quarter).rational_length == _sig(3, 8).rational_length
-    assert TemporalUnit(1, dotted_half).rational_length == _sig(3, 4).rational_length
-    assert _sig(4, 4).first_out_of_bounds([dotted_half, quarter]) is None
-    assert _sig(4, 4).first_out_of_bounds([dotted_half, dotted_quarter]) == 1
+    assert sym.time_signature(6, 8).first_out_of_bounds([dotted_quarter, dotted_quarter]) is None
+    assert (
+        TemporalUnit(2, dotted_quarter).rational_length == sym.time_signature(6, 8).rational_length
+    )
+    assert (
+        TemporalUnit(3, dotted_quarter).rational_length == sym.time_signature(9, 8).rational_length
+    )
+    assert (
+        TemporalUnit(1, dotted_quarter).rational_length == sym.time_signature(3, 8).rational_length
+    )
+    assert TemporalUnit(1, dotted_half).rational_length == sym.time_signature(3, 4).rational_length
+    assert sym.time_signature(4, 4).first_out_of_bounds([dotted_half, quarter]) is None
+    assert sym.time_signature(4, 4).first_out_of_bounds([dotted_half, dotted_quarter]) == 1
 
 
 def test_time_signature_filling_with_tuplets():
@@ -706,15 +700,23 @@ def test_time_signature_filling_with_tuplets():
     quarter = md.MetricalDuration(1, 4)
     half = md.MetricalDuration(1, 2)
     eighth = md.MetricalDuration(1, 8)
-    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=_tuplet(3, 2, quarter))
-    half_in_triplet = md.MetricalDuration(1, 2, ratio=_tuplet(3, 2, half))
-    eighth_in_duplet = md.MetricalDuration(1, 8, ratio=_tuplet(2, 3, eighth))
+    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(3, 2, quarter))
+    half_in_triplet = md.MetricalDuration(1, 2, ratio=sym.tuplet(3, 2, half))
+    eighth_in_duplet = md.MetricalDuration(1, 8, ratio=sym.tuplet(2, 3, eighth))
 
-    assert TemporalUnit(6, quarter_in_triplet).rational_length == _sig(4, 4).rational_length
-    assert TemporalUnit(3, half_in_triplet).rational_length == _sig(4, 4).rational_length
-    assert TemporalUnit(4, eighth_in_duplet).rational_length == _sig(6, 8).rational_length
-    assert _sig(4, 4).first_out_of_bounds([quarter_in_triplet] * 6) is None
-    assert _sig(4, 4).first_out_of_bounds([quarter_in_triplet] * 7) == 6
+    assert (
+        TemporalUnit(6, quarter_in_triplet).rational_length
+        == sym.time_signature(4, 4).rational_length
+    )
+    assert (
+        TemporalUnit(3, half_in_triplet).rational_length == sym.time_signature(4, 4).rational_length
+    )
+    assert (
+        TemporalUnit(4, eighth_in_duplet).rational_length
+        == sym.time_signature(6, 8).rational_length
+    )
+    assert sym.time_signature(4, 4).first_out_of_bounds([quarter_in_triplet] * 6) is None
+    assert sym.time_signature(4, 4).first_out_of_bounds([quarter_in_triplet] * 7) == 6
 
 
 def test_time_signature_remainder():
@@ -723,23 +725,23 @@ def test_time_signature_remainder():
     eighth = md.MetricalDuration(1, 8)
     dotted_quarter = md.MetricalDuration(1, 4, dots=1)
     dotted_half = md.MetricalDuration(1, 2, dots=1)
-    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=_tuplet(3, 2, quarter))
+    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(3, 2, quarter))
 
     def remainder(sig, series):
         return sig.remainder(series)
 
-    assert remainder(_sig(4, 4), [quarter, dotted_quarter, eighth]) == F(1, 4)
-    assert remainder(_sig(3, 4), [dotted_half]) == F(0, 1)
-    assert remainder(_sig(6, 8), [dotted_quarter, eighth, eighth]) == F(1, 8)
-    assert remainder(_sig(7, 8), [quarter, quarter]) == F(3, 8)
-    assert remainder(_sig(4, 4), [quarter_in_triplet] * 3) == F(1, 2)
-    assert remainder(_sig(2, 2), []) == F(1, 1)
+    assert remainder(sym.time_signature(4, 4), [quarter, dotted_quarter, eighth]) == F(1, 4)
+    assert remainder(sym.time_signature(3, 4), [dotted_half]) == F(0, 1)
+    assert remainder(sym.time_signature(6, 8), [dotted_quarter, eighth, eighth]) == F(1, 8)
+    assert remainder(sym.time_signature(7, 8), [quarter, quarter]) == F(3, 8)
+    assert remainder(sym.time_signature(4, 4), [quarter_in_triplet] * 3) == F(1, 2)
+    assert remainder(sym.time_signature(2, 2), []) == F(1, 1)
 
     # overflow is a negative remainder, and first_out_of_bounds identifies the culprit
-    assert remainder(_sig(3, 4), [quarter, quarter, dotted_quarter]) == F(-1, 8)
-    assert _sig(3, 4).first_out_of_bounds([quarter, quarter, dotted_quarter]) == 2
-    assert _sig(3, 4).first_out_of_bounds([dotted_half, eighth]) == 1
-    assert _sig(3, 4).first_out_of_bounds([]) is None
+    assert remainder(sym.time_signature(3, 4), [quarter, quarter, dotted_quarter]) == F(-1, 8)
+    assert sym.time_signature(3, 4).first_out_of_bounds([quarter, quarter, dotted_quarter]) == 2
+    assert sym.time_signature(3, 4).first_out_of_bounds([dotted_half, eighth]) == 1
+    assert sym.time_signature(3, 4).first_out_of_bounds([]) is None
 
 
 # --- clock time and tempo ---------------------------------------------------
@@ -811,7 +813,7 @@ def test_real_time_ratio_simple():
     assert _real_time(quarter, h60).seconds == pytest.approx(0.5)
 
     # a bar of 4/4 at quarter = 120 lasts 2 seconds
-    assert _real_time(_sig(4, 4), q120).seconds == pytest.approx(2.0)
+    assert _real_time(sym.time_signature(4, 4), q120).seconds == pytest.approx(2.0)
     assert _real_time(TemporalUnit(4, quarter), q120).seconds == pytest.approx(2.0)
 
     # a breve at quarter = 60 lasts 8 seconds
@@ -835,7 +837,7 @@ def test_real_time_ratio_dots():
     dq60 = Tempo(60, dotted_quarter)
     assert _real_time(dotted_quarter, dq60).seconds == pytest.approx(1.0)
     assert _real_time(eighth, dq60).seconds == pytest.approx(1 / 3)
-    assert _real_time(_sig(6, 8), dq60).seconds == pytest.approx(2.0)
+    assert _real_time(sym.time_signature(6, 8), dq60).seconds == pytest.approx(2.0)
 
 
 def test_real_time_ratio_tuplets():
@@ -843,9 +845,9 @@ def test_real_time_ratio_tuplets():
     quarter = md.MetricalDuration(1, 4)
     eighth = md.MetricalDuration(1, 8)
     sixteenth = md.MetricalDuration(1, 16)
-    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=_tuplet(3, 2, quarter))
-    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=_tuplet(3, 2, eighth))
-    sixteenth_in_quintuplet = md.MetricalDuration(1, 16, ratio=_tuplet(5, 4, sixteenth))
+    quarter_in_triplet = md.MetricalDuration(1, 4, ratio=sym.tuplet(3, 2, quarter))
+    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=sym.tuplet(3, 2, eighth))
+    sixteenth_in_quintuplet = md.MetricalDuration(1, 16, ratio=sym.tuplet(5, 4, sixteenth))
 
     q60 = Tempo(60, quarter)
     assert _real_time(quarter_in_triplet, q60).seconds == pytest.approx(2 / 3)
@@ -862,7 +864,7 @@ def test_real_time_ratio_complex():
     eighth = md.MetricalDuration(1, 8)
     sixteenth = md.MetricalDuration(1, 16)
     dotted_eighth = md.MetricalDuration(1, 8, dots=1)
-    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=_tuplet(3, 2, eighth))
+    eighth_in_triplet = md.MetricalDuration(1, 8, ratio=sym.tuplet(3, 2, eighth))
 
     # a rhythm: quarter | dotted-eighth sixteenth | eighth-triplet (x3) | two eighths
     # = 1/4 + 3/16 + 1/16 + 3 * 1/12 + 2 * 1/8 = 1 whole note = 4 quarters

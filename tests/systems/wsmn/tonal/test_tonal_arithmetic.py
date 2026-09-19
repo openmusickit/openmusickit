@@ -1,4 +1,5 @@
 from openmusickit.systems.wsmn.tonal import tonal_arithmetic as ta
+from openmusickit.systems.wsmn.tonal.tonal_arithmetic import _negative_tuple, _tonal_modulo
 
 
 def test_fixture_covers_all_35_pitch_classes(tonal_tuples):
@@ -85,8 +86,6 @@ def test_abs_int_diff(tonal_tuples):
 
 
 # --- Testing internal functions ---
-
-from openmusickit.systems.wsmn.tonal.tonal_arithmetic import _negative_tuple, _tonal_modulo
 
 
 def test_tonal_modulo(tonal_tuples):
