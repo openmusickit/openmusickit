@@ -1,6 +1,5 @@
 import pytest
 
-from chord_fixtures import pitch_symbols, chord_type_symbols
 
 from openmusickit.systems.wsmn.tonal.chords import ChordType, Chord, Quality
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector

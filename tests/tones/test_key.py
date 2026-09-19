@@ -1,6 +1,5 @@
 import pytest
 
-from test_fixtures import tonal_tuples
 
 from openmusickit.systems.wsmn.tonal.key import KeySignature, ModePattern, Key
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector

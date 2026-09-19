@@ -1,4 +1,3 @@
-from test_fixtures import tonal_tuples, tonal_oct_tuples
 from openmusickit.systems.wsmn.tonal import tonal_arithmetic as ta
 
 def test_fixture_covers_all_35_pitch_classes(tonal_tuples):
