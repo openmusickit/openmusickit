@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from numbers import Real
 
-from openmusickit.systems.wsmn.tonal.chords import Quality
+from openmusickit.systems.wsmn.tonal.chords import ChordQuality
 from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
@@ -282,7 +282,7 @@ class ModePattern:
 
     name: str
     tones: ToneCollection
-    quality: Quality | None = None
+    quality: ChordQuality | None = None
 
     def __post_init__(self):
         if self.tones[0] is not TonalVector((0, 0)):

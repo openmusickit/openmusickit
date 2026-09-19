@@ -1,6 +1,6 @@
 import pytest
 
-from openmusickit.systems.wsmn.tonal.chords import Quality
+from openmusickit.systems.wsmn.tonal.chords import ChordQuality
 from openmusickit.systems.wsmn.tonal.key import Key, KeySignature, ModePattern
 from openmusickit.systems.wsmn.tonal.symbols import (
     M2,
@@ -364,8 +364,8 @@ def test_key_of_leaves_absent_letters_natural():
 
 
 def test_key_of_keeps_mode_quality():
-    assert Key.of(C, Major).mode.quality is Quality.MAJ
-    assert Key.of(C, Locrian).mode.quality is Quality.HDM
+    assert Key.of(C, Major).mode.quality is ChordQuality.MAJ
+    assert Key.of(C, Locrian).mode.quality is ChordQuality.HDM
 
 
 # --------------------------------------------------------------------------

@@ -1,27 +1,29 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import StrEnum, auto
 
 from openmusickit.objects.errors import LyricConsistencyError
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.utils.id import OmkId
 
 
-class LexicalStress(Enum):
+class LexicalStress(StrEnum):
     UNSTRESSED = auto()
     SECONDARY = auto()
     PRIMARY = auto()
 
 
-class SyllablePlacement(Enum):
+class SyllablePlacement(StrEnum):
     BEGINNING = auto()
     MIDDLE = auto()
     END = auto()
     WHOLE = auto()
 
+    @property
     def is_beginning(self) -> bool:
         return self in (SyllablePlacement.BEGINNING, SyllablePlacement.WHOLE)
 
+    @property
     def is_ending(self) -> bool:
         return self in (SyllablePlacement.END, SyllablePlacement.WHOLE)
 

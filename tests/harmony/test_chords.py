@@ -1,6 +1,6 @@
 import pytest
 
-from openmusickit.systems.wsmn.tonal.chords import Chord, ChordType, Quality
+from openmusickit.systems.wsmn.tonal.chords import Chord, ChordQuality, ChordType
 from openmusickit.systems.wsmn.tonal.symbols import (
     C,
     D,
@@ -76,7 +76,7 @@ def test_chord_types_with_identical_tones_are_equal_but_distinct_objects():
 
 def test_chord_type_quality_is_preserved(chord_type_symbols):
     for name, chord_type in chord_type_symbols.items():
-        assert isinstance(chord_type.quality, Quality), name
+        assert isinstance(chord_type.quality, ChordQuality), name
 
 
 def test_maj_min_have_distinct_third(pitch_symbols):

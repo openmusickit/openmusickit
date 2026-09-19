@@ -1,20 +1,22 @@
 from collections.abc import Callable, Iterable
-from enum import Enum
+from enum import StrEnum, auto
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.utils.number_names import ORDINALS
 from openmusickit.values.tone.tone_collection import ToneCollection
 
 
-class Quality(Enum):
-    MAJ = "major"
-    MIN = "minor"
-    SUS = "suspended"
-    POW = "open/power"
-    AUG = "augmented"
-    DIM = "diminished"
-    DOM = "dominant"
-    HDM = "half diminished"
+class ChordQuality(StrEnum):
+    """The broad family a chord type belongs to."""
+
+    MAJ = auto()
+    MIN = auto()
+    SUS = auto()
+    POW = auto()  # open / power chord
+    AUG = auto()
+    DIM = auto()
+    DOM = auto()
+    HDM = auto()  # half diminished
 
 
 class ChordType(ToneCollection):
@@ -30,7 +32,7 @@ class ChordType(ToneCollection):
         tones: Iterable[TonalVector],
         name: str,
         bass: TonalVector | None = None,
-        quality: Quality | None = None,
+        quality: ChordQuality | None = None,
         suffix: str | None = None,
     ):
 

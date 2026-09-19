@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum, auto
 
 D_LEN = 7  # "Diatonic Length" - The number of tones in a diatonic scale.
 C_LEN = 12  # "Chromatic Length" - The number of tones in a chromatic scale.
@@ -21,7 +21,7 @@ P = QualityType.P
 Mm = QualityType.Mm
 
 
-class SolfegeStyle(Enum):
+class SolfegeStyle(StrEnum):
     """Which solfege naming convention a solfege string belongs to.
 
     OMK_MOVEABLE uses moveable-do syllables with chromatic variants
@@ -32,8 +32,8 @@ class SolfegeStyle(Enum):
     separate modifiers, e.g. 'Do#', 'Sib').
     """
 
-    OMK_MOVEABLE = "omk_moveable"
-    EURO_FIXED = "euro_fixed"
+    OMK_MOVEABLE = auto()
+    EURO_FIXED = auto()
 
 
 # CHROMATIC SOLFEGE SYLLABLES

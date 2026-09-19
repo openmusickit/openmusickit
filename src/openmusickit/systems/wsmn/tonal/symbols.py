@@ -16,7 +16,7 @@ TonalVector((4, 7))
 TonalVector((6, 10))
 """
 
-from openmusickit.systems.wsmn.tonal.chords import ChordType, Quality
+from openmusickit.systems.wsmn.tonal.chords import ChordQuality, ChordType
 from openmusickit.systems.wsmn.tonal.key import Key, KeySignature, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
@@ -70,14 +70,14 @@ Bxx = aa7 = TonalVector((6, 1))
 maj = ChordType(
     tones=[C, E, G],
     name="major",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="",
 )
 
 min_ = ChordType(
     tones=[C, Eb, G],
     name="minor",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min",
 )
 m = min_  # `min` alone would shadow the builtin; `min7`, `min6` etc. are fine
@@ -85,35 +85,35 @@ m = min_  # `min` alone would shadow the builtin; `min7`, `min6` etc. are fine
 dim = ChordType(
     tones=[C, Eb, Gb],
     name="diminished",
-    quality=Quality.DIM,
+    quality=ChordQuality.DIM,
     suffix="dim",
 )
 
 aug = ChordType(
     tones=[C, E, Gx],
     name="augmented",
-    quality=Quality.AUG,
+    quality=ChordQuality.AUG,
     suffix="aug",
 )
 
 sus2 = ChordType(
     tones=[C, D, G],
     name="suspended 2",
-    quality=Quality.SUS,
+    quality=ChordQuality.SUS,
     suffix="sus2",
 )
 
 sus4 = ChordType(
     tones=[C, F, G],
     name="suspended 4",
-    quality=Quality.SUS,
+    quality=ChordQuality.SUS,
     suffix="sus4",
 )
 
 pow5 = ChordType(
     tones=[C, G],
     name="power chord",
-    quality=Quality.POW,
+    quality=ChordQuality.POW,
     suffix="5",
 )
 
@@ -123,28 +123,28 @@ pow5 = ChordType(
 maj6 = ChordType(
     tones=[C, E, G, A],
     name="major 6",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="6",
 )
 
 min6 = ChordType(
     tones=[C, Eb, G, A],
     name="minor 6",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min6",
 )
 
 maj6_9 = ChordType(
     tones=[C, E, G, A, D],
     name="major 6/9",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="6add9",
 )
 
 min6_9 = ChordType(
     tones=[C, Eb, G, A, D],
     name="minor 6/9",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min6add9",
 )
 
@@ -154,49 +154,49 @@ min6_9 = ChordType(
 maj7 = ChordType(
     tones=[C, E, G, B],
     name="major 7",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj7",
 )
 
 min7 = ChordType(
     tones=[C, Eb, G, Bb],
     name="minor 7",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min7",
 )
 
 dom7 = ChordType(
     tones=[C, E, G, Bb],
     name="dominant 7",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7",
 )
 
 hdim7 = ChordType(
     tones=[C, Eb, Gb, Bb],
     name="half-diminished 7",
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
     suffix="ø7",
 )
 
 dim7 = ChordType(
     tones=[C, Eb, Gb, Bbb],
     name="diminished 7",
-    quality=Quality.DIM,
+    quality=ChordQuality.DIM,
     suffix="dim7",
 )
 
 min_maj7 = ChordType(
     tones=[C, Eb, G, B],
     name="minor-major 7",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min(maj7)",
 )
 
 aug_maj7 = ChordType(
     tones=[C, E, Gx, B],
     name="augmented major 7",
-    quality=Quality.AUG,
+    quality=ChordQuality.AUG,
     suffix="aug(maj7)",
 )
 
@@ -206,49 +206,49 @@ aug_maj7 = ChordType(
 add2 = ChordType(
     tones=[C, D, E, G],
     name="add 2",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="add2",
 )
 
 add9 = ChordType(
     tones=[C, E, G, D],
     name="add 9",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="add9",
 )
 
 min_add9 = ChordType(
     tones=[C, Eb, G, D],
     name="minor add 9",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min(add9)",
 )
 
 add4 = ChordType(
     tones=[C, E, F, G],
     name="add 4",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="add4",
 )
 
 add11 = ChordType(
     tones=[C, E, G, F],
     name="add 11",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="add11",
 )
 
 min_add11 = ChordType(
     tones=[C, Eb, G, F],
     name="minor add 11",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min(add11)",
 )
 
 add_sharp11 = ChordType(
     tones=[C, E, G, Fx],
     name="add sharp 11",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="add♯11",
 )
 
@@ -258,28 +258,28 @@ add_sharp11 = ChordType(
 maj9 = ChordType(
     tones=[C, E, G, B, D],
     name="major 9",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj9",
 )
 
 min9 = ChordType(
     tones=[C, Eb, G, Bb, D],
     name="minor 9",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min9",
 )
 
 dom9 = ChordType(
     tones=[C, E, G, Bb, D],
     name="dominant 9",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="9",
 )
 
 min_maj9 = ChordType(
     tones=[C, Eb, G, B, D],
     name="minor-major 9",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min(maj9)",
 )
 
@@ -289,35 +289,35 @@ min_maj9 = ChordType(
 maj11 = ChordType(
     tones=[C, E, G, B, D, F],
     name="major 11",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj11",
 )
 
 min11 = ChordType(
     tones=[C, Eb, G, Bb, D, F],
     name="minor 11",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min11",
 )
 
 dom11 = ChordType(
     tones=[C, E, G, Bb, D, F],
     name="dominant 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="11",
 )
 
 maj9_sharp11 = ChordType(
     tones=[C, E, G, B, D, Fx],
     name="major 9 sharp 11",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj9♯11",
 )
 
 dom9_sharp11 = ChordType(
     tones=[C, E, G, Bb, D, Fx],
     name="dominant 9 sharp 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="9♯11",
 )
 
@@ -327,35 +327,35 @@ dom9_sharp11 = ChordType(
 maj13 = ChordType(
     tones=[C, E, G, B, D, F, A],
     name="major 13",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj13",
 )
 
 min13 = ChordType(
     tones=[C, Eb, G, Bb, D, F, A],
     name="minor 13",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min13",
 )
 
 dom13 = ChordType(
     tones=[C, E, G, Bb, D, F, A],
     name="dominant 13",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="13",
 )
 
 maj13_sharp11 = ChordType(
     tones=[C, E, G, B, D, Fx, A],
     name="major 13 sharp 11",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj13♯11",
 )
 
 dom13_sharp11 = ChordType(
     tones=[C, E, G, Bb, D, Fx, A],
     name="dominant 13 sharp 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="13♯11",
 )
 
@@ -365,28 +365,28 @@ dom13_sharp11 = ChordType(
 dom7_sus2 = ChordType(
     tones=[C, D, G, Bb],
     name="dominant 7 suspended 2",
-    quality=Quality.SUS,
+    quality=ChordQuality.SUS,
     suffix="7sus2",
 )
 
 dom7_sus4 = ChordType(
     tones=[C, F, G, Bb],
     name="dominant 7 suspended 4",
-    quality=Quality.SUS,
+    quality=ChordQuality.SUS,
     suffix="7sus4",
 )
 
 dom9_sus4 = ChordType(
     tones=[C, F, G, Bb, D],
     name="dominant 9 suspended 4",
-    quality=Quality.SUS,
+    quality=ChordQuality.SUS,
     suffix="9sus4",
 )
 
 dom13_sus4 = ChordType(
     tones=[C, F, G, Bb, D, A],
     name="dominant 13 suspended 4",
-    quality=Quality.SUS,
+    quality=ChordQuality.SUS,
     suffix="13sus4",
 )
 
@@ -396,28 +396,28 @@ dom13_sus4 = ChordType(
 dom7_flat5 = ChordType(
     tones=[C, E, Gb, Bb],
     name="dominant 7 flat 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭5",
 )
 
 dom7_sharp5 = ChordType(
     tones=[C, E, Gx, Bb],
     name="dominant 7 sharp 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯5",
 )
 
 dom9_flat5 = ChordType(
     tones=[C, E, Gb, Bb, D],
     name="dominant 9 flat 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="9♭5",
 )
 
 dom9_sharp5 = ChordType(
     tones=[C, E, Gx, Bb, D],
     name="dominant 9 sharp 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="9♯5",
 )
 
@@ -427,49 +427,49 @@ dom9_sharp5 = ChordType(
 dom7_flat9 = ChordType(
     tones=[C, E, G, Bb, Db],
     name="dominant 7 flat 9",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭9",
 )
 
 dom7_sharp9 = ChordType(
     tones=[C, E, G, Bb, Dx],
     name="dominant 7 sharp 9",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯9",
 )
 
 dom7_flat9_flat5 = ChordType(
     tones=[C, E, Gb, Bb, Db],
     name="dominant 7 flat 9 flat 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭5♭9",
 )
 
 dom7_flat9_sharp5 = ChordType(
     tones=[C, E, Gx, Bb, Db],
     name="dominant 7 flat 9 sharp 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯5♭9",
 )
 
 dom7_sharp9_flat5 = ChordType(
     tones=[C, E, Gb, Bb, Dx],
     name="dominant 7 sharp 9 flat 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭5♯9",
 )
 
 dom7_sharp9_sharp5 = ChordType(
     tones=[C, E, Gx, Bb, Dx],
     name="dominant 7 sharp 9 sharp 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯5♯9",
 )
 
 dom7_flat9_sharp9 = ChordType(
     tones=[C, E, G, Bb, Db, Dx],
     name="dominant 7 flat 9 sharp 9",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭9♯9",
 )
 
@@ -479,21 +479,21 @@ dom7_flat9_sharp9 = ChordType(
 dom7_sharp11 = ChordType(
     tones=[C, E, G, Bb, Fx],
     name="dominant 7 sharp 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯11",
 )
 
 dom7_flat9_sharp11 = ChordType(
     tones=[C, E, G, Bb, Db, Fx],
     name="dominant 7 flat 9 sharp 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭9♯11",
 )
 
 dom7_sharp9_sharp11 = ChordType(
     tones=[C, E, G, Bb, Dx, Fx],
     name="dominant 7 sharp 9 sharp 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯9♯11",
 )
 
@@ -503,28 +503,28 @@ dom7_sharp9_sharp11 = ChordType(
 dom7_flat13 = ChordType(
     tones=[C, E, G, Bb, Ab],
     name="dominant 7 flat 13",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭13",
 )
 
 dom7_flat9_flat13 = ChordType(
     tones=[C, E, G, Bb, Db, Ab],
     name="dominant 7 flat 9 flat 13",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭9♭13",
 )
 
 dom7_sharp9_flat13 = ChordType(
     tones=[C, E, G, Bb, Dx, Ab],
     name="dominant 7 sharp 9 flat 13",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯9♭13",
 )
 
 dom7_sharp11_flat13 = ChordType(
     tones=[C, E, G, Bb, Fx, Ab],
     name="dominant 7 sharp 11 flat 13",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯11♭13",
 )
 
@@ -534,35 +534,35 @@ dom7_sharp11_flat13 = ChordType(
 dom7_flat9_sharp9_flat5 = ChordType(
     tones=[C, E, Gb, Bb, Db, Dx],
     name="dominant 7 flat 9 sharp 9 flat 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭5♭9♯9",
 )
 
 dom7_flat9_sharp9_sharp5 = ChordType(
     tones=[C, E, Gx, Bb, Db, Dx],
     name="dominant 7 flat 9 sharp 9 sharp 5",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♯5♭9♯9",
 )
 
 dom7_flat9_sharp9_sharp11 = ChordType(
     tones=[C, E, G, Bb, Db, Dx, Fx],
     name="dominant 7 flat 9 sharp 9 sharp 11",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭9♯9♯11",
 )
 
 dom7_flat9_sharp9_flat13 = ChordType(
     tones=[C, E, G, Bb, Db, Dx, Ab],
     name="dominant 7 flat 9 sharp 9 flat 13",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7♭9♯9♭13",
 )
 
 dom7_alt = ChordType(
     tones=[C, E, Bb, Db, Dx, Gb, Ab],
     name="altered dominant 7",
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
     suffix="7alt",
 )
 
@@ -572,21 +572,21 @@ dom7_alt = ChordType(
 maj7_flat5 = ChordType(
     tones=[C, E, Gb, B],
     name="major 7 flat 5",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj7♭5",
 )
 
 maj7_sharp5 = ChordType(
     tones=[C, E, Gx, B],
     name="major 7 sharp 5",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj7♯5",
 )
 
 maj7_sharp11 = ChordType(
     tones=[C, E, G, B, Fx],
     name="major 7 sharp 11",
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
     suffix="maj7♯11",
 )
 
@@ -596,28 +596,28 @@ maj7_sharp11 = ChordType(
 min7_flat5 = ChordType(
     tones=[C, Eb, Gb, Bb],
     name="minor 7 flat 5",
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
     suffix="min7♭5",
 )
 
 min7_sharp5 = ChordType(
     tones=[C, Eb, Gx, Bb],
     name="minor 7 sharp 5",
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
     suffix="min7♯5",
 )
 
 min9_flat5 = ChordType(
     tones=[C, Eb, Gb, Bb, D],
     name="minor 9 flat 5",
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
     suffix="min9♭5",
 )
 
 min11_flat5 = ChordType(
     tones=[C, Eb, Gb, Bb, D, F],
     name="minor 11 flat 5",
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
     suffix="min11♭5",
 )
 
@@ -627,28 +627,28 @@ min11_flat5 = ChordType(
 dim_maj7 = ChordType(
     tones=[C, Eb, Gb, B],
     name="diminished major 7",
-    quality=Quality.DIM,
+    quality=ChordQuality.DIM,
     suffix="dim(maj7)",
 )
 
 dim9 = ChordType(
     tones=[C, Eb, Gb, Bbb, D],
     name="diminished 9",
-    quality=Quality.DIM,
+    quality=ChordQuality.DIM,
     suffix="dim9",
 )
 
 hdim9 = ChordType(
     tones=[C, Eb, Gb, Bb, D],
     name="half-diminished 9",
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
     suffix="ø9",
 )
 
 hdim11 = ChordType(
     tones=[C, Eb, Gb, Bb, D, F],
     name="half-diminished 11",
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
     suffix="ø11",
 )
 
@@ -661,7 +661,7 @@ Major = ModePattern(
         name="Major Scale",
         tones=[P1, M2, M3, P4, P5, M6, M7],
     ),
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
 )
 
 Minor = ModePattern(
@@ -670,7 +670,7 @@ Minor = ModePattern(
         name="Natural Minor Scale",
         tones=[P1, M2, m3, P4, P5, m6, m7],
     ),
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
 )
 
 # The seven diatonic ("church" / jazz) modes
@@ -681,7 +681,7 @@ Ionian = ModePattern(
         name="Ionian Mode",
         tones=[P1, M2, M3, P4, P5, M6, M7],
     ),
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
 )
 
 Dorian = ModePattern(
@@ -690,7 +690,7 @@ Dorian = ModePattern(
         name="Dorian Mode",
         tones=[P1, M2, m3, P4, P5, M6, m7],
     ),
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
 )
 
 Phrygian = ModePattern(
@@ -699,7 +699,7 @@ Phrygian = ModePattern(
         name="Phrygian Mode",
         tones=[P1, m2, m3, P4, P5, m6, m7],
     ),
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
 )
 
 Lydian = ModePattern(
@@ -708,7 +708,7 @@ Lydian = ModePattern(
         name="Lydian Mode",
         tones=[P1, M2, M3, a4, P5, M6, M7],
     ),
-    quality=Quality.MAJ,
+    quality=ChordQuality.MAJ,
 )
 
 Mixolydian = ModePattern(
@@ -717,7 +717,7 @@ Mixolydian = ModePattern(
         name="Mixolydian Mode",
         tones=[P1, M2, M3, P4, P5, M6, m7],
     ),
-    quality=Quality.DOM,
+    quality=ChordQuality.DOM,
 )
 
 Aeolian = ModePattern(
@@ -726,7 +726,7 @@ Aeolian = ModePattern(
         name="Aeolian Mode",
         tones=[P1, M2, m3, P4, P5, m6, m7],
     ),
-    quality=Quality.MIN,
+    quality=ChordQuality.MIN,
 )
 
 Locrian = ModePattern(
@@ -735,7 +735,7 @@ Locrian = ModePattern(
         name="Locrian Mode",
         tones=[P1, m2, m3, P4, d5, m6, m7],
     ),
-    quality=Quality.HDM,
+    quality=ChordQuality.HDM,
 )
 
 # An open key signature with no tonic or mode, for atonal music and unpitched parts.
