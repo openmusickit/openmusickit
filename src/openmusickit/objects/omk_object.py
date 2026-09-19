@@ -10,14 +10,16 @@ from openmusickit.values.tone.tone import Tone
 
 @dataclass(kw_only=True)
 class OmkObject:
-    _id: OmkId = field(
-        default_factory=OmkId.new,
-        repr=False,
-    )
-    _meta: dict[str, Any] = field(
-        default_factory=dict,
-        repr=False,
-    )
+    """Base class for everything that can be a node in the graph.
+
+    Equality means "same musical content": the id (which stands for the
+    object's place in a graph) and the free-form metadata are excluded, so
+    two separately built B-flat quarter notes compare equal while remaining
+    distinct objects (`is` is unaffected). Objects are mutable and unhashable.
+    """
+
+    _id: OmkId = field(default_factory=OmkId.new, init=False, repr=False, compare=False)
+    _meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
 
     @property
     def id(self) -> OmkId:

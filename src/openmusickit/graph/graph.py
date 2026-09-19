@@ -85,7 +85,7 @@ class OmkGraph:
         return self._graph.edges(edge_type)
 
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
-        edge = OmkEdge(_type=edge_type)
+        edge = OmkEdge(type=edge_type)
         self._graph.add_edge(from_obj, to_obj, edge)
 
     def remove_edge(self, edge: OmkEdge) -> OmkEdge:
@@ -172,7 +172,7 @@ class OmkGraph:
         >>> from openmusickit.systems.wsmn.tonal.key import Key
         >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Gx, B, maj, M3, Major
-        >>> key, note, chord = (KeySignatureEvent(_key=Key.of(C, Major)),
+        >>> key, note, chord = (KeySignatureEvent(key=Key.of(C, Major)),
         ...                     NoteEvent(tones={C, E, G}), ChordEvent(chord=C(maj)))
         >>> graph = OmkGraph(GraphMeta())
         >>> graph.add_line([key, note, chord])

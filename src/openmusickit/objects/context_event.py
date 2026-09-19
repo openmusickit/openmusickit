@@ -32,33 +32,36 @@ class KeySignatureEvent(ContextEvent, TonalObject):
     """A key signature in a score, defined using a Key (which specifies tonality and alterations)
     xor a KeySignature (which only specifies alterations).
 
-    'None' values in both Key and KeySignature imply an undefined or undecided key signature.
+    `None` for both implies an undefined or undecided key signature.
     For an empty key signature with no alterations and no tonal implications,
-    use `_key = openmusickit.systems.wsmn.tonal.symbols.NoKey`
+    use `key=openmusickit.systems.wsmn.tonal.symbols.NoKey`.
+
+    `key` and `key_signature` are what was given; `signature` is the effective
+    KeySignature either way. Use `set_key`/`set_key_signature` to replace one
+    with the other.
     """
 
-    _key: Key | None = None
-    _key_signature: KeySignature | None = None
+    key: Key | None = None
+    key_signature: KeySignature | None = None
 
     def __post_init__(self):
-        if self._key is not None and self._key_signature is not None:
+        if self.key is not None and self.key_signature is not None:
             raise ValueError("A Key includes a KeySignature, do not specify both.")
 
     @property
-    def key(self) -> Key | None:
-        return self._key
-
-    @property
-    def key_signature(self) -> KeySignature | None:
-        return self._key_signature or (self.key.signature if self.key is not None else None) or None
+    def signature(self) -> KeySignature | None:
+        """The effective key signature: the Key's, or the bare KeySignature, or None."""
+        if self.key is not None:
+            return self.key.signature
+        return self.key_signature
 
     def set_key(self, key: Key) -> None:
-        self._key_signature = None
-        self._key = key
+        self.key_signature = None
+        self.key = key
 
     def set_key_signature(self, key_signature: KeySignature) -> None:
-        self._key = None
-        self._key_signature = key_signature
+        self.key = None
+        self.key_signature = key_signature
 
     def transform_tones(self, operation: Callable[..., TonalVector], *args, **kwargs) -> None:
         """Transforms this key signature event in place: the Key is replaced by
@@ -76,9 +79,9 @@ class KeySignatureEvent(ContextEvent, TonalObject):
 
         A Key moves to a new tonic, keeping its mode:
 
-        >>> event = KeySignatureEvent(_key=Key.of(C, Major))
+        >>> event = KeySignatureEvent(key=Key.of(C, Major))
         >>> event.transform_tones(TonalVector.transpose, M2)
-        >>> event.key.name, event.key_signature
+        >>> event.key.name, event.signature
         ('D Major', KeySignature(c=1, f=1))
 
         >>> event.transform_tones(TonalVector.transpose, P5, TonalDirection.DOWN)
@@ -87,9 +90,9 @@ class KeySignatureEvent(ContextEvent, TonalObject):
 
         A bare KeySignature is transformed letter by letter:
 
-        >>> event = KeySignatureEvent(_key_signature=KeySignature())
+        >>> event = KeySignatureEvent(key_signature=KeySignature())
         >>> event.transform_tones(TonalVector.transpose, m3)
-        >>> event.key_signature
+        >>> event.signature
         KeySignature(e=-1, a=-1, b=-1)
         >>> event.key is None
         True
@@ -97,7 +100,7 @@ class KeySignatureEvent(ContextEvent, TonalObject):
         Empty and NoKey events warn and are unchanged:
 
         >>> import warnings
-        >>> event = KeySignatureEvent(_key=NoKey)
+        >>> event = KeySignatureEvent(key=NoKey)
         >>> with warnings.catch_warnings(record=True) as caught:
         ...     warnings.simplefilter("always")
         ...     event.transform_tones(TonalVector.transpose, M2)
@@ -106,7 +109,7 @@ class KeySignatureEvent(ContextEvent, TonalObject):
         """
         key = self.key
 
-        if key is None and self._key_signature is None or key is not None and key.tonic is None:
+        if (key is None and self.key_signature is None) or (key is not None and key.tonic is None):
             warnings.warn(
                 "You are attempting to transform an empty key signature. Nothing will happen.",
                 OmkWarning,
@@ -115,6 +118,6 @@ class KeySignatureEvent(ContextEvent, TonalObject):
             return
 
         if key is None:
-            self.set_key_signature(self._key_signature.transform(operation, *args, **kwargs))
+            self.set_key_signature(self.key_signature.transform(operation, *args, **kwargs))
         else:
             self.set_key(key.transform(operation, *args, **kwargs))

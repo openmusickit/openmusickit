@@ -18,28 +18,28 @@ from openmusickit.values.time.errors import TemporalCompatibilityError
 CLOCK_TIME = TemporalSystem("Clock time", "Real time, measured in microseconds.")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ClockDuration(Duration):
     """A duration measured in microseconds of real time.
 
     The stored value may be a Fraction so that conversions from metrical time
     (e.g. a triplet eighth at quarter = 100) stay exact; the accessors
-    (`microseconds`, `seconds`, `str()`) present ordinary numbers.
+    (`whole_microseconds`, `seconds`, `str()`) present ordinary numbers.
     """
 
-    _microseconds: int | Fraction
+    microseconds: int | Fraction
 
     @property
     def rational_length(self) -> Fraction:
-        return Fraction(self._microseconds)
+        return Fraction(self.microseconds)
 
     def scale(self, scalar: int | Fraction) -> ClockDuration:
-        return ClockDuration(self._microseconds * scalar)
+        return ClockDuration(self.microseconds * scalar)
 
     def __add__(self, other):
         if not isinstance(other, ClockDuration):
             return NotImplemented
-        return ClockDuration(self._microseconds + other._microseconds)
+        return ClockDuration(self.microseconds + other.microseconds)
 
     def __radd__(self, other):
         # lets `sum(clock_durations)` work with the default start value of 0
@@ -50,13 +50,13 @@ class ClockDuration(Duration):
     def __sub__(self, other):
         if not isinstance(other, ClockDuration):
             return NotImplemented
-        return ClockDuration(self._microseconds - other._microseconds)
+        return ClockDuration(self.microseconds - other.microseconds)
 
     def __mul__(self, scalar):
-        return ClockDuration(self._microseconds * scalar)
+        return ClockDuration(self.microseconds * scalar)
 
     def __truediv__(self, scalar):
-        return ClockDuration(self._microseconds / scalar)
+        return ClockDuration(self.microseconds / scalar)
 
     # Clock time is deliberately not comparable to metrical time: `rational_length`
     # is a WSMN notion (the named fractional value), whereas here it is a count of
@@ -64,26 +64,20 @@ class ClockDuration(Duration):
     # `ClockDuration.from_duration(duration, ratio)` using a TemporalRatio/Tempo.
     def __eq__(self, other):
         if isinstance(other, ClockDuration):
-            return self._microseconds == other._microseconds
+            return self.microseconds == other.microseconds
         return NotImplemented
 
     def __lt__(self, other):
         if isinstance(other, ClockDuration):
-            return self._microseconds < other._microseconds
+            return self.microseconds < other.microseconds
         return NotImplemented
-
-    def __hash__(self):
-        return hash(Fraction(self._microseconds))
 
     @property
     def temporal_system(self) -> TemporalSystem:
         return CLOCK_TIME
 
-    def __repr__(self):
-        return f"{type(self).__name__}({self._microseconds})"
-
     def __str__(self):
-        total_microseconds = int(round(self._microseconds))
+        total_microseconds = int(round(self.microseconds))
         hours, remainder = divmod(total_microseconds, 3_600_000_000)
         minutes, remainder = divmod(remainder, 60_000_000)
         seconds, microseconds = divmod(remainder, 1_000_000)
@@ -91,27 +85,27 @@ class ClockDuration(Duration):
 
     @property
     def hours(self) -> float:
-        return self._microseconds / 3_600_000_000
+        return self.microseconds / 3_600_000_000
 
     @property
     def minutes(self) -> float:
-        return self._microseconds / 60_000_000
+        return self.microseconds / 60_000_000
 
     @property
     def seconds(self) -> float:
-        return self._microseconds / 1_000_000
+        return self.microseconds / 1_000_000
 
     @property
     def milliseconds(self) -> float:
-        return self._microseconds / 1_000
+        return self.microseconds / 1_000
 
     @property
-    def microseconds(self) -> int:
-        return int(round(self._microseconds))
+    def whole_microseconds(self) -> int:
+        return int(round(self.microseconds))
 
     @property
     def timedelta(self) -> timedelta:
-        return timedelta(microseconds=self.microseconds)
+        return timedelta(microseconds=self.whole_microseconds)
 
     @classmethod
     def from_minutes(cls, n: int | Fraction) -> ClockDuration:

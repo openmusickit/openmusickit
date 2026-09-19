@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from openmusickit.values.tone.tone import Tone
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SilentTone(Tone):
     """
     A musical silence, for example a rest.

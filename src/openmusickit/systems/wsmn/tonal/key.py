@@ -301,8 +301,19 @@ class Key:
     tonic: TonalVector | None
     tones: ToneCollection
     signature: KeySignature
-    _mode: ModePattern | None = None
-    _name: str | None = None
+    mode: ModePattern | None = None
+    name: str | None = None
+
+    def __post_init__(self):
+        if self.name is None:
+            object.__setattr__(self, "name", self._default_name())
+
+    def _default_name(self) -> str:
+        if self.tonic is None:
+            return "No Key"
+        if self.mode is not None:
+            return f"{self.tonic.pitch.unicode} {self.mode.name}"
+        return f"{self.tonic.pitch.unicode} (unspecified mode)"
 
     @classmethod
     def of(
@@ -323,7 +334,7 @@ class Key:
             >>> from openmusickit.systems.wsmn.tonal.symbols import C, Eb, Fx, Major, Minor
 
             >>> c = Key.of(C, Major)
-            >>> c.name, c.mode, c.signature
+            >>> c.name, c.mode.name, c.signature
             ('C Major', 'Major', KeySignature())
             >>> [t.pitch.unicode for t in c.tones]
             ['C', 'D', 'E', 'F', 'G', 'A', 'B']
@@ -361,28 +372,8 @@ class Key:
             tonic=tonic,
             tones=tones,
             signature=signature,
-            _mode=mode,
-            _name=f"{tonic.pitch.unicode} {mode.name}",
+            mode=mode,
         )
-
-    @property
-    def mode(self) -> str | None:
-        """Returns the name of the mode pattern of this key, if it has one."""
-        return self._mode.name if self._mode else None
-
-    @property
-    def name(self) -> str | None:
-        """Returns the name of this key, if it has one."""
-        if self._name:
-            return self._name
-
-        if self.tonic is None:
-            return "No Key"
-
-        if self._mode:
-            return f"{self.tonic.pitch.unicode} {self._mode.name}"
-
-        return f"{self.tonic.pitch.unicode} (unspecified mode)"
 
     def transform(self, operation: Callable[..., TonalVector], *args, **kwargs) -> Key:
         """Returns a new Key made by applying `operation` to this key's tonic
@@ -417,8 +408,8 @@ class Key:
             )
         signature = self.signature.transform(operation, *args, **kwargs)
 
-        if self._mode is not None:
-            return Key.of(new_tonic, self._mode, signature)
+        if self.mode is not None:
+            return Key.of(new_tonic, self.mode, signature)
 
         return Key(
             tonic=new_tonic,

@@ -302,7 +302,7 @@ def test_key_of_names(chromatic_tonics):
         for mode in DIATONIC_MODES:
             key = Key.of(tonic, mode)
             assert key.name == f"{tonic.pitch.unicode} {mode.name}"
-            assert key.mode == mode.name
+            assert key.mode is mode
 
 
 def test_relative_major_and_minor_share_a_signature(chromatic_tonics):
@@ -366,8 +366,8 @@ def test_key_of_leaves_absent_letters_natural():
 
 
 def test_key_of_keeps_mode_quality():
-    assert Key.of(C, Major)._mode.quality is Quality.MAJ
-    assert Key.of(C, Locrian)._mode.quality is Quality.HDM
+    assert Key.of(C, Major).mode.quality is Quality.MAJ
+    assert Key.of(C, Locrian).mode.quality is Quality.HDM
 
 
 # --------------------------------------------------------------------------
@@ -376,7 +376,7 @@ def test_key_of_keeps_mode_quality():
 
 
 def test_key_name_falls_back_to_tonic_and_mode():
-    key = Key(tonic=D, tones=ToneCollection([D]), signature=KeySignature(), _mode=Dorian)
+    key = Key(tonic=D, tones=ToneCollection([D]), signature=KeySignature(), mode=Dorian)
     assert key.name == "D Dorian"
 
 
@@ -388,7 +388,7 @@ def test_key_name_falls_back_when_no_mode():
 
 def test_explicit_name_wins():
     key = Key(
-        tonic=C, tones=ToneCollection([C]), signature=KeySignature(), _mode=Major, _name="Do major"
+        tonic=C, tones=ToneCollection([C]), signature=KeySignature(), mode=Major, name="Do major"
     )
     assert key.name == "Do major"
 

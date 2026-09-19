@@ -32,10 +32,10 @@ class RustworkxAdapter(GraphAdapter):
     def _register_node(self, node: OmkObject, rxid: int) -> None:
         """Registers a node and its Rustworkx integer id to self._node_index."""
 
-        self._node_index[str(node._id)] = rxid
+        self._node_index[str(node.id)] = rxid
 
     def _unregister_node(self, node: OmkObject | OmkId | str) -> None:
-        del self._node_index[str(node._id if hasattr(node, "_id") else node)]
+        del self._node_index[str(node.id if hasattr(node, "_id") else node)]
 
     def _unregister_node_rxid(self, rxid: int) -> None:
         del self._node_index.inverse[rxid]
@@ -43,9 +43,9 @@ class RustworkxAdapter(GraphAdapter):
     def _rxid(self, node: OmkObject | OmkEdge | OmkId | str) -> int:
         """Returns the Rustworks integer id of the OmkObject or OmkEdge."""
         try:  # it's a node
-            return self._node_index[str(node._id if hasattr(node, "_id") else node)]
+            return self._node_index[str(node.id if hasattr(node, "_id") else node)]
         except KeyError:  # it's an edge
-            return self._edge_index[str(node._id if hasattr(node, "_id") else node)]
+            return self._edge_index[str(node.id if hasattr(node, "_id") else node)]
 
     def _omkid_node(self, rxid: int) -> str:
         return self._node_index.inverse[rxid]
@@ -58,10 +58,10 @@ class RustworkxAdapter(GraphAdapter):
 
     def _register_edge(self, edge: OmkEdge, rxid: int) -> None:
         """Registers an edge and its Rustworkx integer id to self._edge_index."""
-        self._edge_index[str(edge._id)] = rxid
+        self._edge_index[str(edge.id)] = rxid
 
     def _unregister_edge(self, edge: OmkEdge | OmkId | str) -> None:
-        del self._edge_index[str(edge._id if hasattr(edge, "_id") else edge)]
+        del self._edge_index[str(edge.id if hasattr(edge, "_id") else edge)]
 
     def _get_edge_by_rxid(self, rxid: int) -> OmkEdge:
         return self.graph.get_edge_data_by_index(rxid)
@@ -72,7 +72,7 @@ class RustworkxAdapter(GraphAdapter):
         """Add a node to the graph.
 
         Does nothing if the node (by OmkId) is already present."""
-        if str(node._id) in self._node_index:
+        if str(node.id) in self._node_index:
             return
         rxid = self.graph.add_node(node)
         self._register_node(node, rxid)
@@ -144,7 +144,7 @@ class RustworkxAdapter(GraphAdapter):
 
     def has_node(self, node: OmkObject) -> bool:
         """Return True if node is present in the graph."""
-        return str(node._id) in self._node_index
+        return str(node.id) in self._node_index
 
     def has_edge(
         self, source: OmkObject, target: OmkObject, edge_type: EdgeType | None = None
@@ -274,10 +274,10 @@ class RustworkxAdapter(GraphAdapter):
         """Iterate over all nodes adjacent to node (predecessors and successors), optionally filtered."""
         seen: set[str] = set()
         for neighbor in self.predecessors(node, node_type, edge_type, predicate):
-            seen.add(str(neighbor._id))
+            seen.add(str(neighbor.id))
             yield neighbor
         for neighbor in self.successors(node, node_type, edge_type, predicate):
-            if str(neighbor._id) in seen:
+            if str(neighbor.id) in seen:
                 continue
             yield neighbor
 

@@ -743,5 +743,4 @@ NoKey = Key(
     tonic=None,
     tones=ToneCollection(name="No Key"),
     signature=KeySignature(),
-    _name="No Key",
 )

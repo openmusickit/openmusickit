@@ -359,15 +359,6 @@ class TemporalRatio:
         for a tempo of quarter = 60 it is microseconds-per-whole-note (4_000_000)."""
         return Fraction(self._c.rational_length) / Fraction(self._n.rational_length)
 
-    # kept for backwards compatibility
-    @property
-    def _nominal(self):
-        return self._n
-
-    @property
-    def _contextual(self):
-        return self._c
-
     def __eq__(self, other):
         if not isinstance(other, TemporalRatio):
             return NotImplemented
