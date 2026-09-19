@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+from dataclasses import dataclass
 from fractions import Fraction as F
 from numbers import Rational
 
@@ -14,6 +16,7 @@ from openmusickit.values.time.duration import (
 from openmusickit.values.time.errors import ScalingError
 
 
+@dataclass(frozen=True, slots=True, eq=False)
 class MetricalDuration(Duration):
     """The duration of notes, rests, or other temporal musical items
     as understood and notated in Western Standard Music Notation.
@@ -44,14 +47,14 @@ class MetricalDuration(Duration):
 
     """
 
-    def __init__(
-        self,
-        numerator: int,
-        denominator: int,
-        dots: int = 0,
-        ratio: TemporalRatio | None = None,
-    ):
-        """
+    numerator: int
+    denominator: int
+    dots: int = 0
+    ratio: TemporalRatio | None = None
+
+    def __post_init__(self):
+        """Validates and normalises the nominal value.
+
         MetricalDuration is created with a two-argument nominal note value,
         which may optionally include dots,
         and an optional ``TemporalRatio`` that defines timing and placement
@@ -80,18 +83,18 @@ class MetricalDuration(Duration):
 
         Parameters
         ----------
-        n : int
+        numerator : int
             The numerator of the nominal note value.
 
             This should normally be 1 for standard un-dotted note values,
             and should also be 1 if dots are specified.
             Dotted notes can be expressed as their full nominal value
-            with n > 1 and dots = 0.
+            with numerator > 1 and dots = 0.
 
             Notes longer than a whole note use a power-of-two numerator
             over a denominator of 1: (2, 1) breve, (4, 1) longa, (8, 1) maxima.
 
-        d : int
+        denominator : int
             The denominator of the nominal note value. Must be a power of two.
 
         dots : int (optional)
@@ -113,45 +116,49 @@ class MetricalDuration(Duration):
         Raises
         ------
         ValueError
-            If n/d is not a single notatable symbol (e.g. 5/8),
-            if d is not a power of two, if n is not positive,
+            If numerator/denominator is not a single notatable symbol (e.g. 5/8),
+            if the denominator is not a power of two, if the numerator is not positive,
             if dots is negative, or if a full dotted value is given
             together with additional dots.
 
         """
 
         if (
-            isinstance(denominator, bool)
-            or not isinstance(denominator, int)
-            or not _is_power_of_two(denominator)
+            isinstance(self.denominator, bool)
+            or not isinstance(self.denominator, int)
+            or not _is_power_of_two(self.denominator)
         ):
             raise ValueError("The denominator must be a positive integer power of 2.")
 
-        if isinstance(numerator, bool) or not isinstance(numerator, int) or numerator <= 0:
+        if (
+            isinstance(self.numerator, bool)
+            or not isinstance(self.numerator, int)
+            or self.numerator <= 0
+        ):
             raise ValueError(
                 "The numerator must be a positive integer. (Use ZeroDuration for a zero-length duration.)"
             )
 
-        if dots < 0:
+        if self.dots < 0:
             raise ValueError("A duration cannot have negative dots.")
 
         # reduce, then split the numerator into (power of two) * (odd part).
         # The odd part encodes the dots: 1 -> none, 3 -> one, 7 -> two, 15 -> three...
-        value = F(numerator, denominator)
+        value = F(self.numerator, self.denominator)
         odd = value.numerator
         while odd % 2 == 0:
             odd //= 2
 
         if not _is_power_of_two(odd + 1):
             raise ValueError(
-                f"{numerator}/{denominator} is not a single notatable duration. "
+                f"{self.numerator}/{self.denominator} is not a single notatable duration. "
                 "The numerator must be 1 less than a power of 2 (a dotted value), "
                 "or a power of two over 1 (breve, longa, maxima)."
             )
 
         implied_dots = (odd + 1).bit_length() - 2
 
-        if implied_dots > 0 and dots > 0:
+        if implied_dots > 0 and self.dots > 0:
             raise ValueError(
                 "Use a nominal value + dots, or an actual value without dots, never both."
             )
@@ -159,10 +166,9 @@ class MetricalDuration(Duration):
         # the base (undotted) value: strip the dot factor back out
         base = value * (2**implied_dots) / odd
 
-        self._numerator = base.numerator
-        self._denominator = base.denominator
-        self._dots = dots + implied_dots
-        self._ratio = ratio
+        object.__setattr__(self, "numerator", base.numerator)
+        object.__setattr__(self, "denominator", base.denominator)
+        object.__setattr__(self, "dots", self.dots + implied_dots)
 
     @classmethod
     def from_fraction(
@@ -345,23 +351,6 @@ class MetricalDuration(Duration):
         return self.real_note_duration[1]
 
     @property
-    def numerator(self) -> int:
-        return self._numerator
-
-    @property
-    def denominator(self) -> int:
-        return self._denominator
-
-    @property
-    def dots(self) -> int:
-        return self._dots
-
-    @property
-    def ratio(self) -> TemporalRatio | None:
-        """The tuplet ratio this duration is notated inside, if any."""
-        return self._ratio
-
-    @property
     def temporal_system(self) -> TemporalSystem:
         return WSMN_TEMPORAL
 
@@ -372,9 +361,9 @@ class MetricalDuration(Duration):
 
     @property
     def rational_length(self) -> F:
-        if self._ratio is None:
+        if self.ratio is None:
             return self.nominal_length
-        return self.nominal_length * self._ratio.multiplier
+        return self.nominal_length * self.ratio.multiplier
 
     @property
     def scalar_length(self):
@@ -413,9 +402,9 @@ class MetricalDuration(Duration):
 
         if _is_power_of_two(scalar):
             base = F(self.numerator, self.denominator) * scalar
-            return MetricalDuration(base.numerator, base.denominator, self.dots, self._ratio)
+            return MetricalDuration(base.numerator, base.denominator, self.dots, self.ratio)
 
-        return MetricalDuration.from_length(self.nominal_length * scalar, ratio=self._ratio)
+        return MetricalDuration.from_length(self.nominal_length * scalar, ratio=self.ratio)
 
     def __add__(self, other):
         """Add two durations.
@@ -439,16 +428,19 @@ class MetricalDuration(Duration):
         return NotImplemented
 
     def __repr__(self):
-        if self.dots == 0 and self._ratio is None:
+        if self.dots == 0 and self.ratio is None:
             return f"{type(self).__name__}({self.numerator}, {self.denominator})"
         elif self.dots == 0:
-            return f"{type(self).__name__}({self.numerator}, {self.denominator}, ratio={self._ratio!r})"
-        elif self._ratio is None:
+            return (
+                f"{type(self).__name__}({self.numerator}, {self.denominator}, ratio={self.ratio!r})"
+            )
+        elif self.ratio is None:
             return f"{type(self).__name__}({self.numerator}, {self.denominator}, dots={self.dots})"
         else:
-            return f"{type(self).__name__}({self.numerator}, {self.denominator}, dots={self.dots}, ratio={self._ratio!r})"
+            return f"{type(self).__name__}({self.numerator}, {self.denominator}, dots={self.dots}, ratio={self.ratio!r})"
 
 
+@dataclass(frozen=True, slots=True, eq=False)
 class TiedDuration(Duration):
     """A single sounding duration notated as two or more tied symbols,
     e.g. quarter tied to sixteenth (5/16).
@@ -458,26 +450,24 @@ class TiedDuration(Duration):
     and collapses back to a plain MetricalDuration when the total becomes notatable.
     """
 
-    def __init__(self, members: list[Duration]):
-        members = list(members)
+    members: tuple[Duration, ...]
+
+    def __init__(self, members: Iterable[Duration]):
+        members = tuple(members)
         if len(members) < 2:
             raise ValueError(
                 "A TiedDuration needs at least two members. Use a plain Duration for one."
             )
-        self._members = members
-
-    @property
-    def members(self) -> list[Duration]:
-        return list(self._members)
+        object.__setattr__(self, "members", members)
 
     def __iter__(self):
-        return iter(self._members)
+        return iter(self.members)
 
     def __len__(self):
-        return len(self._members)
+        return len(self.members)
 
     def __getitem__(self, index):
-        return self._members[index]
+        return self.members[index]
 
     @property
     def temporal_system(self) -> TemporalSystem:
@@ -485,12 +475,12 @@ class TiedDuration(Duration):
 
     @property
     def rational_length(self) -> F:
-        return sum((m.rational_length for m in self._members), F(0))
+        return sum((m.rational_length for m in self.members), F(0))
 
     def scale(self, scalar) -> Duration:
         """Scale every member; the result is re-merged, so it may collapse to a single symbol."""
-        result = self._members[0].scale(scalar)
-        for m in self._members[1:]:
+        result = self.members[0].scale(scalar)
+        for m in self.members[1:]:
             result = result + m.scale(scalar)
         return result
 
@@ -506,7 +496,7 @@ class TiedDuration(Duration):
             return NotImplemented
 
         # fold `other` into the tail, merging as far back as it will go
-        members = list(self._members)
+        members = list(self.members)
         current = other
         while members:
             merged = _merge(members[-1], current)
@@ -526,7 +516,7 @@ class TiedDuration(Duration):
         return NotImplemented
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._members!r})"
+        return f"{type(self).__name__}({list(self.members)!r})"
 
 
 def _merge(a: Duration, b: Duration) -> MetricalDuration | None:
