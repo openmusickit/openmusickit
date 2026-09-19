@@ -7,7 +7,7 @@ from numbers import Real
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality
 from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
-from openmusickit.values.tone.tone_collection import ToneCollection
+from openmusickit.values.tone.tone_collection import ToneCollection, apply_tone_operation
 
 
 class KeySignature(tuple):
@@ -213,12 +213,7 @@ class KeySignature(tuple):
         alts: dict[int, int] = {}
         for d, alt in enumerate(self):
             tone = TonalVector((d, (DIATONES[d].chromatic + alt) % C_LEN))
-            new_tone = operation(tone, *args, **kwargs)
-            if not isinstance(new_tone, TonalVector):
-                raise TypeError(
-                    f"`operation` must return a TonalVector, "
-                    f"but returned {new_tone!r} for {tone!r}."
-                )
+            new_tone = apply_tone_operation(operation, tone, *args, expected=TonalVector, **kwargs)
             if new_tone.d in alts:
                 raise ValueError(
                     f"Cannot build a KeySignature: `operation` sent two letters to "
@@ -399,12 +394,9 @@ class Key:
         if self.tonic is None:
             return self
 
-        new_tonic = operation(self.tonic, *args, **kwargs)
-        if not isinstance(new_tonic, TonalVector):
-            raise TypeError(
-                f"`operation` must return a TonalVector, "
-                f"but returned {new_tonic!r} for the tonic {self.tonic!r}."
-            )
+        new_tonic = apply_tone_operation(
+            operation, self.tonic, *args, expected=TonalVector, **kwargs
+        )
         signature = self.signature.transform(operation, *args, **kwargs)
 
         if self.mode is not None:

@@ -7,7 +7,7 @@ from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
 from openmusickit.objects.lyrics import LyricSequence, LyricSyllable
-from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
+from openmusickit.objects.omk_object import OmkObject, SequentialEvent, TonalObject
 from openmusickit.utils.id import OmkId
 from openmusickit.values.tone.tone import Tone
 
@@ -131,25 +131,13 @@ class OmkGraph:
         self, line: list[SequentialEvent], prev: SequentialEvent, following: SequentialEvent
     ) -> None:
         """Create a new linear subgraph from a list of objects and insert it between prev and next."""
-        edge = self.get_edge(prev, following, EdgeType.NEXT)
-        if edge is not None:
-            self.remove_edge(edge)
+        self.remove_edge(self.get_edge(prev, following, EdgeType.NEXT))
         if not line:
+            self.add_next(prev, following)
             return
         self.add_next(prev, line[0])
-        for i in range(len(line) - 1):
-            self.add_next(line[i], line[i + 1])
+        self.add_line(line)
         self.add_next(line[-1], following)
-
-    def define_span(
-        self, start: SequentialEvent, end: SequentialEvent, spanner: Spanner | None = None
-    ) -> Spanner:
-        """Defines a span of SequentialEvents from start to end, inclusive."""
-        spanner = spanner or Spanner()
-        self.add_node(spanner)
-        self.add_edge(spanner, start, EdgeType.STARTS_AT)
-        self.add_edge(spanner, end, EdgeType.ENDS_AT)
-        return spanner
 
     def transform_tones(
         self,
@@ -218,13 +206,7 @@ class OmkGraph:
 
     def add_lyric_sequence(self, lyric_sequence: LyricSequence) -> None:
         """Creates a new linear subgraph from a sequence of lyric syllables."""
-        prev = None
-        for syllable in lyric_sequence:
-            if prev is not None:
-                self.add_next(prev, syllable)
-            else:
-                self.add_node(syllable)
-            prev = syllable
+        self.add_line(list(lyric_sequence))
         # Do something with lyric sequence metadata once i have an annotation object
 
     def zip_lyrics_to_objects(

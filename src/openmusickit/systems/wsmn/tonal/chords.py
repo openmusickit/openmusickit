@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.utils.number_names import ORDINALS
-from openmusickit.values.tone.tone_collection import ToneCollection
+from openmusickit.values.tone.tone_collection import ToneCollection, apply_tone_operation
 
 
 class ChordQuality(StrEnum):
@@ -245,9 +245,8 @@ class Chord(_ChordBase):
         `operation` is called as `operation(tone, *args, **kwargs)` for each
         tone. It is typically a TonalVector method (such as
         `TonalVector.transpose`), but any callable that accepts a TonalVector
-        as its first argument and returns a TonalVector will do. The
-        operation is validated against the root first; if it does not
-        return a TonalVector, a TypeError is raised.
+        as its first argument and returns a TonalVector will do; if it does
+        not return a TonalVector, a TypeError is raised.
 
         The new chord keeps this chord's name and suffix unless `new_name`
         and/or `new_suffix` are given.
@@ -284,14 +283,13 @@ class Chord(_ChordBase):
         ...
         TypeError: ...
         """
-        root = operation(self.root, *args, **kwargs)
-        if not isinstance(root, TonalVector):
-            raise TypeError(
-                f"`operation` must return a TonalVector, but returned {root!r} for the root."
-            )
 
-        tones = [operation(t, *args, **kwargs) for t in self]
-        bass = operation(self.bass, *args, **kwargs)
+        def apply(tone: TonalVector) -> TonalVector:
+            return apply_tone_operation(operation, tone, *args, expected=TonalVector, **kwargs)
+
+        root = apply(self.root)
+        tones = [apply(t) for t in self]
+        bass = apply(self.bass)
 
         if new_name is None:
             new_name = self.name_template

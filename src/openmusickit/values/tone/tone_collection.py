@@ -7,6 +7,31 @@ from itertools import combinations
 from openmusickit.values.tone.tone import Tone
 
 
+def apply_tone_operation(
+    operation: Callable[..., Tone], tone: Tone, *args, expected: type = Tone, **kwargs
+) -> Tone:
+    """Returns `operation(tone, *args, **kwargs)`, checking the result is an `expected` Tone.
+
+    The one validation used by every `transform`/`transform_tones` implementation,
+    so they all fail the same way when handed an operation that does not produce a Tone.
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, M3
+    >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+    >>> apply_tone_operation(TonalVector.transpose, C, M3)
+    TonalVector((2, 4))
+    >>> apply_tone_operation(str, C)
+    Traceback (most recent call last):
+    ...
+    TypeError: `operation` must return a Tone, but returned 'TonalVector((0, 0)) # C' for TonalVector((0, 0)).
+    """
+    result = operation(tone, *args, **kwargs)
+    if not isinstance(result, expected):
+        raise TypeError(
+            f"`operation` must return a {expected.__name__}, but returned {result!r} for {tone!r}."
+        )
+    return result
+
+
 @dataclass(frozen=True, slots=True)
 class ToneCollection:
     """An ordered collection of tones, with an optional root and optional name.
@@ -150,12 +175,7 @@ class ToneCollection:
         """
 
         def apply(tone: Tone) -> Tone:
-            new_tone = operation(tone, *args, **kwargs)
-            if not isinstance(new_tone, Tone):
-                raise TypeError(
-                    f"`operation` must return a Tone, but returned {new_tone!r} for {tone!r}."
-                )
-            return new_tone
+            return apply_tone_operation(operation, tone, *args, **kwargs)
 
         new_root = None if self.root is None else apply(self.root)
         new_tones = [apply(t) for t in self.tones]

@@ -5,6 +5,7 @@ from openmusickit.objects.omk_object import SequentialEvent, TonalObject
 from openmusickit.values.time.duration import Duration
 from openmusickit.values.tone.silent_tone import SilentTone
 from openmusickit.values.tone.tone import Tone
+from openmusickit.values.tone.tone_collection import apply_tone_operation
 
 
 @dataclass(kw_only=True)
@@ -134,12 +135,7 @@ class NoteEvent(SequentialEvent, TonalObject):
             if type(tone) is SilentTone:
                 new_tones.add(tone)
                 continue
-            new_tone = operation(tone, *args, **kwargs)
-            if not isinstance(new_tone, Tone):
-                raise TypeError(
-                    f"`operation` must return a Tone, but returned {new_tone!r} for {tone!r}."
-                )
-            new_tones.add(new_tone)
+            new_tones.add(apply_tone_operation(operation, tone, *args, **kwargs))
         self.tones = new_tones
 
     def __repr__(self):
