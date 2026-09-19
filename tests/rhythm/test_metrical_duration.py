@@ -555,7 +555,7 @@ def test_common_time_signature_creation():
         sig = _sig(n, d)
         assert sig.rational_length == F(n, d)
         assert sig.presentation == (str(n), str(d))
-        assert len(sig.spec) == 1
+        assert len(sig.units) == 1
         assert isinstance(sig, CompoundTemporalUnit)
 
 
@@ -570,7 +570,7 @@ def test_time_signature_creation_from_list_and_compound():
     assert from_unit.rational_length == F(1, 1)
     assert from_list.rational_length == F(1, 1)
     assert from_compound.rational_length == F(1, 1)
-    assert len(from_compound.spec) == 1
+    assert len(from_compound.units) == 1
 
     # no presentation given
     assert from_unit.presentation is None
@@ -615,7 +615,7 @@ def test_additive_time_signature():
     assert seven_eight_223.rational_length == F(7, 8)
     assert seven_eight_322.rational_length == F(7, 8)
     assert seven_eight_223.rational_length == _sig(7, 8).rational_length
-    assert len(seven_eight_223.spec) == 3
+    assert len(seven_eight_223.units) == 3
     assert seven_eight_223.presentation == ("2+2+3", "8")
 
     five_four = ts.TimeSignature([TemporalUnit(3, quarter), TemporalUnit(2, quarter)])
@@ -1002,14 +1002,14 @@ def test_time_signature_scaling_presentation():
     assert sym.six_eight.scale(F(1, 3)).presentation == ("2", "8")
 
     # the units agree with the presentation
-    assert sym.three_eight.scale(F(1, 2)).spec[0].base == sym.sixteenth
-    assert sym.three_eight.scale(F(1, 2)).spec[0].count == 3
+    assert sym.three_eight.scale(F(1, 2)).units[0].base == sym.sixteenth
+    assert sym.three_eight.scale(F(1, 2)).units[0].count == 3
 
     # compound meter spelled with its beat: 6/8 as 2 dotted quarters, halved -> 1 dotted quarter, "3/8"
     halved = sym.two_dotted_quarters.scale(F(1, 2))
     assert halved.presentation == ("3", "8")
-    assert halved.spec[0].count == 1
-    assert halved.spec[0].base == sym.dotted_quarter
+    assert halved.units[0].count == 1
+    assert halved.units[0].base == sym.dotted_quarter
 
 
 def test_additive_time_signature_scaling_presentation():
@@ -1028,8 +1028,8 @@ def test_time_signature_scaling_with_odd_factors():
     assert isinstance(third, ts.TimeSignature)
     assert third.rational_length == F(1, 3)
     assert third.presentation is None
-    assert third.spec[0].count == 4
-    assert third.spec[0].base == sym.eighth_in_triplet
+    assert third.units[0].count == 4
+    assert third.units[0].base == sym.eighth_in_triplet
 
     # 6/8 / 3 = 2/8: no tuplet needed, presentation survives
     assert sym.six_eight.scale(F(1, 3)).presentation == ("2", "8")

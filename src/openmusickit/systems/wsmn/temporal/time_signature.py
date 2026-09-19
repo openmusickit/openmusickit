@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from fractions import Fraction
 from math import lcm
 
@@ -8,6 +9,7 @@ from openmusickit.values.time.duration import CompoundTemporalUnit, TemporalUnit
 from openmusickit.values.time.errors import ScalingError
 
 
+@dataclass(frozen=True, slots=True, eq=False)
 class TimeSignature(CompoundTemporalUnit):
     """A WSMN time signature: an ordered series of TemporalUnits
     (one for simple meters, several for additive meters such as 2+2+3/8),
@@ -24,30 +26,17 @@ class TimeSignature(CompoundTemporalUnit):
     so 4/4 == 2/2 == 8/8.
     """
 
+    presentation: tuple[str, str] | None
+
     def __init__(
         self,
         spec: TemporalUnit | Iterable[TemporalUnit] | CompoundTemporalUnit,
         presentation: tuple[str, str] | None = None,
     ):
-
         if isinstance(spec, TemporalUnit):
-            spec = [
-                spec,
-            ]
-        elif isinstance(spec, CompoundTemporalUnit):
-            spec = spec._units
-
+            spec = [spec]
         super().__init__(spec)
-
-        self._presentation = tuple(presentation) if presentation else None
-
-    @property
-    def spec(self):
-        return self._units
-
-    @property
-    def presentation(self) -> tuple[str, str] | None:
-        return self._presentation
+        object.__setattr__(self, "presentation", tuple(presentation) if presentation else None)
 
     def scale(self, scalar) -> TimeSignature:
         """Scale the time signature.
@@ -67,26 +56,23 @@ class TimeSignature(CompoundTemporalUnit):
 
         # Scale all groups in unison, so an additive meter keeps a single denominator:
         # if any group's count would stop being whole, every group moves to the smaller base.
-        new_counts = [tu.count * scalar for tu in self._units]
+        new_counts = [tu.count * scalar for tu in self.units]
         leftover = lcm(*(c.denominator for c in new_counts))
 
         try:
             new_units = [
                 TemporalUnit(int(c * leftover), tu.base.scale(Fraction(1, leftover)))
-                for tu, c in zip(self._units, new_counts, strict=False)
+                for tu, c in zip(self.units, new_counts, strict=False)
             ]
         except ScalingError as e:
             raise ScalingError(f"Cannot scale {self!r} by {scalar}: {e}") from e
 
-        return TimeSignature(
-            new_units, presentation=_scale_presentation(self._presentation, scalar)
-        )
+        return TimeSignature(new_units, presentation=_scale_presentation(self.presentation, scalar))
 
     def __repr__(self):
-        if self._presentation:
-            return f"{type(self).__name__}({self._units!r}, {self._presentation})"
-        else:
-            return f"{type(self).__name__}({self._units!r})"
+        if self.presentation:
+            return f"{type(self).__name__}({list(self.units)!r}, {self.presentation})"
+        return f"{type(self).__name__}({list(self.units)!r})"
 
 
 def _scale_presentation(presentation: tuple[str, str] | None, scalar) -> tuple[str, str] | None:

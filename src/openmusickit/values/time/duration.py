@@ -2,26 +2,19 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from dataclasses import dataclass
 from fractions import Fraction
 from functools import total_ordering
 
 from openmusickit.values.time.errors import ScalingError
 
 
+@dataclass(frozen=True, slots=True)
 class TemporalSystem:
     """A named system of musical time (see `TonalSystem` for the tonal counterpart)."""
 
-    def __init__(self, name: str, description: str):
-        self._name = name
-        self._description = description
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def description(self) -> str:
-        return self._description
+    name: str
+    description: str
 
     pass
 
@@ -64,7 +57,6 @@ class TemporalElement(ABC):
     def rational_length(self) -> Fraction:
         """Returns a fraction value representing the length of the TemporalElement,
         as defined within the TemporalSystem."""
-        raise NotImplementedError
 
     @abstractmethod
     def scale(self, scalar: int | Fraction) -> TemporalElement:
@@ -81,7 +73,6 @@ class TemporalElement(ABC):
                 scaled value cannot be represented in this TemporalSystem at all.
                 Callers may catch this and fall back to an alternate strategy.
         """
-        raise NotImplementedError
 
     def __eq__(self, other) -> bool:
         other_length = _length_of(other)
@@ -146,6 +137,7 @@ class ZeroDuration(Duration):
         return -other
 
 
+@dataclass(frozen=True, slots=True, eq=False)
 class TemporalUnit(TemporalElement):
     """A length of musical time defined as n number of TemporalElements.
     This is used to represent (among other things)
@@ -196,11 +188,12 @@ class TemporalUnit(TemporalElement):
 
     """
 
-    def __init__(self, count: int, base: Duration):
-        if count < 0:
+    count: int
+    base: Duration
+
+    def __post_init__(self):
+        if self.count < 0:
             raise ValueError("A TemporalUnit cannot have a negative count.")
-        self.count = count
-        self.base = base
 
     @property
     def temporal_system(self) -> TemporalSystem:
@@ -229,7 +222,7 @@ class TemporalUnit(TemporalElement):
 
         new_count = self.count * scalar
         if new_count.denominator == 1:
-            return self.__class__(int(new_count), self.base)
+            return type(self)(int(new_count), self.base)
 
         # push the leftover denominator into the base
         leftover = Fraction(1, new_count.denominator)
@@ -241,42 +234,45 @@ class TemporalUnit(TemporalElement):
                 f"{new_count.denominator} does not divide the count, "
                 f"and the base cannot be scaled by {leftover}: {e}"
             ) from e
-        return self.__class__(new_count.numerator, new_base)
+        return type(self)(new_count.numerator, new_base)
 
     def __repr__(self):
         return f"{type(self).__name__}({self.count}, {self.base!r})"
 
 
+@dataclass(frozen=True, slots=True, eq=False)
 class CompoundTemporalUnit(TemporalElement):
-    """An iterable defining a series of ordered temporal elements."""
+    """An ordered series of temporal elements, measured as their total length."""
+
+    units: tuple[TemporalElement, ...]
 
     def __init__(self, units: Iterable[TemporalElement]):
-        self._units = list(units)
+        object.__setattr__(self, "units", tuple(units))
 
     def __iter__(self):
-        return iter(self._units)
+        return iter(self.units)
 
     def __getitem__(self, index):
-        return self._units[index]
+        return self.units[index]
 
     def __len__(self):
-        return len(self._units)
+        return len(self.units)
 
     def __contains__(self, item):
-        return item in self._units
+        return item in self.units
 
     def index(self, item: TemporalElement) -> int:
-        return self._units.index(item)
+        return self.units.index(item)
 
     def count(self, item: TemporalElement) -> int:
-        return self._units.count(item)
+        return self.units.count(item)
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._units!r})"
+        return f"{type(self).__name__}({list(self.units)!r})"
 
     @property
     def rational_length(self) -> Fraction:
-        return sum((tu.rational_length for tu in self._units), Fraction(0))
+        return sum((tu.rational_length for tu in self.units), Fraction(0))
 
     def remainder(self, series: Iterable[TemporalElement]) -> Fraction:
         """Returns the length of self minus the total length of `series`.
@@ -297,14 +293,15 @@ class CompoundTemporalUnit(TemporalElement):
 
     def scale(self, scalar: int | Fraction) -> CompoundTemporalUnit:
         try:
-            new_units = [tu.scale(scalar) for tu in self._units]
+            new_units = [tu.scale(scalar) for tu in self.units]
         except ScalingError as e:
             raise ScalingError(
                 f"One or more members cannot complete the requested scaling operation: {e}"
             ) from e
-        return self.__class__(new_units)
+        return type(self)(new_units)
 
 
+@dataclass(frozen=True, slots=True)
 class TemporalRatio:
     """The ratio of two TemporalUnits.
 
@@ -338,17 +335,8 @@ class TemporalRatio:
 
     """
 
-    def __init__(self, nominal: TemporalElement, contextual: TemporalElement):
-        self._n = nominal
-        self._c = contextual
-
-    @property
-    def nominal(self) -> TemporalElement:
-        return self._n
-
-    @property
-    def contextual(self) -> TemporalElement:
-        return self._c
+    nominal: TemporalElement
+    contextual: TemporalElement
 
     @property
     def multiplier(self) -> Fraction:
@@ -357,7 +345,7 @@ class TemporalRatio:
 
         For a quarter-note triplet this is 2/3;
         for a tempo of quarter = 60 it is microseconds-per-whole-note (4_000_000)."""
-        return Fraction(self._c.rational_length) / Fraction(self._n.rational_length)
+        return Fraction(self.contextual.rational_length) / Fraction(self.nominal.rational_length)
 
     def __eq__(self, other):
         if not isinstance(other, TemporalRatio):
@@ -368,4 +356,4 @@ class TemporalRatio:
         return hash(self.multiplier)
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._n!r}, {self._c!r})"
+        return f"{type(self).__name__}({self.nominal!r}, {self.contextual!r})"
