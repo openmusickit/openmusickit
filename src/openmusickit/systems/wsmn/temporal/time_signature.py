@@ -1,9 +1,10 @@
 from __future__ import annotations
+
+from collections.abc import Iterable
 from fractions import Fraction
 from math import lcm
-from typing import Tuple, Iterable
 
-from openmusickit.values.time.duration import TemporalUnit, CompoundTemporalUnit
+from openmusickit.values.time.duration import CompoundTemporalUnit, TemporalUnit
 from openmusickit.values.time.errors import ScalingError
 
 
@@ -23,14 +24,19 @@ class TimeSignature(CompoundTemporalUnit):
     so 4/4 == 2/2 == 8/8.
     """
 
-    def __init__(self, spec: TemporalUnit|Iterable[TemporalUnit]|CompoundTemporalUnit,
-                 presentation: Tuple[str, str]=None):
-        
+    def __init__(
+        self,
+        spec: TemporalUnit | Iterable[TemporalUnit] | CompoundTemporalUnit,
+        presentation: tuple[str, str] = None,
+    ):
+
         if isinstance(spec, TemporalUnit):
-            spec = [spec,]
+            spec = [
+                spec,
+            ]
         elif isinstance(spec, CompoundTemporalUnit):
             spec = spec._units
-        
+
         super().__init__(spec)
 
         self._presentation = tuple(presentation) if presentation else None
@@ -40,15 +46,15 @@ class TimeSignature(CompoundTemporalUnit):
         return self._units
 
     @property
-    def presentation(self) -> Tuple[str, str] | None:
+    def presentation(self) -> tuple[str, str] | None:
         return self._presentation
-    
+
     @property
     def n(self):
         if self._presentation:
             return self._presentation[0]
         return None
-        
+
     @property
     def d(self):
         if self._presentation:
@@ -79,12 +85,14 @@ class TimeSignature(CompoundTemporalUnit):
         try:
             new_units = [
                 TemporalUnit(int(c * leftover), tu.base.scale(Fraction(1, leftover)))
-                for tu, c in zip(self._units, new_counts)
+                for tu, c in zip(self._units, new_counts, strict=False)
             ]
         except ScalingError as e:
             raise ScalingError(f"Cannot scale {self!r} by {scalar}: {e}")
 
-        return TimeSignature(new_units, presentation=_scale_presentation(self._presentation, scalar))
+        return TimeSignature(
+            new_units, presentation=_scale_presentation(self._presentation, scalar)
+        )
 
     def __repr__(self):
         if self._presentation:
@@ -93,7 +101,7 @@ class TimeSignature(CompoundTemporalUnit):
             return f"TimeSignature({self._units!r})"
 
 
-def _scale_presentation(presentation: Tuple[str, str] | None, scalar) -> Tuple[str, str] | None:
+def _scale_presentation(presentation: tuple[str, str] | None, scalar) -> tuple[str, str] | None:
     """Scale a numeric presentation like ("2+2+3", "8") by the same rule as TemporalUnit.scale."""
     if presentation is None:
         return None

@@ -1,7 +1,6 @@
-from . import errors, lyrics
+from openmusickit.objects.lyrics import errors, lyrics
 
 __all__ = [
     "errors",
     "lyrics",
 ]
-

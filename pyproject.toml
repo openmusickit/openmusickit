@@ -48,7 +48,7 @@ target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "FA", "W"]
+select = ["E", "F", "I", "UP", "B", "FA", "W", "TID252"]
 ignore = [
     "E501",  # line length is handled by the formatter; long docstring lines are fine
 ]

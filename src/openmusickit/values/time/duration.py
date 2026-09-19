@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from fractions import Fraction
 from functools import total_ordering
-from typing import Iterable
-from .errors import ScalingError
+
+from openmusickit.values.time.errors import ScalingError
 
 
 class TemporalSystem:
     """A named system of musical time"""
+
     pass
 
 
@@ -31,7 +33,7 @@ def _length_of(other) -> Fraction | None:
 
 @total_ordering
 class TemporalElement(ABC):
-    """Any class that represents a structured period of time 
+    """Any class that represents a structured period of time
     which can be measured and subdivided. For example:
     note durations, measures, beat cycles, gong cycles, and other units of time.
 
@@ -44,22 +46,22 @@ class TemporalElement(ABC):
     which is measured as the sum of its members.
 
     """
-    
+
     @property
     @abstractmethod
     def rational_length(self) -> Fraction:
         """Returns a fraction value representing the length of the TemporalElement,
         as defined within the TemporalSystem."""
         raise NotImplementedError
-    
-    #@property
-    #@abstractmethod
-    #def temporal_system(self) -> TemporalSystem:
+
+    # @property
+    # @abstractmethod
+    # def temporal_system(self) -> TemporalSystem:
     #    """The Temporal System which the duration belongs to (for introspection purposes)."""
     #    raise NotImplementedError
-    
+
     @abstractmethod
-    def scale(self, scalar: int|Fraction):
+    def scale(self, scalar: int | Fraction):
         """Return a TemporalElement scaled by a positive scalar, according to its TemporalSystem.
 
         The result's ``rational_length`` must equal ``self.rational_length * scalar``.
@@ -72,7 +74,7 @@ class TemporalElement(ABC):
             ScalingError: If ``scalar`` is not a positive rational, or if the
                 scaled value cannot be represented in this TemporalSystem at all.
                 Callers may catch this and fall back to an alternate strategy.
-    """
+        """
         raise NotImplementedError
 
     def __eq__(self, other) -> bool:
@@ -93,24 +95,26 @@ class TemporalElement(ABC):
 
 class Duration(TemporalElement):
     """Any class that represents a basic unit of time and is notated as a single symbol.
-    
+
     Subclass Duration to create the specific duration unit(s) of a particular system.
     For example, WSMN's note durations (quarter, half note, tuplets, etc),
     are managed by MeteredDuration.
-    
+
     WSMN only requires a single note duration type to cover standard note durations.
     Some temporal systems will may need many different Duration types.
     """
+
     pass
+
 
 class ZeroDuration(Duration):
     """A Duration of zero length (instantaneous)."""
-    
+
     @property
     def rational_length(self) -> Fraction:
         return Fraction(0, 1)
-    
-    def scale(self, scalar: int|Fraction):
+
+    def scale(self, scalar: int | Fraction):
         return self
 
     def __add__(self, other: Duration):
@@ -126,9 +130,9 @@ class ZeroDuration(Duration):
 
 class TemporalUnit(TemporalElement):
     """A length of musical time defined as n number of TemporalElements.
-    This is used to represent (among other things) 
+    This is used to represent (among other things)
     time signatures and tuple definitions.
-    
+
     Example: WSMN Time Signatures
     ---------------
 
@@ -144,7 +148,7 @@ class TemporalUnit(TemporalElement):
     TemporalUnit(4, MeteredDuration(1,4))
     ```
 
-    Compound meters such as 6/8 can be expressed using 
+    Compound meters such as 6/8 can be expressed using
     the dotted duration or the base duration:
 
     ```
@@ -186,9 +190,9 @@ class TemporalUnit(TemporalElement):
 
     @property
     def rational_length(self) -> Fraction:
-        return self.count * self.base.rational_length 
-    
-    def scale(self, scalar: int|Fraction) -> TemporalUnit:
+        return self.count * self.base.rational_length
+
+    def scale(self, scalar: int | Fraction) -> TemporalUnit:
         """Scale the Temporal Unit.
 
         The count is scaled whenever the result is a whole number
@@ -217,11 +221,12 @@ class TemporalUnit(TemporalElement):
             raise ScalingError(
                 f"Cannot scale {self!r} by {scalar}: "
                 f"{new_count.denominator} does not divide the count, "
-                f"and the base cannot be scaled by {leftover}: {e}")
+                f"and the base cannot be scaled by {leftover}: {e}"
+            )
         return self.__class__(new_count.numerator, new_base)
 
     def __repr__(self):
-        return f'TemporalUnit({self.count}, {repr(self.base)})'
+        return f"TemporalUnit({self.count}, {repr(self.base)})"
 
 
 class CompoundTemporalUnit(TemporalElement):
@@ -235,16 +240,16 @@ class CompoundTemporalUnit(TemporalElement):
 
     def __getitem__(self, index):
         return self._units[index]
-    
+
     def __len__(self):
         return len(self._units)
 
     def __contains__(self, item):
         return item in self._units
-    
+
     def index(self, item):
         return self._units.index(item)
-    
+
     def count(self, item):
         return self._units.count(item)
 
@@ -259,7 +264,7 @@ class CompoundTemporalUnit(TemporalElement):
         """Returns the length of self minus the total length of `series`.
         Negative if `series` overflows self."""
         return self.rational_length - sum((s.rational_length for s in series), Fraction(0))
-    
+
     def first_out_of_bounds(self, series: Iterable[TemporalElement]):
         """Returns the index of the first items in `series`
         that exceeds the length of self.
@@ -271,19 +276,20 @@ class CompoundTemporalUnit(TemporalElement):
             if srl < 0:
                 return i
         return None
-    
+
     def scale(self, scalar):
         try:
             new_units = [tu.scale(scalar) for tu in self._units]
         except ScalingError as e:
-            raise ScalingError(f"One or more members cannot complete the requested scaling operation: {e}")
+            raise ScalingError(
+                f"One or more members cannot complete the requested scaling operation: {e}"
+            )
         return self.__class__(new_units)
-    
 
 
 class TemporalRatio:
     """The ratio of two TemporalUnits.
-    
+
     Used for the following:
 
     - In WSMN, tuplets are a ratio of n number of nominal units which take place during d number of contextual (or actual units).
@@ -296,7 +302,7 @@ class TemporalRatio:
     nominal: the number and type of notes notated and played
     contextual: (sometimes called "actual") the length of time (expressed as a multiple of Durations)
         as measured in the surrounding context.
-             
+
     So, for example, a standard quarter note triplet (3 quarters in the time/space of 2 quarters) would be:
 
     ```python
@@ -338,8 +344,8 @@ class TemporalRatio:
     # kept for backwards compatibility
     @property
     def _nominal(self):
-        return self._n 
-    
+        return self._n
+
     @property
     def _contextual(self):
         return self._c

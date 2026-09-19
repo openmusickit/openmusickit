@@ -1,9 +1,10 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from openmusickit.objects.omk_object import SequentialObject, TonalObject
 from openmusickit.values.tone.tone import Tone
 from openmusickit.values.tone.tone_collection import ToneCollection
+
 
 @dataclass(kw_only=True)
 class ChordEvent(SequentialObject, TonalObject):

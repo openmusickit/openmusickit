@@ -4,31 +4,49 @@ from fractions import Fraction as F
 import pytest
 
 from openmusickit.systems.wsmn.temporal import metrical_duration as md
-from openmusickit.systems.wsmn.temporal import time_signature as ts
-from openmusickit.values.time.duration import TemporalUnit, TemporalRatio, CompoundTemporalUnit
-from openmusickit.values.time.clock_time import ClockDuration, Tempo
-from openmusickit.values.time.errors import ScalingError, TemporalCompatibilityError
 from openmusickit.systems.wsmn.temporal import symbols as sym
+from openmusickit.systems.wsmn.temporal import time_signature as ts
+from openmusickit.values.time.clock_time import ClockDuration, Tempo
+from openmusickit.values.time.duration import CompoundTemporalUnit, TemporalRatio, TemporalUnit
+from openmusickit.values.time.errors import ScalingError, TemporalCompatibilityError
 
 standard_duration_denominators = [1, 2, 4, 8, 16, 32, 64]
 reasonable_tuple_ratios = [(3, 2), (5, 4), (7, 6), (11, 10)]
-common_time_signature = [(2,4), (3,4), (4,4), (5,4), (1,2), (2,2), (3,2), (3,8), (6,8), (7,8), (9,8)]
+common_time_signature = [
+    (2, 4),
+    (3, 4),
+    (4, 4),
+    (5, 4),
+    (1, 2),
+    (2, 2),
+    (3, 2),
+    (3, 8),
+    (6, 8),
+    (7, 8),
+    (9, 8),
+]
 
 # --- helpers ---------------------------------------------------------------
+
 
 def _tuplet(nominal_count: int, contextual_count: int, base: md.MeteredDuration) -> TemporalRatio:
     """nominal_count notes of `base` in the time of contextual_count notes of `base`."""
     return TemporalRatio(TemporalUnit(nominal_count, base), TemporalUnit(contextual_count, base))
 
+
 def _sig(n: int, d: int) -> ts.TimeSignature:
     """A simple time signature n/d built from a single TemporalUnit."""
-    return ts.TimeSignature(TemporalUnit(n, md.MeteredDuration(1, d)), presentation=(str(n), str(d)))
+    return ts.TimeSignature(
+        TemporalUnit(n, md.MeteredDuration(1, d)), presentation=(str(n), str(d))
+    )
+
 
 def _real_time(dur, tempo: TemporalRatio) -> ClockDuration:
     return ClockDuration.from_duration(dur, tempo)
 
 
 # --- basic creation --------------------------------------------------------
+
 
 def test_standard_duration_creation():
     """
@@ -41,15 +59,15 @@ def test_standard_duration_creation():
         assert dur.d == d
         assert dur.dots == 0
 
+
 def test_dotted_duration_creation():
     """Test that every standard note duration can be created with up to five dots, without error,
     and that the two ways of creating a dotted duration are equivalent."""
     for d in standard_duration_denominators:
-        for n_dots in range(1,6):
+        for n_dots in range(1, 6):
+            dotted_dur_nominal = md.MeteredDuration(1, d, dots=n_dots)
 
-            dotted_dur_nominal = md.MeteredDuration(1, d, dots = n_dots)
-
-            numerator = (2**(n_dots+1))-1
+            numerator = (2 ** (n_dots + 1)) - 1
             denominator = d * (2**n_dots)
 
             dotted_dur_actual = md.MeteredDuration(numerator, denominator)
@@ -61,6 +79,7 @@ def test_dotted_duration_creation():
             assert dotted_dur_actual.n == 1
             assert dotted_dur_actual.d == d
             assert dotted_dur_actual.dots == n_dots
+
 
 def test_invalid_duration_creation():
     """Non-power-of-two denominators, negative dots, mixed dotted forms,
@@ -74,14 +93,15 @@ def test_invalid_duration_creation():
     with pytest.raises(ValueError):
         md.MeteredDuration(1, 4, dots=-1)
     with pytest.raises(ValueError):
-        md.MeteredDuration(3, 8, dots=1)   # 3/8 is already dotted; can't dot it again this way
+        md.MeteredDuration(3, 8, dots=1)  # 3/8 is already dotted; can't dot it again this way
     with pytest.raises(ValueError):
-        md.MeteredDuration(5, 8)           # not a single notatable symbol (would need a tie)
+        md.MeteredDuration(5, 8)  # not a single notatable symbol (would need a tie)
     with pytest.raises(ValueError):
-        md.MeteredDuration(0, 4)           # zero-length is not a note value; use ZeroDuration
+        md.MeteredDuration(0, 4)  # zero-length is not a note value; use ZeroDuration
 
 
 # --- long durations: breve, longa, maxima -----------------------------------
+
 
 def test_breve_creation():
     """A breve (double whole note) is exactly two whole notes."""
@@ -89,6 +109,7 @@ def test_breve_creation():
     assert breve.rational_length == F(2, 1)
     assert breve.dots == 0
     assert breve == TemporalUnit(2, md.MeteredDuration(1, 1))
+
 
 def test_dotted_breve_creation():
     """A dotted breve is three whole notes, whether built with a dot
@@ -104,6 +125,7 @@ def test_dotted_breve_creation():
     assert double_dotted_breve.rational_length == F(7, 2)
     assert double_dotted_breve == md.MeteredDuration(7, 2)
 
+
 def test_longa_and_maxima_creation():
     """A longa (quadruple whole note) is four whole notes, a maxima is eight.
     Dotted versions follow the usual rule."""
@@ -118,6 +140,7 @@ def test_longa_and_maxima_creation():
     maxima = md.MeteredDuration(8, 1)
     assert maxima.rational_length == F(8, 1)
 
+
 def test_long_duration_multiples():
     """Two wholes are a breve, two breves are a longa, two longas are a maxima."""
     whole = md.MeteredDuration(1, 1)
@@ -129,6 +152,7 @@ def test_long_duration_multiples():
     assert TemporalUnit(2, breve).rational_length == longa.rational_length
     assert TemporalUnit(2, longa).rational_length == maxima.rational_length
     assert TemporalUnit(4, md.MeteredDuration(1, 2)).rational_length == breve.rational_length
+
 
 def test_long_duration_scaling():
     """Scaling across the whole-note boundary should work in both directions."""
@@ -145,6 +169,7 @@ def test_long_duration_scaling():
     assert md.MeteredDuration(1, 1, dots=1).scale(2) == md.MeteredDuration(2, 1, dots=1)
     assert md.MeteredDuration(2, 1, dots=1).scale(F(1, 2)) == md.MeteredDuration(1, 1, dots=1)
 
+
 def test_breve_fills_measures():
     """A breve fills a bar of 4/2 or 2/1; a dotted breve fills 6/2 or 3/1."""
     breve = md.MeteredDuration(2, 1)
@@ -158,6 +183,7 @@ def test_breve_fills_measures():
 
 # --- tuplets ----------------------------------------------------------------
 
+
 def test_basic_tuple_duration_creation():
     """Test that a reasonable set of tuple-duration (3:2, 5:4, 7:6) can be created without error,
     and that values are appropriate."""
@@ -170,6 +196,7 @@ def test_basic_tuple_duration_creation():
             nom_dur = md.MeteredDuration(1, d)
 
             assert tup_dur.rational_length * tr[0] == nom_dur.rational_length * tr[1]
+
 
 def test_tuplets():
     """Test that tuplets resolve to the correct RationalLength"""
@@ -201,7 +228,10 @@ def test_tuplets():
     # duplet in 6/8: 2 eighths in the time of 3 eighths
     eighth_in_duplet = md.MeteredDuration(1, 8, tr=_tuplet(2, 3, eighth))
     assert eighth_in_duplet.rational_length == F(3, 16)
-    assert TemporalUnit(2, eighth_in_duplet).rational_length == md.MeteredDuration(1, 4, dots=1).rational_length
+    assert (
+        TemporalUnit(2, eighth_in_duplet).rational_length
+        == md.MeteredDuration(1, 4, dots=1).rational_length
+    )
 
     # the ratio of a tuplet is independent of which member note is queried:
     # a quarter inside an eighth-note triplet is two triplet eighths
@@ -211,6 +241,7 @@ def test_tuplets():
     # a dotted quarter takes up an entire eighth-note triplet (i.e. one quarter of real time)
     dotted_quarter_in_eighth_triplet = md.MeteredDuration(1, 4, dots=1, tr=_tuplet(3, 2, eighth))
     assert dotted_quarter_in_eighth_triplet.rational_length == F(1, 4)
+
 
 def test_tuplet_ratio_with_mixed_bases():
     """The nominal and contextual sides of a tuplet need not use the same base duration.
@@ -236,6 +267,7 @@ def test_tuplet_ratio_with_mixed_bases():
     assert r.r == F(3, 4)
     assert TemporalUnit(4, md.MeteredDuration(1, 8, tr=r)).rational_length == F(3, 8)
 
+
 def test_nested_tuplets():
     """An eighth-note triplet nested inside one member of a quarter-note triplet.
     Each outer triplet quarter is 1/6; the inner eighth is a third of that: 1/18."""
@@ -251,6 +283,7 @@ def test_nested_tuplets():
     assert nested_eighth.rational_length == F(1, 18)
     assert TemporalUnit(3, nested_eighth).rational_length == quarter_in_triplet.rational_length
 
+
 def test_tuplet_scaling():
     """Scaling a tupleted duration by a power of two scales its real length by the same amount."""
     eighth = md.MeteredDuration(1, 8)
@@ -263,16 +296,18 @@ def test_tuplet_scaling():
 
 # --- arithmetic and structure ----------------------------------------------
 
+
 def test_standard_multiples():
     """Test that 2 16ths equals an 8th, 2 8ths equal a quarter, etc."""
     for d in standard_duration_denominators:
         single_duration = md.MeteredDuration(1, d)
-        half_duration = md.MeteredDuration(1, d*2)
+        half_duration = md.MeteredDuration(1, d * 2)
         assert single_duration.rational_length == half_duration.rational_length * 2
-        
+
         one_single_duration = TemporalUnit(1, single_duration)
         two_half_durations = TemporalUnit(2, half_duration)
         assert one_single_duration.rational_length == two_half_durations.rational_length
+
 
 def test_dotted_equals_base_plus_half():
     """A dotted note equals the base note plus the next smaller note;
@@ -285,7 +320,11 @@ def test_dotted_equals_base_plus_half():
         double_dotted = md.MeteredDuration(1, d, dots=2)
 
         assert dotted.rational_length == base.rational_length + half_of_base.rational_length
-        assert double_dotted.rational_length == dotted.rational_length + quarter_of_base.rational_length
+        assert (
+            double_dotted.rational_length
+            == dotted.rational_length + quarter_of_base.rational_length
+        )
+
 
 def test_compound_temporal_units_and_duration_addition_commutative():
     """Test quarter + 8th is same as 8th plus quarter, etc"""
@@ -300,29 +339,31 @@ def test_compound_temporal_units_and_duration_addition_commutative():
             compound_temporal_unit_a = CompoundTemporalUnit([temporal_unit_one, temporal_unit_two])
             compound_temporal_unit_b = CompoundTemporalUnit([temporal_unit_two, temporal_unit_one])
 
-            assert compound_temporal_unit_a.rational_length == compound_temporal_unit_b.rational_length
+            assert (
+                compound_temporal_unit_a.rational_length == compound_temporal_unit_b.rational_length
+            )
+
 
 def test_compound_temporal_units_with_duration_addition_associative():
     for d1 in standard_duration_denominators:
         for d2 in standard_duration_denominators:
             duration_one = md.MeteredDuration(1, d1)
             duration_two = md.MeteredDuration(1, d2)
-            duration_three = md.MeteredDuration(3, d2) # dotted
+            duration_three = md.MeteredDuration(3, d2)  # dotted
 
             temporal_unit_one = TemporalUnit(1, duration_one)
             temporal_unit_two = TemporalUnit(2, duration_two)
             temporal_unit_three = TemporalUnit(3, duration_three)
 
             compound_temporal_unit_a = CompoundTemporalUnit([temporal_unit_one, temporal_unit_two])
-            compound_temporal_unit_b = CompoundTemporalUnit([temporal_unit_two, temporal_unit_three])
+            compound_temporal_unit_b = CompoundTemporalUnit(
+                [temporal_unit_two, temporal_unit_three]
+            )
 
             assert (
-                        compound_temporal_unit_a.rational_length + 
-                        temporal_unit_three.rational_length
-                    ) == ( 
-                        compound_temporal_unit_b.rational_length +
-                        temporal_unit_one.rational_length
-                    )
+                compound_temporal_unit_a.rational_length + temporal_unit_three.rational_length
+            ) == (compound_temporal_unit_b.rational_length + temporal_unit_one.rational_length)
+
 
 def test_compound_temporal_unit_sequence_protocol():
     """CompoundTemporalUnit behaves like an ordered sequence of its units."""
@@ -344,6 +385,7 @@ def test_compound_temporal_unit_sequence_protocol():
     assert ctu.count(tu_q) == 2
     assert TemporalUnit(1, md.MeteredDuration(1, 2)) not in ctu
 
+
 def test_duration_equality_and_comparison():
     """Durations compare by real length: a dotted quarter is longer than a quarter,
     3/8 is a dotted quarter, and 2 eighths are a quarter."""
@@ -361,6 +403,7 @@ def test_duration_equality_and_comparison():
     assert sorted([dotted_quarter, eighth, quarter]) == [eighth, quarter, dotted_quarter]
     assert max([dotted_quarter, eighth, quarter]) == dotted_quarter
 
+
 def test_duration_hashable():
     """Equal durations should be usable as dict keys / set members
     (e.g. counting how many of each note value appear in a phrase)."""
@@ -373,6 +416,7 @@ def test_duration_hashable():
     assert hash(dotted_quarter) == hash(also_dotted_quarter)
     assert len({quarter, also_quarter, dotted_quarter, also_dotted_quarter}) == 2
 
+
 def test_repr_roundtrip():
     """repr() of a non-tuplet duration should evaluate back to an equal duration."""
     MeteredDuration = md.MeteredDuration  # noqa: F841  (used by eval)
@@ -382,6 +426,7 @@ def test_repr_roundtrip():
             assert eval(repr(dur)) == dur
     breve = md.MeteredDuration(2, 1)
     assert eval(repr(breve)) == breve
+
 
 def test_temporal_unit_equality():
     """TemporalUnits are equal if they represent the same total length."""
@@ -395,14 +440,18 @@ def test_temporal_unit_equality():
 
 # --- scaling ----------------------------------------------------------------
 
+
 def test_duration_scaling():
     """Test 8th.scale(2) is quarter, etc."""
     for d in standard_duration_denominators:
-        assert md.MeteredDuration(1, d*2).scale(2) == md.MeteredDuration(1, d)
+        assert md.MeteredDuration(1, d * 2).scale(2) == md.MeteredDuration(1, d)
 
     for d in standard_duration_denominators:
         for n_dots in range(5):
-            assert md.MeteredDuration(1, d*2, dots=n_dots).scale(2) == md.MeteredDuration(1, d, dots=n_dots)
+            assert md.MeteredDuration(1, d * 2, dots=n_dots).scale(2) == md.MeteredDuration(
+                1, d, dots=n_dots
+            )
+
 
 def test_duration_scaling_down():
     """Scaling by 1/2 is the inverse of scaling by 2, for every standard value,
@@ -417,6 +466,7 @@ def test_duration_scaling_down():
             assert dur.scale(F(1, 4)) == dur.scale(F(1, 2)).scale(F(1, 2))
             assert dur.scale(1) == dur
 
+
 def test_duration_scaling_preserves_dots():
     """Augmenting or diminishing a dotted note keeps it dotted."""
     for d in standard_duration_denominators:
@@ -425,6 +475,7 @@ def test_duration_scaling_preserves_dots():
             assert scaled.dots == n_dots
             scaled = md.MeteredDuration(1, d, dots=n_dots).scale(F(1, 2))
             assert scaled.dots == n_dots
+
 
 def test_duration_scaling_non_powers_of_two():
     """Scalars that aren't powers of two resolve via from_length:
@@ -439,7 +490,7 @@ def test_duration_scaling_non_powers_of_two():
     assert quarter.scale(5) == sym.whole + sym.quarter
     assert isinstance(quarter.scale(5), md.TiedDuration)
     assert quarter.scale(6) == sym.dotted_whole
-    assert sym.dotted_quarter.scale(F(1, 3)) == sym.eighth   # 3/8 / 3 = 1/8, no tuplet needed
+    assert sym.dotted_quarter.scale(F(1, 3)) == sym.eighth  # 3/8 / 3 = 1/8, no tuplet needed
 
     # an existing tuplet ratio is kept
     scaled = sym.quarter_in_triplet.scale(3)
@@ -449,6 +500,7 @@ def test_duration_scaling_non_powers_of_two():
     for bad in (0, -2, "x", F(-1, 2)):
         with pytest.raises(ScalingError):
             quarter.scale(bad)
+
 
 def test_temporal_unit_scaling():
     """Scaling a TemporalUnit scales its total length (by any scalar, not just powers of 2)."""
@@ -470,6 +522,7 @@ def test_temporal_unit_scaling():
     # dotted base
     two_dotted_quarters = TemporalUnit(2, md.MeteredDuration(1, 4, dots=1))
     assert two_dotted_quarters.scale(2).rational_length == F(3, 2)
+
 
 def test_compound_temporal_unit_scaling():
     """Scaling a compound unit scales every member and the total."""
@@ -493,6 +546,7 @@ def test_compound_temporal_unit_scaling():
 
 # --- time signatures --------------------------------------------------------
 
+
 def test_common_time_signature_creation():
     """Test that common time signatures can be created"""
     for n, d in common_time_signature:
@@ -502,6 +556,7 @@ def test_common_time_signature_creation():
         assert sig.d == str(d)
         assert len(sig.spec) == 1
         assert isinstance(sig, CompoundTemporalUnit)
+
 
 def test_time_signature_creation_from_list_and_compound():
     """A TimeSignature can be built from a single TemporalUnit, a list of TemporalUnits,
@@ -520,6 +575,7 @@ def test_time_signature_creation_from_list_and_compound():
     assert from_unit.n is None
     assert from_unit.d is None
 
+
 def test_compound_meter_equivalent_forms():
     """6/8 is 6 eighths or 2 dotted quarters; 9/8 is 3 dotted quarters; 3/8 is one."""
     eighth = md.MeteredDuration(1, 8)
@@ -529,9 +585,19 @@ def test_compound_meter_equivalent_forms():
     six_eight_b = ts.TimeSignature(TemporalUnit(2, dotted_quarter), presentation=("6", "8"))
     assert six_eight_a.rational_length == six_eight_b.rational_length == F(3, 4)
 
-    assert ts.TimeSignature(TemporalUnit(3, dotted_quarter)).rational_length == _sig(9, 8).rational_length
-    assert ts.TimeSignature(TemporalUnit(1, dotted_quarter)).rational_length == _sig(3, 8).rational_length
-    assert ts.TimeSignature(TemporalUnit(4, dotted_quarter)).rational_length == _sig(12, 8).rational_length
+    assert (
+        ts.TimeSignature(TemporalUnit(3, dotted_quarter)).rational_length
+        == _sig(9, 8).rational_length
+    )
+    assert (
+        ts.TimeSignature(TemporalUnit(1, dotted_quarter)).rational_length
+        == _sig(3, 8).rational_length
+    )
+    assert (
+        ts.TimeSignature(TemporalUnit(4, dotted_quarter)).rational_length
+        == _sig(12, 8).rational_length
+    )
+
 
 def test_additive_time_signature():
     """7/8 grouped as 2+2+3 and 3+2+2 both total 7/8; 5/4 as 3+2 totals 5/4."""
@@ -540,10 +606,12 @@ def test_additive_time_signature():
 
     seven_eight_223 = ts.TimeSignature(
         [TemporalUnit(2, eighth), TemporalUnit(2, eighth), TemporalUnit(3, eighth)],
-        presentation=("2+2+3", "8"))
+        presentation=("2+2+3", "8"),
+    )
     seven_eight_322 = ts.TimeSignature(
         [TemporalUnit(3, eighth), TemporalUnit(2, eighth), TemporalUnit(2, eighth)],
-        presentation=("3+2+2", "8"))
+        presentation=("3+2+2", "8"),
+    )
     assert seven_eight_223.rational_length == F(7, 8)
     assert seven_eight_322.rational_length == F(7, 8)
     assert seven_eight_223.rational_length == _sig(7, 8).rational_length
@@ -553,6 +621,7 @@ def test_additive_time_signature():
     five_four = ts.TimeSignature([TemporalUnit(3, quarter), TemporalUnit(2, quarter)])
     assert five_four.rational_length == F(5, 4)
 
+
 def test_time_signature_repr():
     """repr() should be well-formed with or without a presentation."""
     with_pres = repr(_sig(4, 4))
@@ -560,6 +629,7 @@ def test_time_signature_repr():
     for r in (with_pres, without_pres):
         assert r.startswith("TimeSignature(")
         assert r.count("(") == r.count(")")
+
 
 def test_time_signature_scaling():
     """Scaling a time signature scales its total length: 3/4 doubled is as long as 3/2,
@@ -581,11 +651,14 @@ def test_time_signature_scaling():
 
     # additive signatures scale member by member
     eighth = md.MeteredDuration(1, 8)
-    seven_eight = ts.TimeSignature([TemporalUnit(2, eighth), TemporalUnit(2, eighth), TemporalUnit(3, eighth)])
+    seven_eight = ts.TimeSignature(
+        [TemporalUnit(2, eighth), TemporalUnit(2, eighth), TemporalUnit(3, eighth)]
+    )
     doubled = seven_eight.scale(2)
     assert doubled.rational_length == F(7, 4)
     assert len(doubled) == 3
     assert doubled[2].rational_length == F(3, 4)
+
 
 def test_common_time_signature_filling():
     """Test that 4/4 is same length as 4 quarters, or eight 8ths, etc.
@@ -610,6 +683,7 @@ def test_common_time_signature_filling():
             # one more overflows, and it is the one at index k
             assert sig.first_out_of_bounds(series + [md.MeteredDuration(1, d)]) == k
 
+
 def test_time_signature_filling_with_dotted_values():
     """Compound meters are filled by dotted values: 6/8 by two dotted quarters,
     9/8 by three, 3/8 by one; 3/4 by a dotted half; 4/4 by a dotted half plus a quarter."""
@@ -624,6 +698,7 @@ def test_time_signature_filling_with_dotted_values():
     assert TemporalUnit(1, dotted_half).rational_length == _sig(3, 4).rational_length
     assert _sig(4, 4).first_out_of_bounds([dotted_half, quarter]) is None
     assert _sig(4, 4).first_out_of_bounds([dotted_half, dotted_quarter]) == 1
+
 
 def test_time_signature_filling_with_tuplets():
     """A bar of 4/4 is filled by two quarter-note triplets (six triplet quarters)
@@ -640,6 +715,7 @@ def test_time_signature_filling_with_tuplets():
     assert TemporalUnit(4, eighth_in_duplet).rational_length == _sig(6, 8).rational_length
     assert _sig(4, 4).first_out_of_bounds([quarter_in_triplet] * 6) is None
     assert _sig(4, 4).first_out_of_bounds([quarter_in_triplet] * 7) == 6
+
 
 def test_time_signature_remainder():
     """test that a time signature and several durations result in the correct remainder"""
@@ -667,6 +743,7 @@ def test_time_signature_remainder():
 
 
 # --- clock time and tempo ---------------------------------------------------
+
 
 def test_clock_time_simple():
     """Test that clock time works as expected."""
@@ -698,6 +775,7 @@ def test_clock_time_simple():
     assert ClockDuration.from_timedelta(td).to_timedelta == td
     assert ClockDuration.from_seconds(1).to_timedelta == timedelta(seconds=1)
 
+
 def test_tempo_creation():
     """A tempo marking is n beats per clock duration."""
     quarter = md.MeteredDuration(1, 4)
@@ -709,6 +787,7 @@ def test_tempo_creation():
     # a tempo can be expressed against a different clock duration
     tempo_per_second = Tempo(2, quarter, ClockDuration.from_seconds(1))
     assert tempo_per_second.r == tempo.r
+
 
 def test_real_time_ratio_simple():
     """Test that a MeteredDuration and a tempo marking can calculate a real-time duration."""
@@ -738,6 +817,7 @@ def test_real_time_ratio_simple():
     # a breve at quarter = 60 lasts 8 seconds
     assert _real_time(md.MeteredDuration(2, 1), q60).seconds == pytest.approx(8.0)
 
+
 def test_real_time_ratio_dots():
     """Test that a dotted MeteredDuration and a tempo marking can calculate a real-time duration."""
     quarter = md.MeteredDuration(1, 4)
@@ -757,6 +837,7 @@ def test_real_time_ratio_dots():
     assert _real_time(eighth, dq60).seconds == pytest.approx(1 / 3)
     assert _real_time(_sig(6, 8), dq60).seconds == pytest.approx(2.0)
 
+
 def test_real_time_ratio_tuplets():
     """Test that a tuplet duration and a tempo marking can calculate a real-time duration."""
     quarter = md.MeteredDuration(1, 4)
@@ -774,6 +855,7 @@ def test_real_time_ratio_tuplets():
     # three triplet eighths take exactly one beat
     assert _real_time(TemporalUnit(3, eighth_in_triplet), q60).seconds == pytest.approx(1.0)
 
+
 def test_real_time_ratio_complex():
     """Test that a collection of MeteredDurations and a tempo marking can calculate a real-time duration."""
     quarter = md.MeteredDuration(1, 4)
@@ -784,9 +866,16 @@ def test_real_time_ratio_complex():
 
     # a rhythm: quarter | dotted-eighth sixteenth | eighth-triplet (x3) | two eighths
     # = 1/4 + 3/16 + 1/16 + 3 * 1/12 + 2 * 1/8 = 1 whole note = 4 quarters
-    phrase = [quarter, dotted_eighth, sixteenth,
-              eighth_in_triplet, eighth_in_triplet, eighth_in_triplet,
-              eighth, eighth]
+    phrase = [
+        quarter,
+        dotted_eighth,
+        sixteenth,
+        eighth_in_triplet,
+        eighth_in_triplet,
+        eighth_in_triplet,
+        eighth,
+        eighth,
+    ]
     assert sum(x.rational_length for x in phrase) == F(1, 1)
 
     q100 = Tempo(100, quarter)
@@ -794,17 +883,26 @@ def test_real_time_ratio_complex():
     assert total.seconds == pytest.approx(4 * 0.6)
 
     # the same phrase as a CompoundTemporalUnit
-    ctu = CompoundTemporalUnit([
-        TemporalUnit(1, quarter), TemporalUnit(1, dotted_eighth), TemporalUnit(1, sixteenth),
-        TemporalUnit(3, eighth_in_triplet), TemporalUnit(2, eighth)])
+    ctu = CompoundTemporalUnit(
+        [
+            TemporalUnit(1, quarter),
+            TemporalUnit(1, dotted_eighth),
+            TemporalUnit(1, sixteenth),
+            TemporalUnit(3, eighth_in_triplet),
+            TemporalUnit(2, eighth),
+        ]
+    )
     assert _real_time(ctu, q100).seconds == pytest.approx(2.4)
 
     # two bars of 3/4 at quarter = 90 take 4 seconds
     q90 = Tempo(90, quarter)
-    assert _real_time(TemporalUnit(2, md.MeteredDuration(1, 2, dots=1)), q90).seconds == pytest.approx(4.0)
+    assert _real_time(
+        TemporalUnit(2, md.MeteredDuration(1, 2, dots=1)), q90
+    ).seconds == pytest.approx(4.0)
 
 
 # --- TemporalUnit scaling edge cases (Q5) -----------------------------------
+
 
 def test_temporal_unit_scaling_prefers_count():
     """When the scaled count is whole, the base stays the same: 4 quarters * 2 = 8 quarters."""
@@ -818,6 +916,7 @@ def test_temporal_unit_scaling_prefers_count():
     six_eighths = TemporalUnit(6, sym.eighth)
     assert six_eighths.scale(F(1, 3)).count == 2
     assert six_eighths.scale(F(1, 3)).base == sym.eighth
+
 
 def test_temporal_unit_scaling_pushes_into_base():
     """When the count won't divide, the leftover power of two moves into the base:
@@ -847,6 +946,7 @@ def test_temporal_unit_scaling_pushes_into_base():
     for scalar in (2, F(1, 2), F(3, 2), 3, F(1, 4)):
         assert isinstance(TemporalUnit(4, sym.quarter).scale(scalar).count, int)
 
+
 def test_temporal_unit_scaling_with_odd_factors():
     """4 quarters / 3 = 4 triplet eighths; 1 quarter * 2/3 = 2 triplet eighths."""
     third = TemporalUnit(4, sym.quarter).scale(F(1, 3))
@@ -871,6 +971,7 @@ def test_temporal_unit_scaling_with_odd_factors():
         with pytest.raises(ScalingError):
             TemporalUnit(4, sym.quarter).scale(bad)
 
+
 def test_temporal_unit_with_tuplet_base_scaling():
     """A tupleted base is left alone when the count absorbs the scalar."""
     three_triplet_quarters = TemporalUnit(3, sym.quarter_in_triplet)  # one half note
@@ -882,11 +983,13 @@ def test_temporal_unit_with_tuplet_base_scaling():
 
 # --- TimeSignature scaling with presentation (Q4) ---------------------------
 
+
 def test_time_signature_scaling_returns_time_signature():
     doubled = sym.four_four.scale(2)
     assert isinstance(doubled, ts.TimeSignature)
     assert doubled == sym.time_signature(8, 4)
     assert doubled.presentation == ("8", "4")
+
 
 def test_time_signature_scaling_presentation():
     """4/4 * 2 = 8/4; 4/4 / 2 = 2/4; 6/8 / 2 = 3/8; 3/8 / 2 = 3/16; 3/4 * 3 = 9/4."""
@@ -908,6 +1011,7 @@ def test_time_signature_scaling_presentation():
     assert halved.spec[0].count == 1
     assert halved.spec[0].base == sym.dotted_quarter
 
+
 def test_additive_time_signature_scaling_presentation():
     doubled = sym.seven_eight_2_2_3.scale(2)
     assert doubled.presentation == ("4+4+6", "8")
@@ -916,6 +1020,7 @@ def test_additive_time_signature_scaling_presentation():
     assert halved.presentation == ("2+2+3", "16")
     assert halved.rational_length == F(7, 16)
     assert [tu.base for tu in halved] == [sym.sixteenth] * 3
+
 
 def test_time_signature_scaling_with_odd_factors():
     """4/4 / 3 is a bar of 4 triplet eighths; there is no plain numeric presentation for it."""
@@ -932,11 +1037,12 @@ def test_time_signature_scaling_with_odd_factors():
     third_additive = sym.seven_eight_2_2_3.scale(F(1, 3))
     assert third_additive.rational_length == F(7, 24)
     assert third_additive.presentation is None
-    assert len({tu.base for tu in third_additive}) == 1   # all groups share the same tupleted base
+    assert len({tu.base for tu in third_additive}) == 1  # all groups share the same tupleted base
 
     for bad in (0, -1):
         with pytest.raises(ScalingError):
             sym.four_four.scale(bad)
+
 
 def test_time_signature_scaling_non_numeric_presentation():
     """A presentation that isn't numeric (e.g. common time 'C') can't be scaled and is dropped."""
@@ -945,6 +1051,7 @@ def test_time_signature_scaling_non_numeric_presentation():
     assert doubled.rational_length == F(2, 1)
     assert doubled.presentation is None
 
+
 def test_time_signature_equality():
     """Time signatures of the same total length are equal: 4/4 == 2/2 == 8/8 == 12/8 as 4 dotted quarters."""
     assert sym.four_four == sym.two_two
@@ -952,7 +1059,7 @@ def test_time_signature_equality():
     assert sym.six_eight == sym.two_dotted_quarters
     assert sym.twelve_eight == sym.four_dotted_quarters
     assert sym.seven_eight == sym.seven_eight_2_2_3 == sym.seven_eight_3_2_2
-    assert sym.three_four == sym.six_eight   # same length, different grouping
+    assert sym.three_four == sym.six_eight  # same length, different grouping
     assert sym.three_four != sym.two_four
     assert sym.three_four == sym.dotted_half
     assert sym.four_four == [sym.quarter] * 4
@@ -963,24 +1070,33 @@ def test_time_signature_equality():
 
 # --- clock time conversion (Q2) --------------------------------------------
 
+
 def test_clock_duration_from_duration():
     q120 = Tempo(120, sym.quarter)
     assert ClockDuration.from_duration(sym.quarter, q120) == ClockDuration.from_milliseconds(500)
     assert ClockDuration.from_duration(sym.dotted_half, q120) == ClockDuration.from_seconds(1.5)
     assert ClockDuration.from_duration(sym.four_four, q120) == ClockDuration.from_seconds(2)
-    assert ClockDuration.from_duration(TemporalUnit(3, sym.eighth_in_triplet), q120).seconds == pytest.approx(0.5)
+    assert ClockDuration.from_duration(
+        TemporalUnit(3, sym.eighth_in_triplet), q120
+    ).seconds == pytest.approx(0.5)
     assert ClockDuration.from_duration(sym.breve, q120) == ClockDuration.from_seconds(4)
 
     # tempo against a different clock base
     per_second = Tempo(2, sym.quarter, ClockDuration.from_seconds(1))
-    assert ClockDuration.from_duration(sym.quarter, per_second) == ClockDuration.from_milliseconds(500)
+    assert ClockDuration.from_duration(sym.quarter, per_second) == ClockDuration.from_milliseconds(
+        500
+    )
 
     # exactness: a triplet eighth at quarter = 100 is exactly 200_000 µs
-    assert ClockDuration.from_duration(sym.eighth_in_triplet, Tempo(100, sym.quarter)).microseconds == 200_000
+    assert (
+        ClockDuration.from_duration(sym.eighth_in_triplet, Tempo(100, sym.quarter)).microseconds
+        == 200_000
+    )
 
     # a tuplet ratio is not a tempo
     with pytest.raises(TemporalCompatibilityError):
         ClockDuration.from_duration(sym.quarter, sym.triplet(sym.quarter))
+
 
 def test_clock_duration_hashable_and_ordered():
     a = ClockDuration.from_seconds(1)
@@ -994,6 +1110,7 @@ def test_clock_duration_hashable_and_ordered():
 
 
 # --- duration addition and ties (Q7) ---------------------------------------
+
 
 def test_duration_addition_to_single_symbol():
     """Sums that are notatable as one symbol come back as a MeteredDuration."""
@@ -1011,6 +1128,7 @@ def test_duration_addition_to_single_symbol():
     assert isinstance(sym.whole + sym.whole, md.MeteredDuration)
     assert (sym.whole + sym.whole).dots == 0
 
+
 def test_duration_addition_to_tied():
     """Sums that need a tie come back as a TiedDuration with the correct length."""
     tied = sym.quarter + sym.sixteenth
@@ -1024,6 +1142,7 @@ def test_duration_addition_to_tied():
     assert five_eighths == md.MeteredDuration(1, 2) + md.MeteredDuration(1, 8)
     assert five_eighths.rational_length == F(5, 8)
     assert five_eighths == TemporalUnit(5, sym.eighth)
+
 
 def test_tied_duration_collapses_when_possible():
     """quarter + sixteenth + sixteenth = quarter + eighth = dotted quarter."""
@@ -1039,6 +1158,7 @@ def test_tied_duration_collapses_when_possible():
     phrase = [sym.quarter, sym.dotted_eighth, sym.sixteenth, sym.eighth, sym.eighth]
     assert sum(phrase) == sym.dotted_half
     assert sum(phrase) == sym.three_four
+
 
 def test_tied_duration_scaling_and_tuplets():
     tied = sym.quarter + sym.sixteenth
@@ -1060,6 +1180,7 @@ def test_tied_duration_scaling_and_tuplets():
     assert two_triplet_quarters.n == 1 and two_triplet_quarters.d == 2
     assert two_triplet_quarters.tr == sym.triplet(sym.quarter)
 
+
 def test_from_fraction():
     assert md.MeteredDuration.from_fraction(F(3, 8)) == sym.dotted_quarter
     assert md.MeteredDuration.from_fraction(2) == sym.breve
@@ -1070,19 +1191,34 @@ def test_from_fraction():
 
 # --- symbols ----------------------------------------------------------------
 
+
 def test_symbols_note_values():
     expected = {
-        sym.maxima: 8, sym.longa: 4, sym.breve: 2, sym.whole: 1, sym.half: F(1, 2),
-        sym.quarter: F(1, 4), sym.eighth: F(1, 8), sym.sixteenth: F(1, 16),
-        sym.thirtysecond: F(1, 32), sym.sixtyfourth: F(1, 64),
-        sym.dotted_breve: 3, sym.dotted_whole: F(3, 2), sym.dotted_half: F(3, 4),
-        sym.dotted_quarter: F(3, 8), sym.dotted_eighth: F(3, 16),
-        sym.double_dotted_half: F(7, 8), sym.double_dotted_quarter: F(7, 16),
-        sym.half_in_triplet: F(1, 3), sym.quarter_in_triplet: F(1, 6),
-        sym.eighth_in_triplet: F(1, 12), sym.sixteenth_in_triplet: F(1, 24),
+        sym.maxima: 8,
+        sym.longa: 4,
+        sym.breve: 2,
+        sym.whole: 1,
+        sym.half: F(1, 2),
+        sym.quarter: F(1, 4),
+        sym.eighth: F(1, 8),
+        sym.sixteenth: F(1, 16),
+        sym.thirtysecond: F(1, 32),
+        sym.sixtyfourth: F(1, 64),
+        sym.dotted_breve: 3,
+        sym.dotted_whole: F(3, 2),
+        sym.dotted_half: F(3, 4),
+        sym.dotted_quarter: F(3, 8),
+        sym.dotted_eighth: F(3, 16),
+        sym.double_dotted_half: F(7, 8),
+        sym.double_dotted_quarter: F(7, 16),
+        sym.half_in_triplet: F(1, 3),
+        sym.quarter_in_triplet: F(1, 6),
+        sym.eighth_in_triplet: F(1, 12),
+        sym.sixteenth_in_triplet: F(1, 24),
     }
     for symbol, length in expected.items():
         assert symbol.rational_length == length, symbol
+
 
 def test_symbols_time_signatures():
     assert sym.four_four.rational_length == 1
@@ -1095,6 +1231,7 @@ def test_symbols_time_signatures():
     assert sym.seven_eight_2_2_3.n == "2+2+3"
     assert sym.five_eight_3_2.rational_length == F(5, 8)
 
+
 def test_symbols_tuplet_helpers():
     assert sym.triplet(sym.quarter).r == F(2, 3)
     assert sym.duplet(sym.eighth).r == F(3, 2)
@@ -1105,6 +1242,7 @@ def test_symbols_tuplet_helpers():
 
 
 # --- from_length ------------------------------------------------------------
+
 
 def test_from_length_single_symbols():
     """Notatable lengths come back as one MeteredDuration, same as from_fraction."""
@@ -1120,20 +1258,21 @@ def test_from_length_single_symbols():
     assert md.MeteredDuration.from_length(F(3, 1)) == sym.dotted_breve
     assert md.MeteredDuration.from_length(8) == sym.maxima
 
+
 def test_from_length_tuplets_canonical_ratios():
     """An odd factor k in the denominator gives a k : (largest power of two below k) tuplet."""
     cases = {
-        F(1, 3): (F(1, 2), F(2, 3)),    # half in a half-note triplet
-        F(1, 6): (F(1, 4), F(2, 3)),    # quarter in a quarter-note triplet
+        F(1, 3): (F(1, 2), F(2, 3)),  # half in a half-note triplet
+        F(1, 6): (F(1, 4), F(2, 3)),  # quarter in a quarter-note triplet
         F(1, 12): (F(1, 8), F(2, 3)),
-        F(1, 5): (F(1, 4), F(4, 5)),    # quarter in a 5:4 quintuplet
+        F(1, 5): (F(1, 4), F(4, 5)),  # quarter in a 5:4 quintuplet
         F(1, 10): (F(1, 8), F(4, 5)),
-        F(1, 7): (F(1, 4), F(4, 7)),    # quarter in a 7:4 septuplet
-        F(1, 9): (F(1, 8), F(8, 9)),    # eighth in a 9:8
+        F(1, 7): (F(1, 4), F(4, 7)),  # quarter in a 7:4 septuplet
+        F(1, 9): (F(1, 8), F(8, 9)),  # eighth in a 9:8
         F(1, 11): (F(1, 8), F(8, 11)),
-        F(2, 5): (F(1, 2), F(4, 5)),    # half in a half-note quintuplet
-        F(2, 3): (F(1, 1), F(2, 3)),    # whole in a whole-note triplet
-        F(3, 7): (F(3, 4), F(4, 7)),    # dotted half in a 7:4
+        F(2, 5): (F(1, 2), F(4, 5)),  # half in a half-note quintuplet
+        F(2, 3): (F(1, 1), F(2, 3)),  # whole in a whole-note triplet
+        F(3, 7): (F(3, 4), F(4, 7)),  # dotted half in a 7:4
     }
     for length, (nominal, ratio) in cases.items():
         result = md.MeteredDuration.from_length(length)
@@ -1147,6 +1286,7 @@ def test_from_length_tuplets_canonical_ratios():
     assert md.MeteredDuration.from_length(F(1, 6)).tr == sym.triplet(sym.quarter)
     assert md.MeteredDuration.from_length(F(1, 12)) == sym.eighth_in_triplet
 
+
 def test_from_length_tuplet_ratio_is_well_formed():
     """The synthesized ratio is k units in the time of c units of the same plain note value."""
     result = md.MeteredDuration.from_length(F(1, 5))
@@ -1157,8 +1297,9 @@ def test_from_length_tuplet_ratio_is_well_formed():
     assert ratio.nominal.base == sym.quarter
     assert ratio.contextual.base == sym.quarter
     assert ratio.nominal.base.dots == 0
-    assert ratio.contextual.rational_length == F(1, 1)     # the tuplet fills a bar of 4/4
+    assert ratio.contextual.rational_length == F(1, 1)  # the tuplet fills a bar of 4/4
     assert TemporalUnit(5, result) == sym.four_four
+
 
 def test_from_length_ties():
     """Non-notatable power-of-two lengths are split largest-first (dots included)."""
@@ -1180,14 +1321,16 @@ def test_from_length_ties():
         assert result.rational_length == length
         assert all(m.tr is None for m in result)
 
+
 def test_from_length_tie_inside_tuplet():
     """5/24 = (quarter tied to sixteenth) inside a quarter-note triplet."""
     result = md.MeteredDuration.from_length(F(5, 24))
     assert isinstance(result, md.TiedDuration)
     assert result.rational_length == F(5, 24)
     assert [m.nominal_length for m in result] == [F(1, 4), F(1, 16)]
-    assert all(m.tr is result[0].tr for m in result)      # members share one ratio object
+    assert all(m.tr is result[0].tr for m in result)  # members share one ratio object
     assert result[0].tr.r == F(2, 3)
+
 
 def test_from_length_with_existing_tuplet():
     """With tr given, length is the notated value inside that tuplet."""
@@ -1204,7 +1347,8 @@ def test_from_length_with_existing_tuplet():
     nested = md.MeteredDuration.from_length(F(1, 12), tr=triplet)
     assert nested.nominal_length == F(1, 8)
     assert nested.rational_length == F(1, 18)
-    assert nested.tr.contextual.base.tr is triplet     # inner ratio is measured in outer-tuplet units
+    assert nested.tr.contextual.base.tr is triplet  # inner ratio is measured in outer-tuplet units
+
 
 def test_from_length_divide_a_bar():
     """Dividing common bars into n equal parts."""
@@ -1228,11 +1372,13 @@ def test_from_length_divide_a_bar():
     assert part.tr.r == F(4, 5)
     assert TemporalUnit(5, part) == sym.six_eight
 
+
 def test_from_length_rejects_non_positive():
     with pytest.raises(ValueError):
         md.MeteredDuration.from_length(0)
     with pytest.raises(ValueError):
         md.MeteredDuration.from_length(F(-1, 4))
+
 
 def test_from_length_vs_from_fraction():
     """from_fraction stays strict; from_length always resolves."""
@@ -1243,6 +1389,7 @@ def test_from_length_vs_from_fraction():
     assert md.MeteredDuration.from_length(F(5, 8)).rational_length == F(5, 8)
     assert md.MeteredDuration.from_length(F(1, 3)).rational_length == F(1, 3)
     assert md.MeteredDuration.from_fraction(F(3, 8)) == md.MeteredDuration.from_length(F(3, 8))
+
 
 def test_from_length_quantized_float():
     """Floats should be quantized to a Fraction first."""

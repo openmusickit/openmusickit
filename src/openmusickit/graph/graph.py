@@ -1,19 +1,22 @@
 from __future__ import annotations
-from pathlib import Path
-from typing import Callable
 
-from .graph_adapter import GraphAdapter
-from .rx_adapter import RustworkxAdapter
-from .edges.edge import EdgeType, OmkEdge
-from openmusickit.utils.id import OmkId
+from collections.abc import Callable
+from pathlib import Path
+
+from openmusickit.graph.edges.edge import EdgeType, OmkEdge
+from openmusickit.graph.graph_adapter import GraphAdapter
+from openmusickit.graph.rx_adapter import RustworkxAdapter
+from openmusickit.objects.lyrics.lyrics import LyricSequence, LyricSyllable
 from openmusickit.objects.omk_object import OmkObject, SequentialObject, Spanner, TonalObject
+from openmusickit.utils.id import OmkId
 from openmusickit.values.tone.tone import Tone
-from openmusickit.objects.lyrics.lyrics import LyricSyllable, LyricSequence 
 
 
 class GraphMeta:
     """Details about the graph, including title, composer name, etc."""
+
     pass
+
 
 class OmkGraph:
     """A graph representation of music."""
@@ -44,13 +47,12 @@ class OmkGraph:
     def export_to_json(self):
         pass
 
-    def export_json_to_file(self, f: Path) -> None: # Return some status object?
+    def export_json_to_file(self, f: Path) -> None:  # Return some status object?
         pass
-
 
     # Basic Add, Connect, Remove
 
-    def get_node(self, id: OmkId|str) -> OmkObject|None:
+    def get_node(self, id: OmkId | str) -> OmkObject | None:
         """Returns an OmkObj based on id. Returns None if no such object exists."""
         id = str(id)
         return self._graph.get_node(id)
@@ -61,18 +63,20 @@ class OmkGraph:
 
     def remove_node(self, obj: OmkObject) -> None:
         """Removes a node and all related edges from the graph.
-        
+
         This does not automatically remove the object and edges from memory;
         if you retain a reference to the object and edges, they remain accessible
         until they are garbage collected.
-        
+
         Raises an exception if the node does not exist."""
         self._graph.remove_node(obj)
 
     def get_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> OmkEdge:
         return self._graph.get_edge(from_obj, to_obj, edge_type)
 
-    def get_edges(self, from_obj: OmkObject, to_obj: OmkObject) -> tuple[list[OmkEdge], list[OmkEdge]]:
+    def get_edges(
+        self, from_obj: OmkObject, to_obj: OmkObject
+    ) -> tuple[list[OmkEdge], list[OmkEdge]]:
         return self._graph.get_edges(from_obj, to_obj)
 
     def get_edges_by_type(self, edge_type: EdgeType) -> list[OmkEdge]:
@@ -85,26 +89,27 @@ class OmkGraph:
     def remove_edge(self, edge: OmkEdge) -> OmkEdge:
         return self._graph.remove_edge(edge)
 
-
     # Sequential Data
 
     def add_next(self, current: SequentialObject, next: SequentialObject) -> None:
         """Places a SequentialObject after another SequentialObject.
-        
+
         Current node must be on the graph before adding a next node.
         Next node can be on the graph or not."""
         self.add_node(next)
         self.add_edge(current, next, EdgeType.NEXT)
 
-    def get_next(self, current: SequentialObject) -> SequentialObject|None:
+    def get_next(self, current: SequentialObject) -> SequentialObject | None:
         return self._graph.get_next(current)
-    
-    def get_previous(self, current: SequentialObject) -> SequentialObject|None:
+
+    def get_previous(self, current: SequentialObject) -> SequentialObject | None:
         return self._graph.get_previous(current)
-    
-    def insert_event(self, event: SequentialObject, prev: SequentialObject, next: SequentialObject) -> None:
+
+    def insert_event(
+        self, event: SequentialObject, prev: SequentialObject, next: SequentialObject
+    ) -> None:
         """Insert a SequentialObject between two SequentialObjects.
-        
+
         It makes no difference if the inserted object was already part of the graph."""
         edge = self.get_edge(prev, next, EdgeType.NEXT)
         self.remove_edge(edge)
@@ -121,7 +126,9 @@ class OmkGraph:
                 self.add_node(obj)
             prev = obj
 
-    def insert_line_from_list(self, line: list[SequentialObject], prev: SequentialObject, next: SequentialObject) -> None:
+    def insert_line_from_list(
+        self, line: list[SequentialObject], prev: SequentialObject, next: SequentialObject
+    ) -> None:
         """Create a new linear subgraph from a list of objects and insert it between prev and next."""
         edge = self.get_edge(prev, next, EdgeType.NEXT)
         if edge is not None:
@@ -133,7 +140,9 @@ class OmkGraph:
             self.add_next(line[i], line[i + 1])
         self.add_next(line[-1], next)
 
-    def define_span(self, start: SequentialObject, end: SequentialObject, spanner: Spanner|None = None) -> Spanner:
+    def define_span(
+        self, start: SequentialObject, end: SequentialObject, spanner: Spanner | None = None
+    ) -> Spanner:
         """Defines a span of SequentialObjects from start to end, inclusive."""
         spanner = spanner or Spanner()
         self.add_node(spanner)
@@ -141,8 +150,14 @@ class OmkGraph:
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
         return spanner
 
-    def transform_tones(self, start: SequentialObject, end: SequentialObject | None,
-                        operation: Callable[..., Tone], *args, **kwargs) -> None:
+    def transform_tones(
+        self,
+        start: SequentialObject,
+        end: SequentialObject | None,
+        operation: Callable[..., Tone],
+        *args,
+        **kwargs,
+    ) -> None:
         """Applies `operation` to the tonal content of every TonalObject from
         `start` to `end` (inclusive) along NEXT edges; `end=None` runs to the end
         of the line. Objects without tonal content are passed over.
@@ -172,7 +187,9 @@ class OmkGraph:
             obj = self.get_next(obj)
 
         if end is not None:
-            raise ValueError(f"{end!r} was not reached: the line starting at {start!r} ended first.")
+            raise ValueError(
+                f"{end!r} was not reached: the line starting at {start!r} ended first."
+            )
 
     # Annotations (articulations, memos, analysis)
 
@@ -184,14 +201,14 @@ class OmkGraph:
         self.add_node(annotation)
         self.add_edge(annotation, obj, EdgeType.ANNOTATES)
 
-
     # Spanners (slurs, crescendos, phrasing)
 
-    def add_spanner(self, spanner: OmkObject, start: SequentialObject, end: SequentialObject) -> None:
+    def add_spanner(
+        self, spanner: OmkObject, start: SequentialObject, end: SequentialObject
+    ) -> None:
         self.add_node(spanner)
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
-
 
     # Lyrics
     def add_lyric_syllable(self, lyric_syllable: LyricSyllable) -> None:
@@ -209,9 +226,11 @@ class OmkGraph:
             else:
                 self.add_node(syllable)
             prev = syllable
-        # Do something with lyric sequence metadata once i have an annotation object 
+        # Do something with lyric sequence metadata once i have an annotation object
 
-    def zip_lyrics_to_objects(self, start_syllable: LyricSyllable, start_object: SequentialObject) -> None:
+    def zip_lyrics_to_objects(
+        self, start_syllable: LyricSyllable, start_object: SequentialObject
+    ) -> None:
         """Connects a sequence of lyric syllables to a sequence of musical objects in a one-to-one manner."""
         syllable = start_syllable
         obj = start_object
@@ -223,7 +242,9 @@ class OmkGraph:
     def unlink_lyric_from_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:
         self.remove_edge(self.get_edge(obj, lyric_syllable, EdgeType.LYRIC))
 
-    def unlink_lyric_sequence(self, start_syllable: LyricSyllable, stop_syllable: LyricSyllable|None = None) -> None:
+    def unlink_lyric_sequence(
+        self, start_syllable: LyricSyllable, stop_syllable: LyricSyllable | None = None
+    ) -> None:
         """Unlink a sequence of lyric syllables from their associated musical objects, stopping at the specified stop syllable if provided.
         If no stop syllable is provided, the sequence will be unlinked until the end."""
         syllable = start_syllable

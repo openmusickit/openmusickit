@@ -12,7 +12,7 @@ These functions operate on tuples of the form `(d, c, o)`, where
 
 import itertools
 
-from .constants import D_LEN, C_LEN, MS
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, MS
 
 
 def tonal_sum(x: tuple[int], y: tuple[int]) -> tuple[int]:
@@ -40,11 +40,12 @@ def tonal_sum(x: tuple[int], y: tuple[int]) -> tuple[int]:
     if len(x) < len(y):
         raise TypeError("An octave designation cannot be added to an abstract tonal value.")
 
-    sum = tuple(xval+yval for xval,yval in itertools.zip_longest(x,y, fillvalue=0))
+    sum = tuple(xval + yval for xval, yval in itertools.zip_longest(x, y, fillvalue=0))
 
     sum = _tonal_modulo(sum)
 
     return sum
+
 
 # @tonal_args
 def tonal_diff(x: tuple[int], y: tuple[int]) -> tuple[int]:
@@ -75,6 +76,7 @@ def tonal_diff(x: tuple[int], y: tuple[int]) -> tuple[int]:
 
     return tonal_sum(x, _negative_tuple(y))
 
+
 def _negative_tuple(x: tuple[int]) -> tuple[int]:
     """
     Negates a tonal tuple on (0, 0, (0)).
@@ -90,8 +92,8 @@ def _negative_tuple(x: tuple[int]) -> tuple[int]:
     return tuple(-m for m in x)
 
 
-#@tonal_args
-def tonal_invert(x, y=(0,0)):
+# @tonal_args
+def tonal_invert(x, y=(0, 0)):
     """Returns the inversion of x on y.
 
     The inversion is the value which is as far below y
@@ -152,10 +154,10 @@ def _tonal_modulo(x: tuple[int]) -> tuple[int]:
     if x[0] in range(D_LEN) and x[1] in range(C_LEN):
         return x
 
-    d_val = x[0] % D_LEN # The normalized diatonic value.
-    d_oct = x[0] // D_LEN # The additional diatonic octave.
-    c_val = x[1] % C_LEN # The normalized chromatic value.
-    
+    d_val = x[0] % D_LEN  # The normalized diatonic value.
+    d_oct = x[0] // D_LEN  # The additional diatonic octave.
+    c_val = x[1] % C_LEN  # The normalized chromatic value.
+
     if len(x) == 2:
         return (d_val, c_val)
 
@@ -177,6 +179,7 @@ def tonal_abs(x: tuple[int]) -> int:
     """
 
     return abs(tonal_int(x))
+
 
 def tonal_int(x):
     """Returns the directed (+/-) distance in half steps from the origin (Middle C).
@@ -227,11 +230,10 @@ def tonal_int(x):
     if c - base_c < -3:
         c = c + C_LEN
 
-    return c + x[2]*(C_LEN)
+    return c + x[2] * (C_LEN)
 
-        
 
-def tonal_higher_of(x: tuple[int],y: tuple[int]) -> tuple[int]:
+def tonal_higher_of(x: tuple[int], y: tuple[int]) -> tuple[int]:
     """Returns the higher pitch.
 
     Examples
@@ -245,8 +247,8 @@ def tonal_higher_of(x: tuple[int],y: tuple[int]) -> tuple[int]:
     >>> tonal_higher_of((0,0,0),(0,10,0)) # C, C-flat
     (0, 0, 0)
     """
-    if tonal_int(x) == tonal_int(y): # if same half-steps, larger diatonic
-                                     # dim5 > aug4
+    if tonal_int(x) == tonal_int(y):  # if same half-steps, larger diatonic
+        # dim5 > aug4
         if x[0] > y[0]:
             return x
         else:
@@ -256,6 +258,7 @@ def tonal_higher_of(x: tuple[int],y: tuple[int]) -> tuple[int]:
         return x
     else:
         return y
+
 
 def tonal_lower_of(x: tuple[int], y: tuple[int]) -> tuple[int]:
     """Returns the lower pitch
@@ -282,9 +285,10 @@ def tonal_lower_of(x: tuple[int], y: tuple[int]) -> tuple[int]:
     else:
         return _tonal_modulo(y)
 
-def tonal_larger_of(x: tuple[int], y:tuple[int]) -> tuple[int]:
+
+def tonal_larger_of(x: tuple[int], y: tuple[int]) -> tuple[int]:
     """Returns the larger interval.
-    
+
     Examples
     --------
 
@@ -293,8 +297,8 @@ def tonal_larger_of(x: tuple[int], y:tuple[int]) -> tuple[int]:
 
     """
 
-    if tonal_abs(x) == tonal_abs(y): # if same half-steps, larger diatonic
-                                     # dim5 > aug4
+    if tonal_abs(x) == tonal_abs(y):  # if same half-steps, larger diatonic
+        # dim5 > aug4
         if abs(x[0]) > abs(y[0]):
             return x
         else:
@@ -304,10 +308,11 @@ def tonal_larger_of(x: tuple[int], y:tuple[int]) -> tuple[int]:
         return x
     else:
         return y
-    
-def tonal_smaller_of(x: tuple[int], y:tuple[int]) -> tuple[int]:
+
+
+def tonal_smaller_of(x: tuple[int], y: tuple[int]) -> tuple[int]:
     """Returns the smaller interval.
-    
+
     Examples
     --------
 
@@ -320,7 +325,6 @@ def tonal_smaller_of(x: tuple[int], y:tuple[int]) -> tuple[int]:
         return y
     else:
         return x
-
 
 
 def abs_interval(x: tuple[int]) -> tuple[int]:
@@ -368,7 +372,6 @@ def abs_interval(x: tuple[int]) -> tuple[int]:
                 return x
 
         return tonal_lower_of(x, y)
-        
 
 
 def tonal_abs_diff(x: tuple[int], y: tuple[int]) -> tuple[int]:
@@ -410,18 +413,17 @@ def tonal_abs_diff(x: tuple[int], y: tuple[int]) -> tuple[int]:
     True
 
     """
-    x,y = _qualify_octave_as_needed(x,y)
-    #if len(x) == 3:
+    x, y = _qualify_octave_as_needed(x, y)
+    # if len(x) == 3:
     #    return tonal_diff(tonal_greater_of(x,y), tonal_lesser_of(x,y))
 
-    #return tonal_lesser_of(tonal_diff(x,y), tonal_diff(y,x))
+    # return tonal_lesser_of(tonal_diff(x,y), tonal_diff(y,x))
 
-    a = abs_interval(tonal_diff(x,y))
-    b = abs_interval(tonal_diff(y,x))
-
-
+    a = abs_interval(tonal_diff(x, y))
+    b = abs_interval(tonal_diff(y, x))
 
     return _tonal_modulo(tonal_lower_of(a, b))
+
 
 def abs_int_diff(x: tuple[int], y: tuple[int]) -> int:
     """Returns the smallest number of half-steps between two tonal primitives.
@@ -435,14 +437,14 @@ def abs_int_diff(x: tuple[int], y: tuple[int]) -> int:
     >>> abs_int_diff((0,1,0),(6,11,-1))
     2
     """
-    x,y = _qualify_octave_as_needed(x,y)
+    x, y = _qualify_octave_as_needed(x, y)
 
     if len(x) == 3:
         x = tonal_int(x)
         y = tonal_int(y)
-        return abs(x-y)
+        return abs(x - y)
 
-    return tonal_int(tonal_abs_diff(x,y))
+    return tonal_int(tonal_abs_diff(x, y))
 
 
 def tonal_nearest_instance(x: tuple[int], y: tuple[int]):
@@ -492,11 +494,12 @@ def tonal_nearest_instance(x: tuple[int], y: tuple[int]):
 
     return min(candidates, key=lambda z: (abs_int_diff(x, z), diatonic_steps(z)))
 
+
 def _tonal_unmodulo(x: tuple[int]) -> tuple[int]:
     """Utility function.
     Returns a tuple in which the chromatic value is close to the diatonic value,
     even if that requires a negative value.
-    (This makes certain calculations easier 
+    (This makes certain calculations easier
     when the d and c values wrap around their modulo scale.)
 
 
@@ -526,13 +529,14 @@ def _tonal_unmodulo(x: tuple[int]) -> tuple[int]:
         return (d, c, x[2])
     except:
         return (d, c)
-    
+
+
 def _qualify_octave_as_needed(x: tuple[int], y: tuple[int]) -> tuple[tuple[int], tuple[int]]:
     """Returns (x,y), with an octave qualifier on both x and y if either had one.
 
     Examples
     --------
-    
+
     >>> _qualify_octave_as_needed((1, 1, 0), (1, 1))
     ((1, 1, 0), (1, 1, 0))
 

@@ -1,5 +1,5 @@
-from . import graph, graph_adapter, rx_adapter
-from .edges import edge
+from openmusickit.graph import graph, graph_adapter, rx_adapter
+from openmusickit.graph.edges import edge
 
 __all__ = [
     "edge",
@@ -7,4 +7,3 @@ __all__ = [
     "graph_adapter",
     "rx_adapter",
 ]
-

@@ -1,4 +1,4 @@
-from . import (
+from openmusickit.systems.wsmn.tonal import (
     chords,
     constants,
     interval_quality,
@@ -19,4 +19,3 @@ __all__ = [
     "tonal_vector",
     "wsmn",
 ]
-

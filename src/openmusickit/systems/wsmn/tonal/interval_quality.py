@@ -1,35 +1,34 @@
 import functools
 import math
 
-from .constants import C_LEN, MS
-
-
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, MS
 
 q_vals = {
-- 4.5 : 'quad_diminished-from_maj_min',
-- 4.0 : 'quad_diminished-from_perfect',
-- 3.5 : 'trpl_diminished-from_maj_min',
-- 3.0 : 'trpl_diminished-from_perfect',
-- 2.5 : 'dbl_diminished-from_maj_min',
-- 2   : 'dbl_diminished-from_perfect',
-- 1.5 : 'diminished-from_maj_min',
-- 1   : 'diminished-from_perfect',
-- 0.5 : 'minor',
-  0   : 'perfect',
-  0.5 : 'major',
-  1   : 'augmented-from_perfect',
-  1.5 : 'augmented-from_maj_min',
-  2   : 'dbl_augmented-from_perfect',
-  2.5 : 'dbl_augmented-from_maj_min',
-  3.0 : 'trpl_augmented-from_perfect',
-  3.5 : 'trpl_augmented-from_maj_min',
-  4.0 : 'quad_augmented-from_perfect',
-  4.5 : 'quad_augmented-from_maj_min'
+    -4.5: "quad_diminished-from_maj_min",
+    -4.0: "quad_diminished-from_perfect",
+    -3.5: "trpl_diminished-from_maj_min",
+    -3.0: "trpl_diminished-from_perfect",
+    -2.5: "dbl_diminished-from_maj_min",
+    -2: "dbl_diminished-from_perfect",
+    -1.5: "diminished-from_maj_min",
+    -1: "diminished-from_perfect",
+    -0.5: "minor",
+    0: "perfect",
+    0.5: "major",
+    1: "augmented-from_perfect",
+    1.5: "augmented-from_maj_min",
+    2: "dbl_augmented-from_perfect",
+    2.5: "dbl_augmented-from_maj_min",
+    3.0: "trpl_augmented-from_perfect",
+    3.5: "trpl_augmented-from_maj_min",
+    4.0: "quad_augmented-from_perfect",
+    4.5: "quad_augmented-from_maj_min",
 }
 
 qualities = dict()
 
-class IntervalQuality():
+
+class IntervalQuality:
     """
     >>> len(qualities)
     19
@@ -38,9 +37,8 @@ class IntervalQuality():
     IntervalQuality("perfect", 0)
     """
 
-
     def __new__(cls, name, rel_number):
-        
+
         try:
             return _get_quality(name)
         except:
@@ -85,7 +83,6 @@ class IntervalQuality():
     def __sub__(self, halfsteps):
         return self.__add__(-halfsteps)
 
-
     # String representations
 
     @property
@@ -98,12 +95,14 @@ class IntervalQuality():
     def __repr__(self):
         return "".join(['IntervalQuality("', self.name, '", ', str(self.__rel_number), ")"])
 
+
 # Instantiate the Interval Qualities
 for number, name in q_vals.items():
     IntervalQuality(name, number)
 
 
 ###########
+
 
 @functools.singledispatch
 def _get_quality(q, d=None):
@@ -115,6 +114,7 @@ def _get_quality(q, d=None):
     """
     raise TypeError("The quality identifier supplied is not a supported type.")
 
+
 @_get_quality.register(int)
 @_get_quality.register(float)
 def _(q, d=None):
@@ -123,6 +123,7 @@ def _(q, d=None):
     IntervalQuality("perfect", 0)
     """
     return qualities[q]
+
 
 @_get_quality.register(tuple)
 def _(v, _=None):
@@ -139,7 +140,7 @@ def _(v, _=None):
     base_q_val = d_val.q.value
 
     # correct for octave break cases
-    if abs(modifier) > 4: # 4 = triple aug or triple dim
+    if abs(modifier) > 4:  # 4 = triple aug or triple dim
         if c < d_val.c:
             d_val_c = d_val.c - C_LEN
         if c > d_val.c:
@@ -147,7 +148,6 @@ def _(v, _=None):
         modifier = c - d_val_c
 
     return _get_quality(base_q_val + modifier)
-
 
 
 @_get_quality.register(str)
@@ -184,11 +184,11 @@ def _(q, d=None):
     IntervalQuality("diminished-from_maj_min", -1.5)
     """
 
-    for rel_number, quality in qualities.items():
+    for _rel_number, quality in qualities.items():
         if quality.name.lower() == q.lower():
             return quality
 
-    for rel_number, quality in qualities.items():
+    for _rel_number, quality in qualities.items():
         if (len(q) == 1 and q == "M") or q.lower() == "maj":
             return _get_quality("major")
         if (len(q) == 1 and q == "m") or q.lower() == "min":
@@ -197,20 +197,21 @@ def _(q, d=None):
         if q.lower() == "p" or q.lower() == "per":
             return _get_quality("perfect")
 
-        if q.lower() in ["a","d"] or any(qstr in q.lower() for qstr in ['dim', 'aug', 'dbl']):
+        if q.lower() in ["a", "d"] or any(qstr in q.lower() for qstr in ["dim", "aug", "dbl"]):
             return _get_quality_x(q, d)
 
-def _get_quality_x(q, d): # x= extended
+
+def _get_quality_x(q, d):  # x= extended
     q = q.lower()
     base_quality = MS[d].q.value
-    
-    if q == 'a' or 'aug' in q:
-        q_add = 1 # quality addend
 
-    if q == 'd' or 'dim' in q:
+    if q == "a" or "aug" in q:
+        q_add = 1  # quality addend
+
+    if q == "d" or "dim" in q:
         q_add = -1
 
-    if 'dbl' in q or 'double' in q:
+    if "dbl" in q or "double" in q:
         q_add = q_add * 2
 
     if base_quality == 0:

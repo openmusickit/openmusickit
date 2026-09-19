@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 from fractions import Fraction as F
 from numbers import Rational
 
-from openmusickit.values.time.duration import Duration, ZeroDuration, TemporalRatio, TemporalUnit
+from openmusickit.values.time.duration import Duration, TemporalRatio, TemporalUnit, ZeroDuration
 from openmusickit.values.time.errors import ScalingError
+
 
 class MeteredDuration(Duration):
     """The duration of notes, rests, or other temporal musical items
     as understood and notated in Western Standard Music Notation.
-    
+
     Duration values are stored as nominal values,
     so a dotted quarter notes is stored as: {n: 1, d: 4, dots: 1}.
     Actual temporal values (3, 8) are calculated when queried.
@@ -16,10 +18,10 @@ class MeteredDuration(Duration):
     Notes longer than a whole note (breve, longa, maxima) are stored
     with a power-of-two numerator and a denominator of 1,
     so a breve is {n: 2, d: 1, dots: 0} and a dotted longa is {n: 4, d: 1, dots: 1}.
-    
+
     Tuplet values are handled by storing a TemporalRatio,
     which is (n, TemporalElements) against (m, TemporalElements).
-    
+
     A quarter note inside standard quarter note triplet would then be:
 
         Duration(
@@ -35,17 +37,17 @@ class MeteredDuration(Duration):
 
     """
 
-    def __init__(self, n:int, d: int, dots: int= 0, tr: TemporalRatio = None):
+    def __init__(self, n: int, d: int, dots: int = 0, tr: TemporalRatio = None):
         """
         MeteredDuration is created with a two-argument nominal note value,
         which may optionally include dots,
         and an optional ``TemporalRatio`` that defines timing and placement
         within a tuplet figure.
 
-        
+
         Examples
         --------
-        
+
         ```
         quarter_note = MeteredDuration(1, 4)
 
@@ -55,19 +57,19 @@ class MeteredDuration(Duration):
         breve = MeteredDuration(2, 1)
         dotted_breve = MeteredDuration(2, 1, dots=1)
         also_dotted_breve = MeteredDuration(3, 1)
-            
+
         triplet_ratio = TemporalRatio(
             TemporalUnit(3, quarter_note),
             TemporalUnit(2, quarter_note)
         )
         quarter_note_in_triplet = MeteredDuration(1, 4, tr=triplet_ratio)
         ```
-        
+
         Parameters
         ----------
         n : int
             The numerator of the nominal note value.
-            
+
             This should normally be 1 for standard un-dotted note values,
             and should also be 1 if dots are specified.
             Dotted notes can be expressed as their full nominal value
@@ -103,13 +105,15 @@ class MeteredDuration(Duration):
             if dots is negative, or if a full dotted value is given
             together with additional dots.
 
-        """    
+        """
 
         if isinstance(d, bool) or not isinstance(d, int) or not _is_power_of_two(d):
             raise ValueError("The denominator must be a positive integer power of 2.")
 
         if isinstance(n, bool) or not isinstance(n, int) or n <= 0:
-            raise ValueError("The numerator must be a positive integer. (Use ZeroDuration for a zero-length duration.)")
+            raise ValueError(
+                "The numerator must be a positive integer. (Use ZeroDuration for a zero-length duration.)"
+            )
 
         if dots < 0:
             raise ValueError("A duration cannot have negative dots.")
@@ -125,15 +129,18 @@ class MeteredDuration(Duration):
             raise ValueError(
                 f"{n}/{d} is not a single notatable duration. "
                 "The numerator must be 1 less than a power of 2 (a dotted value), "
-                "or a power of two over 1 (breve, longa, maxima).")
+                "or a power of two over 1 (breve, longa, maxima)."
+            )
 
         implied_dots = (odd + 1).bit_length() - 2
 
         if implied_dots > 0 and dots > 0:
-            raise ValueError("Use a nominal value + dots, or an actual value without dots, never both.")
+            raise ValueError(
+                "Use a nominal value + dots, or an actual value without dots, never both."
+            )
 
         # the base (undotted) value: strip the dot factor back out
-        base = value * (2 ** implied_dots) / odd
+        base = value * (2**implied_dots) / odd
 
         self._n = base.numerator
         self._d = base.denominator
@@ -149,7 +156,9 @@ class MeteredDuration(Duration):
         return cls(value.numerator, value.denominator, tr=tr)
 
     @classmethod
-    def from_length(cls, length: Rational, *, tr: TemporalRatio = None) -> MeteredDuration | TiedDuration:
+    def from_length(
+        cls, length: Rational, *, tr: TemporalRatio = None
+    ) -> MeteredDuration | TiedDuration:
         """Resolve *any* positive rational length into notation:
         a single ``MeteredDuration`` where one exists, a tuplet member where the
         length needs one, and a ``TiedDuration`` where it needs a tie.
@@ -274,7 +283,9 @@ class MeteredDuration(Duration):
         """
         length = F(length)
         if length <= 0:
-            raise ValueError("from_length needs a positive length. (Use ZeroDuration for a zero-length duration.)")
+            raise ValueError(
+                "from_length needs a positive length. (Use ZeroDuration for a zero-length duration.)"
+            )
 
         # rule 1
         try:
@@ -287,12 +298,14 @@ class MeteredDuration(Duration):
         power_of_two_part = den & -den
         odd = den // power_of_two_part
         if odd > 1:
-            contextual_count = 1 << (odd.bit_length() - 1)     # largest power of two below odd
-            notated = length * odd / contextual_count           # power-of-two denominator now
+            contextual_count = 1 << (odd.bit_length() - 1)  # largest power of two below odd
+            notated = length * odd / contextual_count  # power-of-two denominator now
             unit_length = _largest_plain_value_at_most(notated)
             unit = cls(unit_length.numerator, unit_length.denominator)
             unit_in_context = cls(unit_length.numerator, unit_length.denominator, tr=tr)
-            ratio = TemporalRatio(TemporalUnit(odd, unit), TemporalUnit(contextual_count, unit_in_context))
+            ratio = TemporalRatio(
+                TemporalUnit(odd, unit), TemporalUnit(contextual_count, unit_in_context)
+            )
             return cls.from_length(notated, tr=ratio)
 
         # rule 3: greedy tie
@@ -332,17 +345,17 @@ class MeteredDuration(Duration):
     def nominal_length(self) -> F:
         """The notated value, including dots but ignoring any tuplet ratio."""
         return F(*self.real_note_duration)
-    
+
     @property
     def rational_length(self):
         if self._tr is None:
             return self.nominal_length
         return self.nominal_length * self._tr.r
-    
+
     @property
     def scalar_length(self):
         return float(self.rational_length)
-        
+
     @property
     def real_note_duration(self) -> tuple[int, int]:
         """
@@ -352,9 +365,9 @@ class MeteredDuration(Duration):
         Returns:
             (int, int): Tuple of (numerator, denominator) of the total duration.
         """
-        f = F(self.n * (2 ** (self.dots + 1) - 1), self.d * (2 ** self.dots))
+        f = F(self.n * (2 ** (self.dots + 1) - 1), self.d * (2**self.dots))
         return f.numerator, f.denominator
-    
+
     def scale(self, scalar: int | F) -> MeteredDuration | TiedDuration:
         """Returns this duration augmented or diminished by ``scalar``.
 
@@ -409,7 +422,7 @@ class MeteredDuration(Duration):
         elif self._tr is None:
             return f"MeteredDuration({self.n}, {self.d}, dots={self.dots})"
         else:
-            return f"MeteredDuration({self.n}, {self.d}, dots={self.dots}, tr={self._tr!r})" 
+            return f"MeteredDuration({self.n}, {self.d}, dots={self.dots}, tr={self._tr!r})"
 
 
 class TiedDuration(Duration):
@@ -424,7 +437,9 @@ class TiedDuration(Duration):
     def __init__(self, members: list[Duration]):
         members = list(members)
         if len(members) < 2:
-            raise ValueError("A TiedDuration needs at least two members. Use a plain Duration for one.")
+            raise ValueError(
+                "A TiedDuration needs at least two members. Use a plain Duration for one."
+            )
         self._members = members
 
     @property
@@ -515,9 +530,9 @@ def _largest_single_value_at_most(x: F) -> F:
     dots = 0
     while base * (2 ** (dots + 2) - 1) / (2 ** (dots + 1)) <= x:
         dots += 1
-    return base * (2 ** (dots + 1) - 1) / (2 ** dots)
+    return base * (2 ** (dots + 1) - 1) / (2**dots)
 
-    
+
 def _is_power_of_two(n: int | F) -> bool:
     """True for 1, 2, 4, 8... and also for 1/2, 1/4, 1/8..."""
     if isinstance(n, bool):

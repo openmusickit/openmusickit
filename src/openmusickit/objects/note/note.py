@@ -1,22 +1,23 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
-from openmusickit.values.tone.tone import Tone
-from openmusickit.values.tone.silent_tone import SilentTone
-from openmusickit.values.time.duration import Duration
 from openmusickit.objects.omk_object import SequentialObject, TonalObject
+from openmusickit.values.time.duration import Duration
+from openmusickit.values.tone.silent_tone import SilentTone
+from openmusickit.values.tone.tone import Tone
 
 
 @dataclass(kw_only=True)
 class NoteEvent(SequentialObject, TonalObject):
     """A MultiNote is a SequentialObject that contains zero or more Tones played simultaneously within a single voice, line, or part.
-    
+
     A NoteEvent with zero tones is not considered a rest, but rather a duration with unspecified tonal content ---
     either because the tonal content doesn't need to be specified (for example, a comping chart),
     or because it has not yet been specified (for example, in a sketch or draft).
-    
+
     A Rest is represented as a NoteEvent with a SilentTone.
-    Unpitched percussion notes are represented a NoteEvents with an UnpitchedTone. """
+    Unpitched percussion notes are represented a NoteEvents with an UnpitchedTone."""
+
     tones: set[Tone]
 
     def __post_init__(self):
@@ -33,7 +34,9 @@ class NoteEvent(SequentialObject, TonalObject):
         ValueError: A NoteEvent cannot contain a SilentTone and other tones simultaneously.
         """
         if self.is_rest and len(self.tones) > 1:
-            raise ValueError("A NoteEvent cannot contain a SilentTone and other tones simultaneously.")
+            raise ValueError(
+                "A NoteEvent cannot contain a SilentTone and other tones simultaneously."
+            )
 
     @property
     def is_rest(self) -> bool:
@@ -134,8 +137,7 @@ class NoteEvent(SequentialObject, TonalObject):
             new_tone = operation(tone, *args, **kwargs)
             if not isinstance(new_tone, Tone):
                 raise TypeError(
-                    f"`operation` must return a Tone, "
-                    f"but returned {new_tone!r} for {tone!r}."
+                    f"`operation` must return a Tone, but returned {new_tone!r} for {tone!r}."
                 )
             new_tones.add(new_tone)
         self.tones = new_tones
@@ -152,7 +154,7 @@ class NoteEvent(SequentialObject, TonalObject):
             return f"Rest(duration={self.duration})"
         tones = sorted(repr(tone) for tone in self.tones)
         return f"NoteEvent(tones=[{', '.join(tones)}], duration={self.duration})"
-    
+
 
 def Rest(duration: Duration) -> NoteEvent:
     """Utility function that generates a Note with a Silent Tone.
@@ -162,8 +164,5 @@ def Rest(duration: Duration) -> NoteEvent:
     >>> Rest(None).tones == {SilentTone()}
     True
     """
-    
-    return NoteEvent(tones={SilentTone()}, duration=duration)
 
-    
-        
+    return NoteEvent(tones={SilentTone()}, duration=duration)

@@ -1,12 +1,13 @@
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from openmusickit.objects.omk_object import SequentialObject, TonalObject
-from openmusickit.utils.omk_warning import OmkWarning
-from openmusickit.values.time.duration import Duration, ZeroDuration
 from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+from openmusickit.utils.omk_warning import OmkWarning
+from openmusickit.values.time.duration import Duration, ZeroDuration
+
 
 @dataclass(kw_only=True)
 class ContextEvent(SequentialObject):
@@ -22,7 +23,9 @@ class ContextEvent(SequentialObject):
     ...
     TypeError: ...
     """
+
     duration: Duration = field(default_factory=ZeroDuration, init=False)
+
 
 @dataclass(kw_only=True)
 class KeySignatureEvent(ContextEvent, TonalObject):
@@ -33,6 +36,7 @@ class KeySignatureEvent(ContextEvent, TonalObject):
     For an empty key signature with no alterations and no tonal implications,
     use `_key = openmusickit.systems.wsmn.tonal.symbols.NoKey`
     """
+
     _key: Key | None = None
     _key_signature: KeySignature | None = None
 

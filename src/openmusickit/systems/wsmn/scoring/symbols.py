@@ -24,7 +24,7 @@ Examples
 <AttachmentMode.EITHER: 'either'>
 """
 
-from openmusickit.values.scoring.mark import Mark, MarkType, AttachmentMode
+from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
 
 # =============================================================================
 # ARTICULATIONS

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
@@ -17,8 +18,7 @@ class OmkId:
     (the pitch middle C, the idea of a major chord, the abstract duration of a quarter note, etc),
     only with specific instances of those appearing in a score.
     """
-    
-    
+
     value: UUID | str | None = None
 
     def __post_init__(self) -> None:
@@ -33,20 +33,19 @@ class OmkId:
             if self.value.version != 4:
                 raise ValueError(f"{self.value!r} is not a valid uuid4.")
         else:
-            raise TypeError(
-                f"OmkId value must be a UUID or str, got {type(self.value).__name__}."
-            )
+            raise TypeError(f"OmkId value must be a UUID or str, got {type(self.value).__name__}.")
 
     @classmethod
     def new(cls) -> OmkId:
         return cls(uuid4())
+
     @classmethod
     def parse(cls, value: str) -> OmkId:
         return cls(UUID(value))
 
     def __str__(self) -> str:
         return str(self.value)
-    
+
     def __eq__(self, other: object) -> bool:
         """Equal to another OmkId, or to the string form of one, with the same UUID.
 
@@ -63,4 +62,3 @@ class OmkId:
         if isinstance(other, (OmkId, str)):
             return str(self) == str(other)
         return NotImplemented
-    

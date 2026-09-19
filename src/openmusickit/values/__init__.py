@@ -1,4 +1,4 @@
-from . import time, tone
+from openmusickit.values import time, tone
 
 __all__ = [
     "time",
@@ -9,4 +9,3 @@ __all__ = [
 
 Most Values are abstract base classes representing fundamental musical concepts,
 and need to be subclassed within a specific tonal or temporal musical system."""
-

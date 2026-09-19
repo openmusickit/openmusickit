@@ -1,15 +1,17 @@
-from typing import Callable, Iterator, Optional
+from collections.abc import Callable, Iterator
 
-from openmusickit.graph.graph_adapter import GraphAdapter
-from openmusickit.graph.edges.edge import OmkEdge, EdgeType
-from openmusickit.utils.id import OmkId
-from openmusickit.objects.omk_object import OmkObject
-from bidict import bidict
 import rustworkx as rx
+from bidict import bidict
+
+from openmusickit.graph.edges.edge import EdgeType, OmkEdge
+from openmusickit.graph.graph_adapter import GraphAdapter
+from openmusickit.objects.omk_object import OmkObject
+from openmusickit.utils.id import OmkId
+
 
 class RustworkxAdapter(GraphAdapter):
     """Default adapter for OmkGraph.
-    
+
     Implementation note:
     This adapter uses Rustworkx's PyDiGraph as the underlying graph structure.
     OmkObjects and OmkEdges are registered by the string value of their OmkId with their Rustworkx integer ids in bidirectional indices.
@@ -22,9 +24,8 @@ class RustworkxAdapter(GraphAdapter):
 
     def __init__(self):
         self.graph = rx.PyDiGraph()
-        self._node_index = bidict() # OmkId: rxid
-        self._edge_index = bidict() # OmkId: rxid
-
+        self._node_index = bidict()  # OmkId: rxid
+        self._edge_index = bidict()  # OmkId: rxid
 
     # ID and registration helpers
 
@@ -33,17 +34,17 @@ class RustworkxAdapter(GraphAdapter):
 
         self._node_index[str(node._id)] = rxid
 
-    def _unregister_node(self, node: OmkObject|OmkId|str) -> None:
+    def _unregister_node(self, node: OmkObject | OmkId | str) -> None:
         del self._node_index[str(node._id if hasattr(node, "_id") else node)]
 
     def _unregister_node_rxid(self, rxid: int) -> None:
         del self._node_index.inverse[rxid]
 
-    def _rxid(self, node: OmkObject|OmkEdge|OmkId|str) -> int:
+    def _rxid(self, node: OmkObject | OmkEdge | OmkId | str) -> int:
         """Returns the Rustworks integer id of the OmkObject or OmkEdge."""
-        try: # it's a node
+        try:  # it's a node
             return self._node_index[str(node._id if hasattr(node, "_id") else node)]
-        except KeyError: # it's an edge
+        except KeyError:  # it's an edge
             return self._edge_index[str(node._id if hasattr(node, "_id") else node)]
 
     def _omkid_node(self, rxid: int) -> str:
@@ -59,12 +60,11 @@ class RustworkxAdapter(GraphAdapter):
         """Registers an edge and its Rustworkx integer id to self._edge_index."""
         self._edge_index[str(edge._id)] = rxid
 
-    def _unregister_edge(self, edge: OmkEdge|OmkId|str) -> None:
+    def _unregister_edge(self, edge: OmkEdge | OmkId | str) -> None:
         del self._edge_index[str(edge._id if hasattr(edge, "_id") else edge)]
 
     def _get_edge_by_rxid(self, rxid: int) -> OmkEdge:
         return self.graph.get_edge_data_by_index(rxid)
-
 
     # Add and remove operations
 
@@ -79,11 +79,13 @@ class RustworkxAdapter(GraphAdapter):
 
     def add_edge(self, source: OmkObject, target: OmkObject, edge: OmkEdge) -> None:
         """Add an edge from source to target to the graph.
-        
+
         Raises an exception if there is already an edge of the same type between source and target.
         Raises an exception if edge_type is NEXT and source already has an outgoing edge of type NEXT."""
         if self.has_edge(source, target, edge.type):
-            raise ValueError(f"An edge of type {edge.type!r} already exists between {source!r} and {target!r}.")
+            raise ValueError(
+                f"An edge of type {edge.type!r} already exists between {source!r} and {target!r}."
+            )
         if edge.type == EdgeType.NEXT and any(self.out_edges(source, EdgeType.NEXT)):
             raise ValueError(f"Source {source!r} already has an outgoing edge of type NEXT.")
         rxid = self.graph.add_edge(self._rxid(source), self._rxid(target), edge)
@@ -91,7 +93,7 @@ class RustworkxAdapter(GraphAdapter):
 
     def remove_node(self, node: OmkObject) -> None:
         """Remove a node (and its incident edges) from the graph.
-        
+
         Raises an exception if the node does not exist."""
         rxid = self._rxid(node)
         for edge_rxid in self.graph.incident_edges(rxid, all_edges=True):
@@ -105,14 +107,12 @@ class RustworkxAdapter(GraphAdapter):
         self.graph.remove_edge_from_index(rxid)
         self._unregister_edge(edge)
 
-
-
     # Retrieval operations
 
-    def get_node(self, node_id: OmkId|str) -> OmkObject:
+    def get_node(self, node_id: OmkId | str) -> OmkObject:
         """Return the node with the given OmkId."""
         return self.graph.get_node_data(self._rxid(node_id))
-    
+
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:
         """Return the edge of the given type from source to target."""
         for edge in self.graph.get_all_edge_data(self._rxid(source), self._rxid(target)):
@@ -122,10 +122,12 @@ class RustworkxAdapter(GraphAdapter):
             f"No edge of type {edge_type!r} between {source!r} and {target!r}."
         )
 
-    def get_edges(self, source: OmkObject, target: OmkObject) -> tuple[list[OmkEdge], list[OmkEdge]]:
+    def get_edges(
+        self, source: OmkObject, target: OmkObject
+    ) -> tuple[list[OmkEdge], list[OmkEdge]]:
         """Returns all edges between source and target, in two lists:
-            return_tuple[0] --> edges from source to target
-            return_tuple[1] --> edges from target to source
+        return_tuple[0] --> edges from source to target
+        return_tuple[1] --> edges from target to source
         """
         source_rxid = self._rxid(source)
         target_rxid = self._rxid(target)
@@ -163,7 +165,9 @@ class RustworkxAdapter(GraphAdapter):
         """Return True if node is present in the graph."""
         return str(node._id) in self._node_index
 
-    def has_edge(self, source: OmkObject, target: OmkObject, edge_type: Optional[EdgeType] = None) -> bool:
+    def has_edge(
+        self, source: OmkObject, target: OmkObject, edge_type: EdgeType | None = None
+    ) -> bool:
         """Return True if an edge (optionally of the given type) exists from source to target."""
         source_rxid = self._rxid(source)
         target_rxid = self._rxid(target)
@@ -185,8 +189,8 @@ class RustworkxAdapter(GraphAdapter):
 
     def nodes(
         self,
-        node_type: Optional[type[OmkObject]] = None,
-        predicate: Optional[Callable[[OmkObject], bool]] = None,
+        node_type: type[OmkObject] | None = None,
+        predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes, optionally filtered by node_type and/or predicate."""
         for node in self.graph.nodes():
@@ -199,7 +203,7 @@ class RustworkxAdapter(GraphAdapter):
     def edges(
         self,
         edge_type: EdgeType | None = None,
-        predicate: Optional[Callable[[OmkEdge], bool]] = None,
+        predicate: Callable[[OmkEdge], bool] | None = None,
     ) -> Iterator[OmkEdge]:
         """Iterate over edges, optionally filtered by edge_type and/or predicate."""
         for edge in self.graph.edges():
@@ -213,7 +217,7 @@ class RustworkxAdapter(GraphAdapter):
         self,
         source: OmkObject,
         target: OmkObject,
-        edge_type: Optional[EdgeType] = None,
+        edge_type: EdgeType | None = None,
     ) -> Iterator[OmkEdge]:
         """Iterate over edges from source to target, optionally filtered by edge_type."""
         try:
@@ -228,9 +232,9 @@ class RustworkxAdapter(GraphAdapter):
     def successors(
         self,
         node: OmkObject,
-        node_type: Optional[type[OmkObject]] = None,
-        edge_type: Optional[EdgeType] = None,
-        predicate: Optional[Callable[[OmkObject], bool]] = None,
+        node_type: type[OmkObject] | None = None,
+        edge_type: EdgeType | None = None,
+        predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes reachable from node via an outgoing edge, optionally filtered."""
         for _, target_rxid, edge in self.graph.out_edges(self._rxid(node)):
@@ -246,9 +250,9 @@ class RustworkxAdapter(GraphAdapter):
     def predecessors(
         self,
         node: OmkObject,
-        node_type: Optional[type[OmkObject]] = None,
-        edge_type: Optional[EdgeType] = None,
-        predicate: Optional[Callable[[OmkObject], bool]] = None,
+        node_type: type[OmkObject] | None = None,
+        edge_type: EdgeType | None = None,
+        predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over nodes that have an outgoing edge to node, optionally filtered."""
         for source_rxid, _, edge in self.graph.in_edges(self._rxid(node)):
@@ -261,27 +265,30 @@ class RustworkxAdapter(GraphAdapter):
                 continue
             yield predecessor
 
-    def get_next(self, node: OmkObject) -> Optional[OmkObject]:
+    def get_next(self, node: OmkObject) -> OmkObject | None:
         """Return the next node connected by an edge of type NEXT from the given node, if it exists."""
         try:
-            return self.graph.find_successor_node_by_edge(self._rxid(node), lambda edge: edge.type == EdgeType.NEXT)
+            return self.graph.find_successor_node_by_edge(
+                self._rxid(node), lambda edge: edge.type == EdgeType.NEXT
+            )
         except rx.NoSuitableNeighbors:
             return None
 
-    def get_previous(self, node: OmkObject) -> Optional[OmkObject]:
+    def get_previous(self, node: OmkObject) -> OmkObject | None:
         """Return the previous node connected by an edge of type NEXT to the given node, if it exists."""
         try:
-            return self.graph.find_predecessor_node_by_edge(self._rxid(node), lambda edge: edge.type == EdgeType.NEXT)
+            return self.graph.find_predecessor_node_by_edge(
+                self._rxid(node), lambda edge: edge.type == EdgeType.NEXT
+            )
         except rx.NoSuitableNeighbors:
             return None
 
-    
     def neighbors(
         self,
         node: OmkObject,
-        node_type: Optional[type[OmkObject]] = None,
-        edge_type: Optional[EdgeType] = None,
-        predicate: Optional[Callable[[OmkObject], bool]] = None,
+        node_type: type[OmkObject] | None = None,
+        edge_type: EdgeType | None = None,
+        predicate: Callable[[OmkObject], bool] | None = None,
     ) -> Iterator[OmkObject]:
         """Iterate over all nodes adjacent to node (predecessors and successors), optionally filtered."""
         seen: set[str] = set()
@@ -293,21 +300,23 @@ class RustworkxAdapter(GraphAdapter):
                 continue
             yield neighbor
 
-    def out_edges(self, node: OmkObject, edge_type: Optional[EdgeType] = None) -> Iterator[OmkEdge]:
+    def out_edges(self, node: OmkObject, edge_type: EdgeType | None = None) -> Iterator[OmkEdge]:
         """Iterate over edges originating from node, optionally filtered by edge_type."""
         for _, _, edge in self.graph.out_edges(self._rxid(node)):
             if edge_type is not None and edge.type != edge_type:
                 continue
             yield edge
 
-    def in_edges(self, node: OmkObject, edge_type: Optional[EdgeType] = None) -> Iterator[OmkEdge]:
+    def in_edges(self, node: OmkObject, edge_type: EdgeType | None = None) -> Iterator[OmkEdge]:
         """Iterate over edges terminating at node, optionally filtered by edge_type."""
         for _, _, edge in self.graph.in_edges(self._rxid(node)):
             if edge_type is not None and edge.type != edge_type:
                 continue
             yield edge
 
-    def incident_edges(self, node: OmkObject, edge_type: Optional[EdgeType] = None) -> Iterator[OmkEdge]:
+    def incident_edges(
+        self, node: OmkObject, edge_type: EdgeType | None = None
+    ) -> Iterator[OmkEdge]:
         """Iterate over all edges touching node (incoming and outgoing), optionally filtered by edge_type."""
         rxid = self._rxid(node)
         for edge_rxid in self.graph.incident_edges(rxid, all_edges=True):
@@ -332,5 +341,3 @@ class RustworkxAdapter(GraphAdapter):
     # NOTE: subgraph/edge_subgraph/copy/merge previously lived here but were
     # removed pending a redesign that moves derived-graph construction to
     # OmkGraph itself, built from lower-level adapter primitives.
-
-

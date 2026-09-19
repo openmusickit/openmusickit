@@ -3,13 +3,21 @@ from __future__ import annotations
 import re
 from enum import StrEnum, auto
 
+from openmusickit.systems.wsmn.tonal import interval_quality as iq
+from openmusickit.systems.wsmn.tonal import tonal_arithmetic as ta
+from openmusickit.systems.wsmn.tonal.constants import (
+    AC,
+    C_LEN,
+    D_LEN,
+    EURO_SF,
+    MS,
+    Accidental,
+    QualityType,
+    SolfegeStyle,
+)
 from openmusickit.utils.number_names import ordinals
-from openmusickit.values.tone.tone import Tone, PitchRepresentation
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
-from . import tonal_arithmetic as ta
-from . import interval_quality as iq
-from .constants import D_LEN, C_LEN, MS, AC, EURO_SF, QualityType, Accidental, SolfegeStyle
-
+from openmusickit.values.tone.tone import PitchRepresentation, Tone
 
 ### Vocabulary and grammar for TonalVector.from_string / from_ly ###
 #
@@ -18,10 +26,13 @@ from .constants import D_LEN, C_LEN, MS, AC, EURO_SF, QualityType, Accidental, S
 # single place where accepted spellings live; the patterns just glue them
 # together.
 
+
 class TonalDirection(StrEnum):
     """Direction for transposition or inversion of a TonalVector."""
+
     UP = auto()
     DOWN = auto()
+
 
 def _alternation(spellings) -> str:
     """A regex alternation matching any one of the given literal spellings,
@@ -31,7 +42,7 @@ def _alternation(spellings) -> str:
 
 ## Pitches ##
 
-_LETTERS = {diatone.ln: diatone.d for diatone in MS}   # 'c' -> 0, 'd' -> 1, ...
+_LETTERS = {diatone.ln: diatone.d for diatone in MS}  # 'c' -> 0, 'd' -> 1, ...
 
 
 def _pitch_names(solfege_style: SolfegeStyle) -> dict[str, tuple[int, int]]:
@@ -45,11 +56,12 @@ def _pitch_names(solfege_style: SolfegeStyle) -> dict[str, tuple[int, int]]:
     names = {letter: (d, 0) for letter, d in _LETTERS.items()}
     if solfege_style == SolfegeStyle.EURO_FIXED:
         names.update({syllable: (d, 0) for d, syllable in EURO_SF.items()})
-        names.update({'so': (4, 0), 'ti': (6, 0)})   # common alternates for 'sol' and 'si'
+        names.update({"so": (4, 0), "ti": (6, 0)})  # common alternates for 'sol' and 'si'
     if solfege_style == SolfegeStyle.OMK_MOVEABLE:
         for diatone in MS:
             names.update({syllable: (diatone.d, offset) for offset, syllable in diatone.sf.items()})
     return names
+
 
 _PITCH_NAMES = {style: _pitch_names(style) for style in SolfegeStyle}
 
@@ -62,28 +74,35 @@ def _accidental_spellings() -> dict[str, int]:
     spellings = {}
     for offset, accidental in AC.items():
         for spelling in (accidental.a, accidental.u, accidental.v.replace(" ", "")):
-            if spelling:   # a natural has no ASCII spelling
+            if spelling:  # a natural has no ASCII spelling
                 spellings[spelling] = offset
     return spellings
+
 
 _ACCIDENTALS = _accidental_spellings()
 
 # e.g. "c", "g#", "c𝄪", "csharp", "do-sharp", "bb3", "g-1"
 _PITCH_PATTERNS = {
-    style: re.compile(rf"""
+    style: re.compile(
+        rf"""
         (?P<name>{_alternation(names)})
         (?:-?(?P<accidental>{_alternation(_ACCIDENTALS)}))?
         (?P<octave>-?\d+)?
-    """, re.VERBOSE)
+    """,
+        re.VERBOSE,
+    )
     for style, names in _PITCH_NAMES.items()
 }
 
 # Lilypond note names, e.g. "c", "cis", "beses", "c'", "des,,"
-_LY_PITCH_PATTERN = re.compile(r"""
+_LY_PITCH_PATTERN = re.compile(
+    r"""
     (?P<letter>[a-g])
     (?P<accidental>(?:is)*|(?:es)*)    # each 'is' raises a half-step, each 'es' lowers one
     (?P<octave_marks>'*|,*)            # each ' raises an octave, each , lowers one
-""", re.VERBOSE)
+""",
+    re.VERBOSE,
+)
 
 # Lilypond also accepts the Dutch contractions 'as' for 'aes' and 'es' for
 # 'ees' (and so 'ases' for 'aeses', 'eses' for 'eeses').
@@ -99,20 +118,20 @@ def _ly_relative_octave(d: int, prev: tuple) -> int:
     """The octave Lilypond's \\relative mode gives to letter name d when it
     follows prev: whichever octave puts it within a fourth (three letter
     names) of prev, above or below. As in Lilypond, accidentals play no part."""
-    steps = (d - prev[0] + 3) % D_LEN - 3   # letter-name steps from prev, -3..3
+    steps = (d - prev[0] + 3) % D_LEN - 3  # letter-name steps from prev, -3..3
     return (prev[2] * D_LEN + prev[0] + steps) // D_LEN
 
 
 def _pitch_from_match(m: re.Match, names: dict, mid_c: int) -> tuple:
     """(d, c[, o]) for a string matched by one of the _PITCH_PATTERNS."""
-    d, chromatic_offset = names[m['name']]
-    if m['accidental']:
-        chromatic_offset += _ACCIDENTALS[m['accidental']]
+    d, chromatic_offset = names[m["name"]]
+    if m["accidental"]:
+        chromatic_offset += _ACCIDENTALS[m["accidental"]]
     c = (MS[d].c + chromatic_offset) % C_LEN
 
-    if m['octave'] is None:
+    if m["octave"] is None:
         return (d, c)
-    return (d, c, int(m['octave']) - mid_c)
+    return (d, c, int(m["octave"]) - mid_c)
 
 
 ## Intervals ##
@@ -120,25 +139,39 @@ def _pitch_from_match(m: re.Match, names: dict, mid_c: int) -> tuple:
 # Quality words, mapped to a canonical kind. Bare 'M' (major) and bare 'm'
 # (minor) are the only case-sensitive spellings; see _quality_kind.
 _QUALITY_KINDS = {
-    'p': 'perfect', 'per': 'perfect', 'perfect': 'perfect',
-    'M': 'major', 'maj': 'major', 'major': 'major',
-    'm': 'minor', 'min': 'minor', 'minor': 'minor',
-    'aug': 'augmented', 'augmented': 'augmented',
-    'dim': 'diminished', 'diminished': 'diminished',
+    "p": "perfect",
+    "per": "perfect",
+    "perfect": "perfect",
+    "M": "major",
+    "maj": "major",
+    "major": "major",
+    "m": "minor",
+    "min": "minor",
+    "minor": "minor",
+    "aug": "augmented",
+    "augmented": "augmented",
+    "dim": "diminished",
+    "diminished": "diminished",
 }
 
 # Prefixes for multiply augmented/diminished intervals, mapped to how many
 # times. The three-letter forms are what IntervalQuality.abbr produces.
 _QUALITY_MULTIPLIERS = {
-    'dbl': 2, 'double': 2,
-    'trp': 3, 'trpl': 3, 'triple': 3,
-    'qua': 4, 'quad': 4, 'quadruple': 4,
+    "dbl": 2,
+    "double": 2,
+    "trp": 3,
+    "trpl": 3,
+    "triple": 3,
+    "qua": 4,
+    "quad": 4,
+    "quadruple": 4,
 }
 
-_NUMBER_WORDS = {diatone.i: diatone.d + 1 for diatone in MS}   # 'unison' -> 1, 'second' -> 2, ...
+_NUMBER_WORDS = {diatone.i: diatone.d + 1 for diatone in MS}  # 'unison' -> 1, 'second' -> 2, ...
 
 # e.g. "P5", "m3", "aug4", "dbldim5", "perfectfifth", "M9th", "aug4+1"
-_INTERVAL_PATTERN = re.compile(rf"""
+_INTERVAL_PATTERN = re.compile(
+    rf"""
     (?P<multiplier>{_alternation(_QUALITY_MULTIPLIERS)})?
     (?P<quality>{_alternation({k.lower() for k in _QUALITY_KINDS})})
     (?:
@@ -146,12 +179,14 @@ _INTERVAL_PATTERN = re.compile(rf"""
       | (?P<number_word>{_alternation(_NUMBER_WORDS)})
     )
     (?P<octave>[+-]\d+)?    # octave suffix as in IntervalQuality.abbr, e.g. "aug4+1"
-""", re.VERBOSE | re.IGNORECASE)
+""",
+    re.VERBOSE | re.IGNORECASE,
+)
 
 
 def _quality_kind(word: str) -> str:
     """The canonical quality kind for a quality word matched by _INTERVAL_PATTERN."""
-    if word in ('M', 'm'):   # the one case-sensitive spelling
+    if word in ("M", "m"):  # the one case-sensitive spelling
         return _QUALITY_KINDS[word]
     return _QUALITY_KINDS[word.lower()]
 
@@ -167,22 +202,24 @@ def _interval_quality(kind: str, times: int, d: int) -> iq.IntervalQuality:
     """
     degree = MS[d]
     is_perfect_type = degree.q == QualityType.P
-    if kind == 'perfect' and not is_perfect_type:
-        raise ValueError(f"A {degree.i} cannot be perfect (only major, minor, augmented or diminished).")
-    if kind in ('major', 'minor') and is_perfect_type:
+    if kind == "perfect" and not is_perfect_type:
+        raise ValueError(
+            f"A {degree.i} cannot be perfect (only major, minor, augmented or diminished)."
+        )
+    if kind in ("major", "minor") and is_perfect_type:
         raise ValueError(f"A {degree.i} cannot be {kind} (only perfect, augmented or diminished).")
 
     # IntervalQuality is keyed by a "relative number": 0 for perfect,
     # +0.5/-0.5 for major/minor, and each augmentation or diminution moves
     # a further 1 away from there.
     base = degree.q.value
-    if kind == 'perfect':
+    if kind == "perfect":
         rel_number = 0
-    elif kind == 'major':
+    elif kind == "major":
         rel_number = base
-    elif kind == 'minor':
+    elif kind == "minor":
         rel_number = -base
-    elif kind == 'augmented':
+    elif kind == "augmented":
         rel_number = base + times
     else:  # diminished
         rel_number = -base - times
@@ -190,32 +227,36 @@ def _interval_quality(kind: str, times: int, d: int) -> iq.IntervalQuality:
     try:
         return iq._get_quality(rel_number)
     except KeyError:
-        raise ValueError(f"{times} times {kind} is beyond the supported range of interval qualities.") from None
+        raise ValueError(
+            f"{times} times {kind} is beyond the supported range of interval qualities."
+        ) from None
 
 
 def _interval_from_match(m: re.Match) -> tuple:
     """(d, c[, o]) for a string matched by _INTERVAL_PATTERN."""
-    kind = _quality_kind(m['quality'])
-    times = _QUALITY_MULTIPLIERS[m['multiplier'].lower()] if m['multiplier'] else 1
-    if times > 1 and kind not in ('augmented', 'diminished'):
+    kind = _quality_kind(m["quality"])
+    times = _QUALITY_MULTIPLIERS[m["multiplier"].lower()] if m["multiplier"] else 1
+    if times > 1 and kind not in ("augmented", "diminished"):
         raise ValueError(f"'{m['multiplier']}' only applies to augmented or diminished intervals.")
 
-    if m['number']:
-        number = int(m['number'])
+    if m["number"]:
+        number = int(m["number"])
     else:
-        number = _NUMBER_WORDS[m['number_word'].lower()]
+        number = _NUMBER_WORDS[m["number_word"].lower()]
     if not 1 <= number < len(ordinals):
         raise ValueError(f"Interval numbers must be between 1 and {len(ordinals) - 1}.")
-    if m['ordinal'] and ordinals[number] != m['number'] + m['ordinal'].lower():
-        raise ValueError(f"'{m['number']}{m['ordinal']}' is not a valid ordinal (expected '{ordinals[number]}').")
+    if m["ordinal"] and ordinals[number] != m["number"] + m["ordinal"].lower():
+        raise ValueError(
+            f"'{m['number']}{m['ordinal']}' is not a valid ordinal (expected '{ordinals[number]}')."
+        )
 
     # Numbers above 7 are compound: a 9th is a 2nd plus an octave.
     d, octave = (number - 1) % D_LEN, (number - 1) // D_LEN
     c = (MS[d].c + _interval_quality(kind, times, d).chromatic_modifier) % C_LEN
 
-    if m['octave']:
-        octave += int(m['octave'])
-    if number > D_LEN or m['octave']:
+    if m["octave"]:
+        octave += int(m["octave"])
+    if number > D_LEN or m["octave"]:
         return (d, c, octave)
     return (d, c)
 
@@ -233,6 +274,7 @@ class TonalVector(tuple, Tone, Interval):
     >>> isinstance(TonalVector((0, 0)), Interval)
     True
     """
+
     _cache = {}
 
     def __new__(cls, *args):
@@ -247,7 +289,7 @@ class TonalVector(tuple, Tone, Interval):
         AttributeError: ...
 
         The canonical way to create a TonalVector is to pass in a tuple:
-        
+
         >>> TonalVector((0, 0, 0))
         TonalVector((0, 0, 0))
 
@@ -284,7 +326,7 @@ class TonalVector(tuple, Tone, Interval):
         True
         """
 
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             return
 
         """
@@ -292,7 +334,7 @@ class TonalVector(tuple, Tone, Interval):
         self.c = self[1] # chromatic value
 
         self._diatone = MS[self.d] # Q for source # rename?
-        
+
         # if a third value (octave) supplied
         try:
             self.o = self[2]
@@ -301,7 +343,7 @@ class TonalVector(tuple, Tone, Interval):
             self.o = None
             self._has_octave = False
         """
-            
+
         self._pitch = self._PitchRepresentation(self)
         self._interval = self._IntervalRepresentation(self)
 
@@ -330,22 +372,22 @@ class TonalVector(tuple, Tone, Interval):
     @property
     def d(self) -> int:
         return self[0]
-    
+
     @property
     def c(self) -> int:
         return self[1]
-    
+
     @property
     def o(self) -> int:
         try:
             return self[2]
         except:
             raise AttributeError("This TonalVector does not have an octave designation.")
-        
+
     @property
     def _diatone(self) -> dict:
         return MS[self.d]
-    
+
     @property
     def _has_octave(self) -> bool:
         if len(self) == 2:
@@ -364,7 +406,7 @@ class TonalVector(tuple, Tone, Interval):
         B♯ is 12, not 0, since the spelling matters.
 
         Read as a pitch, this is the `fifths` of the major key on that tonic
-        (see `KeySignature.fifths`). 
+        (see `KeySignature.fifths`).
         Read as an interval, it is how far a key signature moves around the circle
         when its tonic moves by this interval.
 
@@ -390,7 +432,6 @@ class TonalVector(tuple, Tone, Interval):
         """
         return (2 * self.d + 1) % 7 - 1 + 7 * self.pitch._modifier_value
 
-
     @classmethod
     def from_string(cls, s, mid_c=4, solfege_style=SolfegeStyle.EURO_FIXED):
         """Creates and returns a TonalVector,
@@ -412,7 +453,7 @@ class TonalVector(tuple, Tone, Interval):
 
         Examples
         --------
-        
+
         >>> TonalVector.from_string('C')
         TonalVector((0, 0))
 
@@ -429,10 +470,10 @@ class TonalVector(tuple, Tone, Interval):
         TonalVector((1, 2, 1))
 
         """
-        text = "".join(s.split())   # whitespace is never significant
+        text = "".join(s.split())  # whitespace is never significant
 
         ly = _ly_pitch_match(text.lower())
-        if ly and (ly['accidental'] or ly['octave_marks']):
+        if ly and (ly["accidental"] or ly["octave_marks"]):
             raise ValueError(f"{s!r} is a Lilypond pitch name; use TonalVector.from_ly instead.")
 
         interval = _INTERVAL_PATTERN.fullmatch(text)
@@ -482,23 +523,22 @@ class TonalVector(tuple, Tone, Interval):
         if not m:
             raise ValueError(f"{s!r} is not a Lilypond pitch name.")
 
-        d = _LETTERS[m['letter']]
-        accidental = m['accidental'].count('is') - m['accidental'].count('es')
+        d = _LETTERS[m["letter"]]
+        accidental = m["accidental"].count("is") - m["accidental"].count("es")
         if accidental not in AC:
             raise ValueError(f"{s!r} has more sharps or flats than are supported.")
         c = (MS[d].c + accidental) % C_LEN
 
         if prev_note is None:
-            octave = 0   # Lilypond's default octave is OMK's octave 0
+            octave = 0  # Lilypond's default octave is OMK's octave 0
         else:
             prev_note = cls(prev_note)
             if not prev_note._has_octave:
                 raise ValueError("prev_note must be octave-qualified.")
             octave = _ly_relative_octave(d, prev_note)
 
-        octave_shift = m['octave_marks'].count("'") - m['octave_marks'].count(',')
+        octave_shift = m["octave_marks"].count("'") - m["octave_marks"].count(",")
         return cls((d, c, octave + octave_shift))
-    
 
     ### Util ###
 
@@ -510,7 +550,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((2,4,1))
         TonalVector((2, 4, 1))
         """
-        return "TonalVector({})".format(repr(tuple(self)))
+        return f"TonalVector({repr(tuple(self))})"
 
     def __str__(self) -> str:
         """Returns a string that includes the __repr__ string,
@@ -532,7 +572,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> print(TonalVector((2,3,1)))
         TonalVector((2, 3, 1)) # E♭1
         """
-        return "{} # {}".format(repr(self), self.pitch.unicode)
+        return f"{repr(self)} # {self.pitch.unicode}"
 
     ### Tonal Arithmetic ###
 
@@ -569,8 +609,8 @@ class TonalVector(tuple, Tone, Interval):
         return TonalVector(ta.tonal_diff(self, x))
 
     def distance(self, x: tuple[int]) -> TonalVector:
-        """Returns the smallest difference 
-        
+        """Returns the smallest difference
+
         Examples
         --------
 
@@ -605,8 +645,7 @@ class TonalVector(tuple, Tone, Interval):
         TonalVector((6, 11, -1))
         """
 
-        return TonalVector(ta.tonal_nearest_instance(self,x))
-
+        return TonalVector(ta.tonal_nearest_instance(self, x))
 
     def __abs__(self) -> int:
         """Returns the distance, in half-steps, from self to the origin.
@@ -680,13 +719,15 @@ class TonalVector(tuple, Tone, Interval):
         except TypeError:
             return int(self) < ta.tonal_int(x)
 
-    def transpose(self, x: tuple[int], direction: TonalDirection=TonalDirection.UP) -> TonalVector:
+    def transpose(
+        self, x: tuple[int], direction: TonalDirection = TonalDirection.UP
+    ) -> TonalVector:
         """Returns a TonalVector transposed by x, in the given direction.
 
         Examples
         --------
 
-        >>> TonalVector((0,0)).transpose(TonalVector((1,1))) 
+        >>> TonalVector((0,0)).transpose(TonalVector((1,1)))
         TonalVector((1, 1))
         """
         if direction == TonalDirection.UP:
@@ -696,8 +737,7 @@ class TonalVector(tuple, Tone, Interval):
         else:
             raise ValueError(f"Invalid TonalDirection: {direction}.")
 
-
-    def inversion(self, x: tuple[int]=(0,0)) -> TonalVector:
+    def inversion(self, x: tuple[int] = (0, 0)) -> TonalVector:
         """Returns the inversion of self over x.
 
         When x is unspecified, returns the inversion of self over the origin,
@@ -748,7 +788,7 @@ class TonalVector(tuple, Tone, Interval):
 
     def __hash__(self) -> int:
         return hash(tuple(self))
-    
+
     def __call__(self, other):
         if isinstance(other, TonalVector):
             return self + other
@@ -757,8 +797,7 @@ class TonalVector(tuple, Tone, Interval):
         except TypeError:
             raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector")
 
-
-    def qualify_octave(self, oct: int=0):
+    def qualify_octave(self, oct: int = 0):
         """Returns a TonalVector with an octave designation set to `oct`.
 
         Example
@@ -778,8 +817,8 @@ class TonalVector(tuple, Tone, Interval):
 
         """
         return TonalVector((self.d, self.c, oct))
-    
-    def conditional_qualify_octave(self, oct: int=0):
+
+    def conditional_qualify_octave(self, oct: int = 0):
         """Returns a TonalVector with an octave designation set to `oct`,
         but does not change an existing octave designation if present."""
         if len(self) == 3:
@@ -788,39 +827,37 @@ class TonalVector(tuple, Tone, Interval):
 
     def unqualify_octave(self):
         """Returns a TonalVector without an octave designation.
-        
+
         Example
         -------
-        
+
         >>> TonalVector.unqualify_octave(TonalVector((1, 2, 3)))
         TonalVector((1, 2))
         """
 
         return TonalVector((self.d, self.c))
 
-
     ### Represent as a pitch ###
 
     class _PitchRepresentation(PitchRepresentation):
         """A TonalVector's pitch representation,
         which holds relevant details such as letter name, accidental, etc.
-        
+
         Example
         -------
 
         >>> type(TonalVector((0,0)).pitch)
         <class 'openmusickit.systems.wsmn.tonal.tonal_vector.TonalVector._PitchRepresentation'>
         """
-        
+
         def __init__(self, vector: TonalVector):
             self._v = vector
-
 
         # letter name
         @property
         def _ln(self) -> str:
             """The letter name (without sharps or flats) of the pitch.
-            
+
             Examples
             --------
 
@@ -840,7 +877,7 @@ class TonalVector(tuple, Tone, Interval):
 
             >>> TonalVector((0,0)).pitch._modifier_value # C natural
             0
-            
+
             >>> TonalVector((0,1)).pitch._modifier_value # C sharp
             1
 
@@ -853,11 +890,10 @@ class TonalVector(tuple, Tone, Interval):
             >>> TonalVector((6,0)).pitch._modifier_value # B sharp
             1
             """
-            
+
             modifier = self._v.c - self._v._diatone.c
 
-
-            if abs(modifier) > 4: # 4 = triple aug or triple dim
+            if abs(modifier) > 4:  # 4 = triple aug or triple dim
                 if self._v.c < self._v._diatone.c:
                     d_val_c = self._v._diatone.c - C_LEN
                 if self._v.c > self._v._diatone.c:
@@ -865,7 +901,6 @@ class TonalVector(tuple, Tone, Interval):
                 modifier = self._v.c - d_val_c
 
             return modifier
-            
 
         @property
         def _modifier(self) -> Accidental:
@@ -874,7 +909,7 @@ class TonalVector(tuple, Tone, Interval):
 
             >>> TonalVector((0,0)).pitch._modifier
             Accidental(offset=0, v='natural', uni='♮', asc='', ly='')
-            
+
             >>> TonalVector((0,0)).pitch._modifier.v
             'natural'
             """
@@ -901,7 +936,7 @@ class TonalVector(tuple, Tone, Interval):
 
             if self._v._has_octave:
                 u_str = "".join([u_str, str(self._v.o + mid_c)])
-            
+
             return u_str
 
         @property
@@ -936,7 +971,7 @@ class TonalVector(tuple, Tone, Interval):
             """
             return self._unicode(mid_c=4)
 
-        def _ascii(self, octave_modifier: int=0, show_nat: bool = False):
+        def _ascii(self, octave_modifier: int = 0, show_nat: bool = False):
             """Returns a human readable representation of the pitch, with ascii modifiers (#, b).
             The octave_modifier can be used to set the octave designation for middle C.
             (In OMK, middle C == C0. In MIDI etc., middle C == C4).
@@ -957,9 +992,9 @@ class TonalVector(tuple, Tone, Interval):
 
             if self._v._has_octave:
                 astr = "".join([astr, str(self._v.o + octave_modifier)])
-            
+
             return astr
-            
+
         @property
         def ascii(self):
             """A human readable representation of the pitch, with Ascii modifiers (#, b).
@@ -994,7 +1029,7 @@ class TonalVector(tuple, Tone, Interval):
 
         @property
         def ly(self):
-            """The Lilypond representation of the pitch name, 
+            """The Lilypond representation of the pitch name,
             without an octave designation.
 
             Examples
@@ -1012,7 +1047,7 @@ class TonalVector(tuple, Tone, Interval):
         @property
         def ly_abs8ve(self):
             """The Lilypond representation of the pitch name,
-            with an absolute octave designation. 
+            with an absolute octave designation.
             (see: http://lilypond.org/doc/v2.18/Documentation/learning/absolute-pitch-names)
 
             Examples
@@ -1045,8 +1080,7 @@ class TonalVector(tuple, Tone, Interval):
             else:
                 ostr = "'"
 
-            return "".join([self.ly, ostr*abs(self._v.o)])
-
+            return "".join([self.ly, ostr * abs(self._v.o)])
 
         def ly_rel8ve(self, prev=None):
             """Returns the Lilypond representation of the pitch name,
@@ -1076,7 +1110,7 @@ class TonalVector(tuple, Tone, Interval):
             >>> TonalVector((4,6,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
             "ges'"
             """
-            if prev == None:
+            if prev is None:
                 return self.ly_abs8ve
 
             octave_distance = self._v.o - _ly_relative_octave(self._v.d, prev)
@@ -1086,22 +1120,21 @@ class TonalVector(tuple, Tone, Interval):
             else:
                 ostr = "'"
 
-            return "".join([self.ly, ostr*abs(octave_distance)])
-
+            return "".join([self.ly, ostr * abs(octave_distance)])
 
         @property
         def verbose(self):
             """
             >>> TonalVector((0,0)).pitch.verbose
             'C'
-            
+
             >>> TonalVector((0,1)).pitch.verbose
             'Csharp'
 
             >>> TonalVector((0,1,1)).pitch.verbose
             'Csharp1'
 
-            """ 
+            """
 
             try:
                 o = str(self._v.o)
@@ -1129,9 +1162,7 @@ class TonalVector(tuple, Tone, Interval):
             """
             return "".join([self.unicode, " | ", str(tuple(self._v))])
 
-    
     class _IntervalRepresentation(IntervalRepresentation):
-
         def __init__(self, vector):
             """
             >>> TonalVector((0, 0)).interval._v
@@ -1139,7 +1170,7 @@ class TonalVector(tuple, Tone, Interval):
 
             >>> TonalVector((1, 2)).interval.quality
             IntervalQuality("major", 0.5)
-            
+
             >>> TonalVector((2, 3)).interval.number
             3
             """
@@ -1174,7 +1205,6 @@ class TonalVector(tuple, Tone, Interval):
             'min6-2'
             """
 
-
             return "".join([self.quality.abbr, str(self.number), self.o])
 
         def __repr__(self):
@@ -1183,7 +1213,7 @@ class TonalVector(tuple, Tone, Interval):
             TonalVector((0, 0, 0)).interval
             """
             return "".join([self._v.__repr__(), ".interval"])
-        
+
         @property
         def unicode(self):
             """

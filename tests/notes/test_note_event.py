@@ -1,10 +1,10 @@
 import pytest
 
 from openmusickit.objects.note.note import NoteEvent, Rest
+from openmusickit.systems.wsmn.tonal.symbols import M3, B, C, E, G, Gx
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.tone.silent_tone import SilentTone
 from openmusickit.values.tone.tone import Tone
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector, TonalDirection
-from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Gx, B, M3
 
 
 def test_rest_is_a_note_event_with_a_silent_tone():
@@ -77,9 +77,11 @@ def test_transform_leaves_rest_alone():
 
 def test_transform_accepts_any_tone_result():
     """The result need not be the same Tone subclass as the input."""
+
     class OtherTone(Tone):
         def __eq__(self, other):
             return type(other) is OtherTone
+
         def __hash__(self):
             return 1
 

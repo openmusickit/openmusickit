@@ -1,6 +1,9 @@
 """The relationship between two tones."""
+
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
 
 class Interval(ABC):
     """An Interval is a relationship between two tones,
@@ -32,12 +35,12 @@ class IntervalRepresentation:
 
     For an example implementation, see TonalVector._IntervalRepresentation.
     """
-    
+
     @property
     @abstractmethod
     def unicode(self):
         raise NotImplementedError
-    
+
     @property
     @abstractmethod
     def ascii(self):

@@ -1,10 +1,12 @@
-"""SilentTone represents a rest or other notated silence 
+"""SilentTone represents a rest or other notated silence
 that occurs in the context of other notes or tones."""
+
 from __future__ import annotations
+
 from dataclasses import dataclass
 
+from openmusickit.values.tone.tone import Tone
 
-from .tone import Tone
 
 @dataclass(frozen=True)
 class SilentTone(Tone):
@@ -26,10 +28,9 @@ class SilentTone(Tone):
     >>> SilentTone().pitch is None
     True
     """
-    
+
     def __repr__(self):
-        return f'SilentTone()'
-    
+        return "SilentTone()"
+
     def __eq__(self, other):
         return type(other) is SilentTone
-    

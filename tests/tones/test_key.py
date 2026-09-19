@@ -1,19 +1,42 @@
 import pytest
 
-
-from openmusickit.systems.wsmn.tonal.key import KeySignature, ModePattern, Key
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.systems.wsmn.tonal.chords import Quality
-from openmusickit.values.tone.tone_collection import ToneCollection
+from openmusickit.systems.wsmn.tonal.key import Key, KeySignature, ModePattern
 from openmusickit.systems.wsmn.tonal.symbols import (
-    C, D, E, F, G, A, B,
-    Cb, Db, Eb, Gb, Ab, Bb, Cx, Fx,
-    P1, a1, M2, M3, P5, M6,
-    Major, Minor,
-    Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian,
+    M2,
+    M3,
+    M6,
+    P1,
+    P5,
+    A,
+    Ab,
+    Aeolian,
+    B,
+    Bb,
+    C,
+    Cb,
+    Cx,
+    D,
+    Db,
+    Dorian,
+    E,
+    Eb,
+    F,
+    Fx,
+    G,
+    Gb,
+    Ionian,
+    Locrian,
+    Lydian,
+    Major,
+    Minor,
+    Mixolydian,
     NoKey,
+    Phrygian,
+    a1,
 )
-
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+from openmusickit.values.tone.tone_collection import ToneCollection
 
 # Order in which sharps (and, reversed, flats) accumulate, as C..B indices.
 SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6]  # F C G D A E B
@@ -25,10 +48,12 @@ LETTER_FIFTHS = {0: 0, 1: 2, 2: 4, 3: -1, 4: 1, 5: 3, 6: 5}
 # Each diatonic mode's key signature, relative to the major key on the same tonic.
 MODE_FIFTHS_OFFSET = {
     "Lydian": 1,
-    "Major": 0, "Ionian": 0,
+    "Major": 0,
+    "Ionian": 0,
     "Mixolydian": -1,
     "Dorian": -2,
-    "Minor": -3, "Aeolian": -3,
+    "Minor": -3,
+    "Aeolian": -3,
     "Phrygian": -4,
     "Locrian": -5,
 }
@@ -65,6 +90,7 @@ def chromatic_tonics(tonal_tuples):
 # KeySignature construction and letter properties
 # --------------------------------------------------------------------------
 
+
 def test_key_signature_is_a_seven_tuple_in_c_to_b_order():
     ks = KeySignature(c=1, d=2, e=3, f=-1, g=-2, a=-3, b=0)
     assert tuple(ks) == (1, 2, 3, -1, -2, -3, 0)
@@ -98,6 +124,7 @@ def test_key_signature_equality_is_tuple_equality():
 # KeySignature.__repr__
 # --------------------------------------------------------------------------
 
+
 def test_repr_shows_only_nonzero_alterations_as_kwargs():
     assert repr(KeySignature()) == "KeySignature()"
     assert repr(KeySignature(f=1)) == "KeySignature(f=1)"
@@ -114,6 +141,7 @@ def test_repr_round_trips_through_eval(n):
 # --------------------------------------------------------------------------
 # KeySignature.from_alts and .fifths
 # --------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("n, expected", STANDARD_SIGNATURES.items())
 def test_from_alts_produces_the_standard_signatures(n, expected):
@@ -150,17 +178,20 @@ def test_from_alts_rejects_more_than_triple_alterations(n):
         KeySignature.from_alts(n)
 
 
-@pytest.mark.parametrize("ks", [
-    KeySignature(f=1, b=-1),                 # mixed sharps and flats
-    KeySignature(c=1),                       # C# without F#
-    KeySignature(b=1),                       # B# alone
-    KeySignature(e=-1),                      # Eb without Bb
-    KeySignature(f=-1),                      # Fb alone
-    KeySignature(f=2),                       # Fx without the other six sharps
-    KeySignature(f=1, c=1, g=1, d=1, a=1, e=1, b=2),  # B## before F##
-    KeySignature(f=0.5),                     # microtonal
-    KeySignature(f=1, c=1, g=2),             # gap: G## but C# single
-])
+@pytest.mark.parametrize(
+    "ks",
+    [
+        KeySignature(f=1, b=-1),  # mixed sharps and flats
+        KeySignature(c=1),  # C# without F#
+        KeySignature(b=1),  # B# alone
+        KeySignature(e=-1),  # Eb without Bb
+        KeySignature(f=-1),  # Fb alone
+        KeySignature(f=2),  # Fx without the other six sharps
+        KeySignature(f=1, c=1, g=1, d=1, a=1, e=1, b=2),  # B## before F##
+        KeySignature(f=0.5),  # microtonal
+        KeySignature(f=1, c=1, g=2),  # gap: G## but C# single
+    ],
+)
 def test_fifths_raises_for_nonstandard_signatures(ks):
     with pytest.raises(AttributeError):
         ks.fifths
@@ -169,6 +200,7 @@ def test_fifths_raises_for_nonstandard_signatures(ks):
 # --------------------------------------------------------------------------
 # ModePattern
 # --------------------------------------------------------------------------
+
 
 def test_mode_pattern_must_begin_at_the_root():
     with pytest.raises(ValueError):
@@ -196,8 +228,11 @@ def test_major_and_minor_alias_ionian_and_aeolian():
 
 def test_diatonic_modes_are_rotations_of_the_major_scale():
     """Each mode on its white-key tonic uses only naturals."""
-    for tonic, mode in zip([C, D, E, F, G, A, B],
-                           [Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian]):
+    for tonic, mode in zip(
+        [C, D, E, F, G, A, B],
+        [Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian],
+        strict=False,
+    ):
         key = Key.of(tonic, mode)
         assert key.signature == KeySignature(), mode.name
         assert [t.d for t in key.tones] == [(tonic.d + i) % 7 for i in range(7)], mode.name
@@ -206,6 +241,7 @@ def test_diatonic_modes_are_rotations_of_the_major_scale():
 # --------------------------------------------------------------------------
 # Key.of across the full chromatic set of tonics
 # --------------------------------------------------------------------------
+
 
 def test_chromatic_tonics_fixture_covers_all_35_pitch_classes(chromatic_tonics):
     assert len(chromatic_tonics) == 35
@@ -275,10 +311,26 @@ def test_relative_major_and_minor_share_a_signature(chromatic_tonics):
         assert Key.of(tonic, Major).signature == Key.of(relative_minor, Minor).signature, tonic
 
 
-@pytest.mark.parametrize("tonic, expected", [
-    (Cb, -7), (Gb, -6), (Db, -5), (Ab, -4), (Eb, -3), (Bb, -2), (F, -1),
-    (C, 0), (G, 1), (D, 2), (A, 3), (E, 4), (B, 5), (Fx, 6), (Cx, 7),
-])
+@pytest.mark.parametrize(
+    "tonic, expected",
+    [
+        (Cb, -7),
+        (Gb, -6),
+        (Db, -5),
+        (Ab, -4),
+        (Eb, -3),
+        (Bb, -2),
+        (F, -1),
+        (C, 0),
+        (G, 1),
+        (D, 2),
+        (A, 3),
+        (E, 4),
+        (B, 5),
+        (Fx, 6),
+        (Cx, 7),
+    ],
+)
 def test_major_circle_of_fifths(tonic, expected):
     assert Key.of(tonic, Major).signature == STANDARD_SIGNATURES[expected]
 
@@ -286,6 +338,7 @@ def test_major_circle_of_fifths(tonic, expected):
 # --------------------------------------------------------------------------
 # Key.of edge cases
 # --------------------------------------------------------------------------
+
 
 def test_key_of_uses_an_explicit_signature_without_inspection():
     odd = KeySignature(f=1, b=-1)
@@ -307,8 +360,7 @@ def test_key_of_conflict_is_avoided_by_an_explicit_signature():
 
 def test_key_of_leaves_absent_letters_natural():
     """A gapped (pentatonic) mode still gets a signature; unused letters are natural."""
-    pentatonic = ModePattern(name="Major Pentatonic",
-                             tones=ToneCollection([P1, M2, M3, P5, M6]))
+    pentatonic = ModePattern(name="Major Pentatonic", tones=ToneCollection([P1, M2, M3, P5, M6]))
     assert Key.of(Fx, pentatonic).signature == KeySignature(f=1, g=1, a=1, c=1, d=1)
     assert Key.of(Eb, pentatonic).signature == KeySignature(e=-1, b=-1)
 
@@ -322,6 +374,7 @@ def test_key_of_keeps_mode_quality():
 # Key naming fallbacks and NoKey
 # --------------------------------------------------------------------------
 
+
 def test_key_name_falls_back_to_tonic_and_mode():
     key = Key(tonic=D, tones=ToneCollection([D]), signature=KeySignature(), _mode=Dorian)
     assert key.name == "D Dorian"
@@ -334,8 +387,9 @@ def test_key_name_falls_back_when_no_mode():
 
 
 def test_explicit_name_wins():
-    key = Key(tonic=C, tones=ToneCollection([C]), signature=KeySignature(), _mode=Major,
-              _name="Do major")
+    key = Key(
+        tonic=C, tones=ToneCollection([C]), signature=KeySignature(), _mode=Major, _name="Do major"
+    )
     assert key.name == "Do major"
 
 

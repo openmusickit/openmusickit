@@ -6,7 +6,7 @@ the `TonalVector` class—a core abstraction that encodes both pitches and inter
 as direction-aware vectors suitable for algorithmic and music-theoretical analysis.
 """
 
-from . import interval, silent_tone, tone, tone_collection
+from openmusickit.values.tone import interval, silent_tone, tone, tone_collection
 
 __all__ = [
     "interval",

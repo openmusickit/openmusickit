@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
 
 class TonalSystem:
     """A named system of tones, pitches, and intervals.
-    
+
     To fully implement a TonalSystem:
 
     - Instantiate a TonalSystem with a name and description.
@@ -18,7 +20,7 @@ class TonalSystem:
     - A TemporalSystem, using base classes defined in the `time` subpackage.
     - A percussion system, instantiating `PercussionTone` and `Gesture`
       into relevant atomic units with meaningfully named variables.
-    - Chords or other harmonic structures, instantiating or extending classes 
+    - Chords or other harmonic structures, instantiating or extending classes
       in the `harmony` subpackage.
     - Structural units (analogous to WSMN's measure, section, movement, etc.)
       using base classes defined in the `structure` subpackage.
@@ -30,7 +32,7 @@ class TonalSystem:
     (for example,
     combining a TonalSystem from one musical culture
     with the RhythmicSystem from another).
-    
+
     """
 
     def __init__(self, name, desc):
@@ -40,18 +42,17 @@ class TonalSystem:
     @property
     def name(self):
         return self._name
-    
+
     @property
     def desc(self):
         return self._desc
 
 
 class Tone(ABC):
-
     """A Tone is a defined pitch or sound type within a TonalSystem.
 
     Subclasses of Tone define a type of musical sound, noise, or silence
-    with its own logical system of relationships, 
+    with its own logical system of relationships,
     which are defined within the Tone subclass
     in concert with a subclass of Interval.
 
@@ -71,11 +72,11 @@ class Tone(ABC):
     >>> isinstance(SilentTone(), Tone)
     True
 
-    Tone and Interval should be subclassed to represent 
+    Tone and Interval should be subclassed to represent
     the members and relationships of any other pitch or sonic system.
-    
+
     Subclasses of Tone should normally be immutable and internable,
-    as they represent abstract values ('C# above middle C'), 
+    as they represent abstract values ('C# above middle C'),
     rather than concrete instance of a note in a score."""
 
     @classmethod
@@ -147,7 +148,6 @@ class Tone(ABC):
         return result
 
 
-
 class PitchRepresentation(ABC):
     """The representation of a Tone as a pitch in a score or other human-readable context,
     normally attached as an attribute to a Tone.
@@ -163,7 +163,7 @@ class PitchRepresentation(ABC):
     @abstractmethod
     def unicode(self):
         raise NotImplementedError
-    
+
     @property
     @abstractmethod
     def ascii(self):

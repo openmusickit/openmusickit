@@ -1,4 +1,4 @@
-from . import clock_time, duration, errors, meter
+from openmusickit.values.time import clock_time, duration, errors, meter
 
 __all__ = [
     "clock_time",
@@ -6,4 +6,3 @@ __all__ = [
     "errors",
     "meter",
 ]
-

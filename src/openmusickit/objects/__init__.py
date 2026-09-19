@@ -6,7 +6,7 @@ Each instantiated object represents a single things: this note, that syllable, t
 They are generally composed of immutable values.
 
 So a C-sharp in the tenor line of a chorale is represented by a single OmkObject instance
-(in this case, a Note, which is a SequentialObject), 
+(in this case, a Note, which is a SequentialObject),
 and has a tone attribute (the value of C# -- TonalVector(0, 1, 0)),
 and a duration (for example, the value of a quarter note -- TemporalDuration(1,4)).
 
@@ -19,7 +19,7 @@ is a LyricSyllable object (which is also a SequentialObject, and contains the sy
 and is connected to the Note object by an edge of type LYRIC.
 """
 
-from . import lyrics, note, omk_object
+from openmusickit.objects import lyrics, note, omk_object
 
 __all__ = [
     "lyrics",

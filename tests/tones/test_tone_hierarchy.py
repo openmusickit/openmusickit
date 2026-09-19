@@ -1,11 +1,12 @@
 """The Tone / Interval class hierarchy: TonalVector and SilentTone are Tones,
 TonalVector is also an Interval, and the base-class contract behaves."""
+
 import pytest
 
-from openmusickit.values.tone.tone import Tone, PitchRepresentation
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from openmusickit.values.tone.silent_tone import SilentTone
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+from openmusickit.values.tone.tone import PitchRepresentation, Tone
 
 
 def test_tonal_vector_is_tone_and_interval():

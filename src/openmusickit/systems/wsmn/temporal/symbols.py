@@ -29,9 +29,9 @@ True
 True
 """
 
-from openmusickit.values.time.duration import TemporalUnit, TemporalRatio
-from .metrical_duration import MeteredDuration
-from .time_signature import TimeSignature
+from openmusickit.systems.wsmn.temporal.metrical_duration import MeteredDuration
+from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
+from openmusickit.values.time.duration import TemporalRatio, TemporalUnit
 
 # --- plain note values -------------------------------------------------------
 
@@ -75,6 +75,7 @@ double_dotted_sixtyfourth = double_dotted_hemidemisemiquaver = MeteredDuration(1
 
 # --- tuplet ratios -----------------------------------------------------------
 
+
 def tuplet(nominal_count: int, contextual_count: int, base: MeteredDuration) -> TemporalRatio:
     """`nominal_count` notes of `base` in the time of `contextual_count` notes of `base`.
 
@@ -83,25 +84,31 @@ def tuplet(nominal_count: int, contextual_count: int, base: MeteredDuration) -> 
     """
     return TemporalRatio(TemporalUnit(nominal_count, base), TemporalUnit(contextual_count, base))
 
+
 def triplet(base: MeteredDuration) -> TemporalRatio:
     """3 in the time of 2."""
     return tuplet(3, 2, base)
+
 
 def duplet(base: MeteredDuration) -> TemporalRatio:
     """2 in the time of 3 (for compound meters)."""
     return tuplet(2, 3, base)
 
+
 def quintuplet(base: MeteredDuration) -> TemporalRatio:
     """5 in the time of 4."""
     return tuplet(5, 4, base)
+
 
 def sextuplet(base: MeteredDuration) -> TemporalRatio:
     """6 in the time of 4."""
     return tuplet(6, 4, base)
 
+
 def septuplet(base: MeteredDuration) -> TemporalRatio:
     """7 in the time of 4 (the common simple-meter septuplet; use tuplet(7, 6, ...) for the other)."""
     return tuplet(7, 4, base)
+
 
 # --- notes inside a standard triplet of their own value ----------------------
 
@@ -111,10 +118,15 @@ half_in_triplet = minim_in_triplet = MeteredDuration(1, 2, tr=triplet(half))
 quarter_in_triplet = crotchet_in_triplet = MeteredDuration(1, 4, tr=triplet(quarter))
 eighth_in_triplet = quaver_in_triplet = MeteredDuration(1, 8, tr=triplet(eighth))
 sixteenth_in_triplet = semiquaver_in_triplet = MeteredDuration(1, 16, tr=triplet(sixteenth))
-thirtysecond_in_triplet = demisemiquaver_in_triplet = MeteredDuration(1, 32, tr=triplet(thirtysecond))
-sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MeteredDuration(1, 64, tr=triplet(sixtyfourth))
+thirtysecond_in_triplet = demisemiquaver_in_triplet = MeteredDuration(
+    1, 32, tr=triplet(thirtysecond)
+)
+sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MeteredDuration(
+    1, 64, tr=triplet(sixtyfourth)
+)
 
 # --- time signatures ---------------------------------------------------------
+
 
 def time_signature(n: int, d: int) -> TimeSignature:
     """A simple time signature n/d, presented as written.
@@ -124,6 +136,7 @@ def time_signature(n: int, d: int) -> TimeSignature:
     """
     return TimeSignature(TemporalUnit(n, MeteredDuration(1, d)), presentation=(str(n), str(d)))
 
+
 def additive_time_signature(groups: list[int], d: int) -> TimeSignature:
     """An additive time signature such as 2+2+3/8.
 
@@ -131,8 +144,11 @@ def additive_time_signature(groups: list[int], d: int) -> TimeSignature:
     '2+2+3'
     """
     base = MeteredDuration(1, d)
-    return TimeSignature([TemporalUnit(g, base) for g in groups],
-                         presentation=("+".join(str(g) for g in groups), str(d)))
+    return TimeSignature(
+        [TemporalUnit(g, base) for g in groups],
+        presentation=("+".join(str(g) for g in groups), str(d)),
+    )
+
 
 one_one = time_signature(1, 1)
 two_one = time_signature(2, 1)
@@ -159,10 +175,18 @@ nine_eight = time_signature(9, 8)
 twelve_eight = time_signature(12, 8)
 
 # compound meters expressed by their beat
-one_dotted_quarter = one_dotted_crotchet = TimeSignature(TemporalUnit(1, dotted_quarter), presentation=("3", "8"))
-two_dotted_quarters = two_dotted_crotchets = TimeSignature(TemporalUnit(2, dotted_quarter), presentation=("6", "8"))
-three_dotted_quarters = three_dotted_crotchets = TimeSignature(TemporalUnit(3, dotted_quarter), presentation=("9", "8"))
-four_dotted_quarters = four_dotted_crotchets = TimeSignature(TemporalUnit(4, dotted_quarter), presentation=("12", "8"))
+one_dotted_quarter = one_dotted_crotchet = TimeSignature(
+    TemporalUnit(1, dotted_quarter), presentation=("3", "8")
+)
+two_dotted_quarters = two_dotted_crotchets = TimeSignature(
+    TemporalUnit(2, dotted_quarter), presentation=("6", "8")
+)
+three_dotted_quarters = three_dotted_crotchets = TimeSignature(
+    TemporalUnit(3, dotted_quarter), presentation=("9", "8")
+)
+four_dotted_quarters = four_dotted_crotchets = TimeSignature(
+    TemporalUnit(4, dotted_quarter), presentation=("12", "8")
+)
 
 # common additive groupings
 five_eight_2_3 = additive_time_signature([2, 3], 8)

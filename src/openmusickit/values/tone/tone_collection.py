@@ -1,7 +1,10 @@
 from __future__ import annotations
+
+from collections.abc import Callable, Iterable
 from itertools import combinations
-from typing import Callable, Iterable
-from .tone import Tone
+
+from openmusickit.values.tone.tone import Tone
+
 
 class ToneCollection:
     """An ordered collection of tones, with an optional root and optional name.
@@ -76,7 +79,7 @@ class ToneCollection:
     def combinations(self, k) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of k members."""
         return [ToneCollection(c) for c in combinations(self._tones, k)]
-    
+
     def all_combinations(self) -> list[ToneCollection]:
         """Returns a list of all ToneCollection subsets of length `2` through `len(self)-1`."""
         combos = []
@@ -85,8 +88,9 @@ class ToneCollection:
                 combos.append(ToneCollection(c))
         return combos
 
-    def transform(self, operation: Callable[..., Tone], *args,
-                  new_name: str | None = None, **kwargs) -> ToneCollection:
+    def transform(
+        self, operation: Callable[..., Tone], *args, new_name: str | None = None, **kwargs
+    ) -> ToneCollection:
         """Returns a new ToneCollection made by applying `operation` to every
         tone of this collection (and to `root`, if set).
 
@@ -151,8 +155,7 @@ class ToneCollection:
             new_tone = operation(tone, *args, **kwargs)
             if not isinstance(new_tone, Tone):
                 raise TypeError(
-                    f"`operation` must return a Tone, "
-                    f"but returned {new_tone!r} for {tone!r}."
+                    f"`operation` must return a Tone, but returned {new_tone!r} for {tone!r}."
                 )
             return new_tone
 
@@ -163,4 +166,3 @@ class ToneCollection:
             new_name = self._name_template
 
         return ToneCollection(new_tones, new_root, new_name)
-

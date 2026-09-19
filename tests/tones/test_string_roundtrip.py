@@ -27,11 +27,7 @@ def _abstract_tuples():
 
 def _octave_qualified_tuples():
     """All abstract tuples, qualified at several octaves."""
-    return [
-        (d, c, o)
-        for o in [0, 1, -1, 2, -2]
-        for d, c in _abstract_tuples()
-    ]
+    return [(d, c, o) for o in [0, 1, -1, 2, -2] for d, c in _abstract_tuples()]
 
 
 ABSTRACT_VECTORS = [TonalVector(t) for t in _abstract_tuples()]
@@ -44,6 +40,7 @@ ALL_VECTORS = ABSTRACT_VECTORS + QUALIFIED_VECTORS
 # with from_string's default mid_c=4 only if we pass a matching mid_c).
 # unicode/ascii render octave numbers with middle C == 0, so round-tripping
 # through from_string requires mid_c=0.
+
 
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_unicode_roundtrip(tv):
@@ -59,6 +56,7 @@ def test_ascii_roundtrip(tv):
 # These render octave numbers with middle C == 4, matching from_string's
 # default mid_c=4.
 
+
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_unicode_c4_roundtrip(tv):
     assert TonalVector.from_string(tv.pitch.unicode_C4) == tv
@@ -73,6 +71,7 @@ def test_ascii_c4_roundtrip(tv):
 # verbose renders the raw internal octave number with no mid_c offset at
 # all, so it round-trips with mid_c=0.
 
+
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_verbose_roundtrip(tv):
     assert TonalVector.from_string(tv.pitch.verbose, mid_c=0) == tv
@@ -83,6 +82,7 @@ def test_verbose_roundtrip(tv):
 # all (compound/octave-qualified intervals print the same as their
 # unqualified equivalent), so it only round-trips for abstract vectors.
 
+
 @pytest.mark.parametrize("tv", ABSTRACT_VECTORS)
 def test_interval_unicode_roundtrip(tv):
     assert TonalVector.from_string(tv.interval.unicode) == tv
@@ -92,6 +92,7 @@ def test_interval_unicode_roundtrip(tv):
 # interval.abbr ("maj3", "aug4+1", "per1-2") does encode an octave, as a
 # "+N"/"-N" suffix, so it round-trips for both abstract and
 # octave-qualified vectors.
+
 
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_interval_abbr_roundtrip(tv):
@@ -104,6 +105,7 @@ def test_interval_abbr_roundtrip(tv):
 # round-trip to themselves via ly/from_ly -- this is an accepted, documented
 # asymmetry (see module docstring).
 
+
 @pytest.mark.parametrize("tv", ABSTRACT_VECTORS)
 def test_ly_roundtrip_abstract_qualifies_at_octave_zero(tv):
     """Known asymmetry: from_ly(tv.pitch.ly) qualifies the octave rather
@@ -115,12 +117,14 @@ def test_ly_roundtrip_abstract_qualifies_at_octave_zero(tv):
 # ly_abs8ve does encode an absolute octave (via ' and , marks), so
 # octave-qualified vectors round-trip exactly.
 
+
 @pytest.mark.parametrize("tv", QUALIFIED_VECTORS)
 def test_ly_abs8ve_roundtrip(tv):
     assert TonalVector.from_ly(tv.pitch.ly_abs8ve) == tv
 
 
 ### pitch.ly_rel8ve round-trip through from_ly, using prev_note ###
+
 
 @pytest.mark.parametrize("tv", QUALIFIED_VECTORS)
 def test_ly_rel8ve_roundtrip(tv):

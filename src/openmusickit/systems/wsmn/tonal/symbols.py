@@ -16,52 +16,52 @@ TonalVector((4, 7))
 TonalVector((6, 10))
 """
 
-from .tonal_vector import TonalVector
-from .chords import ChordType, Quality
-from .key import KeySignature, ModePattern, Key
+from openmusickit.systems.wsmn.tonal.chords import ChordType, Quality
+from openmusickit.systems.wsmn.tonal.key import Key, KeySignature, ModePattern
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
 
-Cbb = dd1 = TonalVector((0,10))
-Cb = d1 = TonalVector((0,11))
-C  = P1 = TonalVector((0,0))
-Cx = a1 = TonalVector((0,1))
-Cxx = aa1 = TonalVector((0,2))
+Cbb = dd1 = TonalVector((0, 10))
+Cb = d1 = TonalVector((0, 11))
+C = P1 = TonalVector((0, 0))
+Cx = a1 = TonalVector((0, 1))
+Cxx = aa1 = TonalVector((0, 2))
 
-Dbb = d2 = TonalVector((1,0))
-Db = m2 = TonalVector((1,1))
-D  = M2 = TonalVector((1,2))
-Dx = a2 = TonalVector((1,3))
-Dxx = aa2 = TonalVector((1,4))
+Dbb = d2 = TonalVector((1, 0))
+Db = m2 = TonalVector((1, 1))
+D = M2 = TonalVector((1, 2))
+Dx = a2 = TonalVector((1, 3))
+Dxx = aa2 = TonalVector((1, 4))
 
-Ebb = d3 = TonalVector((2,2))
-Eb = m3 = TonalVector((2,3))
-E  = M3 = TonalVector((2,4))
-Ex = a3 = TonalVector((2,5))
-Exx = aa3 = TonalVector((2,6))
+Ebb = d3 = TonalVector((2, 2))
+Eb = m3 = TonalVector((2, 3))
+E = M3 = TonalVector((2, 4))
+Ex = a3 = TonalVector((2, 5))
+Exx = aa3 = TonalVector((2, 6))
 
-Fbb = dd4 = TonalVector((3,3))
-Fb = d4 = TonalVector((3,4))
-F  = P4 = TonalVector((3,5))
-Fx = a4 = TonalVector((3,6))
-Fxx = aa4 = TonalVector((3,7))
+Fbb = dd4 = TonalVector((3, 3))
+Fb = d4 = TonalVector((3, 4))
+F = P4 = TonalVector((3, 5))
+Fx = a4 = TonalVector((3, 6))
+Fxx = aa4 = TonalVector((3, 7))
 
-Gbb = dd5 = TonalVector((4,5))
-Gb = d5 = TonalVector((4,6))
-G  = P5 = TonalVector((4,7))
-Gx = a5 = TonalVector((4,8))
-Gxx = aa5 = TonalVector((4,9))
+Gbb = dd5 = TonalVector((4, 5))
+Gb = d5 = TonalVector((4, 6))
+G = P5 = TonalVector((4, 7))
+Gx = a5 = TonalVector((4, 8))
+Gxx = aa5 = TonalVector((4, 9))
 
-Abb = d6 = TonalVector((5,7))
-Ab = m6 = TonalVector((5,8))
-A  = M6 = TonalVector((5,9))
-Ax = a6 = TonalVector((5,10))
-Axx = aa6 = TonalVector((5,11))
+Abb = d6 = TonalVector((5, 7))
+Ab = m6 = TonalVector((5, 8))
+A = M6 = TonalVector((5, 9))
+Ax = a6 = TonalVector((5, 10))
+Axx = aa6 = TonalVector((5, 11))
 
-Bbb = d7 = TonalVector((6,9))
-Bb = m7 = TonalVector((6,10))
-B  = M7 = TonalVector((6,11))
-Bx = a7 = TonalVector((6,0))
-Bxx = aa7 = TonalVector((6,1))
+Bbb = d7 = TonalVector((6, 9))
+Bb = m7 = TonalVector((6, 10))
+B = M7 = TonalVector((6, 11))
+Bx = a7 = TonalVector((6, 0))
+Bxx = aa7 = TonalVector((6, 1))
 
 
 # Chord symbols

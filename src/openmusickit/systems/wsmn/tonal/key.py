@@ -1,12 +1,13 @@
 from __future__ import annotations
+
+from collections.abc import Callable
 from dataclasses import dataclass
 from numbers import Real
-from typing import Callable
 
-from openmusickit.systems.wsmn.tonal.constants import C_LEN, MS
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector, TonalDirection
-from openmusickit.values.tone.tone_collection import ToneCollection
 from openmusickit.systems.wsmn.tonal.chords import Quality
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, MS
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
+from openmusickit.values.tone.tone_collection import ToneCollection
 
 
 class KeySignature(tuple):
@@ -33,7 +34,7 @@ class KeySignature(tuple):
         >>> ks.e, ks.d
         (-1, 0)
 
-        >>> ks = KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2) # double flats 
+        >>> ks = KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2) # double flats
         >>> ks.e, ks.f
         (-2, -1)
 
@@ -60,7 +61,7 @@ class KeySignature(tuple):
         return super().__new__(cls, values)
 
     # Convenience constructor for "normal" keysignatures.
-    
+
     @classmethod
     def from_alts(cls, alts: int) -> KeySignature:
         """Create a key signature by specifying the number of sharps (positive int) or flats (negative int).
@@ -70,13 +71,13 @@ class KeySignature(tuple):
 
             >>> KeySignature.from_alts(2)
             KeySignature(c=1, f=1)
-            
+
             >>> KeySignature.from_alts(-3)
             KeySignature(e=-1, a=-1, b=-1)
-            
+
             >>> KeySignature.from_alts(-10)
             KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2)
-            
+
             >>> KeySignature.from_alts(5).fifths
             5
         """
@@ -120,11 +121,11 @@ class KeySignature(tuple):
 
     @property
     def fifths(self) -> int:
-        """Returns the MusicXML representation of the key signature, which walks around the circle of fifths. 
+        """Returns the MusicXML representation of the key signature, which walks around the circle of fifths.
         For example, C major has 0 fifths, G major has 1 fifth, F major has -1 fifth, etc.
-        
-        Raises AttributeError if self is a non-standard keysignature 
-        (for example, if the signature mixes sharps and flats or 
+
+        Raises AttributeError if self is a non-standard keysignature
+        (for example, if the signature mixes sharps and flats or
         they do not go in the standard order [F# C# G# D# A# E# B# | Bb Eb Ab Db Gb Cb Fb]).
         This error should be caught by callers and another key signature resolution strategy should be used.
 
@@ -132,16 +133,16 @@ class KeySignature(tuple):
 
             >>> KeySignature().fifths
             0
-            
+
             >>> KeySignature(c=1, f=1).fifths
             2
-            
+
             >>> KeySignature(e=-1, a=-1, b=-1).fifths
             -3
-            
+
             >>> KeySignature(c=-1, d=-1, e=-2, f=-1, g=-1, a=-2, b=-2).fifths
             -10
-            
+
             >>> KeySignature(f=1, b=-1).fifths
             Traceback (most recent call last):
                 ...
@@ -163,7 +164,7 @@ class KeySignature(tuple):
 
         # Values must be clustered with the higher value on the left,
         # i.e. the sequence is non-increasing in sharp order.
-        if any(left < right for left, right in zip(ordered, ordered[1:])):
+        if any(left < right for left, right in zip(ordered, ordered[1:], strict=False)):
             raise error
 
         return sum(ordered)
@@ -227,7 +228,9 @@ class KeySignature(tuple):
 
         return KeySignature(*(alts[i] for i in range(7)))
 
-    def transpose(self, x: TonalVector, direction: TonalDirection = TonalDirection.UP) -> KeySignature:
+    def transpose(
+        self, x: TonalVector, direction: TonalDirection = TonalDirection.UP
+    ) -> KeySignature:
         """Returns this key signature transposed by the interval `x`: each letter
         moves by `x`, so a standard signature moves around the circle of fifths
         as if it were the signature of a key whose tonic is transposed by `x`.
@@ -260,20 +263,23 @@ class KeySignature(tuple):
 
             >>> KeySignature()
             KeySignature()
-            
+
             >>> KeySignature(c=1, f=1)
             KeySignature(c=1, f=1)
-            
+
             >>> KeySignature(e=-1, a=-1, b=-1)
             KeySignature(e=-1, a=-1, b=-1)
         """
-        alts = ", ".join(f"{name}={value!r}" for name, value in zip("cdefgab", self) if value)
+        alts = ", ".join(
+            f"{name}={value!r}" for name, value in zip("cdefgab", self, strict=False) if value
+        )
         return f"{type(self).__name__}({alts})"
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
 class ModePattern:
     """A pattern of intervals from TonalVector((0, 0)), which defines a mode."""
+
     name: str
     tones: ToneCollection
     quality: Quality | None = None
@@ -281,6 +287,7 @@ class ModePattern:
     def __post_init__(self):
         if self.tones[0] is not TonalVector((0, 0)):
             raise ValueError("A ModePattern must begin with TonalVector((0, 0))")
+
 
 @dataclass(slots=True, kw_only=True, frozen=True)
 class Key:
@@ -290,6 +297,7 @@ class Key:
     which is represented in score formats as an open key signature
     (MusicXML `<mode>none</mode>`). See `symbols.NoKey`.
     """
+
     tonic: TonalVector | None
     tones: ToneCollection
     signature: KeySignature
@@ -297,14 +305,16 @@ class Key:
     _name: str | None = None
 
     @classmethod
-    def of(cls, tonic: TonalVector, mode: ModePattern, signature: KeySignature | None = None) -> Key:
+    def of(
+        cls, tonic: TonalVector, mode: ModePattern, signature: KeySignature | None = None
+    ) -> Key:
         """Convenience constructor for Key.
 
         The key's tones are the mode pattern transposed to the tonic.
         If `signature` is not given, it is derived from those tones:
         each letter takes the alteration of its tone in the key,
         and letters not present in the mode (e.g. in a pentatonic mode) stay natural.
-        
+
         Raises ValueError if the same letter occurs with different alterations
         (e.g. a mode containing both F and F#); pass `signature` explicitly in that case.
 
@@ -415,6 +425,3 @@ class Key:
             tones=self.tones.transform(operation, *args, **kwargs),
             signature=signature,
         )
-
-
-    

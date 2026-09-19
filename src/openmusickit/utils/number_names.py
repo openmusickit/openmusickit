@@ -16,12 +16,12 @@ ordinals = [
 ]
 
 fractionals = {
-    1 : "whole",
-    2 : "half", 
-    4 : "quarter",
-    8 : "eighth",
-    16 : "sixteenth",
-    32 : "thirty-second",
-    64 : "sixty-fourth",
-    128 : "128th"
+    1: "whole",
+    2: "half",
+    4: "quarter",
+    8: "eighth",
+    16: "sixteenth",
+    32: "thirty-second",
+    64: "sixty-fourth",
+    128: "128th",
 }

@@ -1,11 +1,14 @@
 """Durations based on clock time."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import timedelta
 from fractions import Fraction
-from .duration import Duration, TemporalElement, TemporalRatio, TemporalUnit
-from .errors import TemporalCompatibilityError
+
+from openmusickit.values.time.duration import Duration, TemporalElement, TemporalRatio, TemporalUnit
+from openmusickit.values.time.errors import TemporalCompatibilityError
+
 
 @dataclass(frozen=True)
 class ClockDuration(Duration):
@@ -15,6 +18,7 @@ class ClockDuration(Duration):
     (e.g. a triplet eighth at quarter = 100) stay exact; the accessors
     (`microseconds`, `seconds`, `str()`) present ordinary numbers.
     """
+
     _microseconds: int | Fraction
 
     @property
@@ -138,11 +142,14 @@ class ClockDuration(Duration):
         contextual_base = getattr(contextual, "base", contextual)
         if not isinstance(contextual_base, ClockDuration):
             raise TemporalCompatibilityError(
-                "The contextual side of the ratio must be a ClockDuration. (Use Tempo to build one.)")
+                "The contextual side of the ratio must be a ClockDuration. (Use Tempo to build one.)"
+            )
         return cls(Fraction(duration.rational_length) * ratio.r)
 
 
-def Tempo(n:int, beat: Duration, clock_time: ClockDuration=ClockDuration.from_minutes(1)) -> TemporalRatio:
+def Tempo(
+    n: int, beat: Duration, clock_time: ClockDuration = ClockDuration.from_minutes(1)
+) -> TemporalRatio:
     """Returns a TemporalRatio representing a tempo of n beats per clock_time (default: one minute).
 
     ```

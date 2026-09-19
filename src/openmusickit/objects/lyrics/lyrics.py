@@ -1,16 +1,17 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Iterable
 
-from .errors import LyricConsistencyError
-from openmusickit.utils.id import OmkId
+from openmusickit.objects.lyrics.errors import LyricConsistencyError
 from openmusickit.objects.omk_object import OmkObject
+from openmusickit.utils.id import OmkId
 
 
 class LexicalStress(Enum):
     UNSTRESSED = auto()
     SECONDARY = auto()
     PRIMARY = auto()
+
 
 class SyllablePlacement(Enum):
     BEGINNING = auto()
@@ -20,23 +21,28 @@ class SyllablePlacement(Enum):
 
     def is_beginning(self) -> bool:
         return self in (SyllablePlacement.BEGINNING, SyllablePlacement.WHOLE)
-    
+
     def is_ending(self) -> bool:
         return self in (SyllablePlacement.END, SyllablePlacement.WHOLE)
 
+
 # TODO: Lyrics need to be an event, as they occur in sequence.
+
 
 @dataclass(kw_only=True)
 class LyricSyllable(OmkObject):
     """A single syllable of lyric text.
-    
+
     The syllable string should not include hyphens."""
+
     s: str
-    word: str | None # The full word. Identical to `s` in single-syllable words.
-    location: int | None = 0 # The zero-indexed location of the syllable in the word. `0` for single-syllable words.
+    word: str | None  # The full word. Identical to `s` in single-syllable words.
+    location: int | None = (
+        0  # The zero-indexed location of the syllable in the word. `0` for single-syllable words.
+    )
     placement: SyllablePlacement | None = SyllablePlacement.WHOLE
     lexical_stress: LexicalStress | None = None
-    language: str | None = None # Two letter BCP 47 language code.
+    language: str | None = None  # Two letter BCP 47 language code.
 
     def __post_init__(self):
         """Validates syllable placement/location is consistent."""
@@ -48,13 +54,12 @@ class LyricSyllable(OmkObject):
                 f"Syllable should be in word. {self.s} is not in {self.word}."
             )
         if self.location < 0 or type(self.location) != int:
-            raise ValueError(
-                f"location must be 0 or a positive integer"
-            )
+            raise ValueError("location must be 0 or a positive integer")
         if self.s == self.word:
             if self.location > 0:
                 raise LyricConsistencyError(
-                    f"Syllables representing an entire word should have location of 0, got {self.location}.")
+                    f"Syllables representing an entire word should have location of 0, got {self.location}."
+                )
             if self.placement is not SyllablePlacement.WHOLE:
                 raise LyricConsistencyError(
                     f"Syllables representing an entire word should have placement of 'whole', got {self.placement}."
@@ -67,7 +72,7 @@ class LyricSyllable(OmkObject):
 
     def __str__(self):
         return self.syl_str()
-    
+
     def syl_str(self, hyphen: str = "-"):
         if self.placement in [SyllablePlacement.WHOLE, None]:
             return self.s
@@ -78,7 +83,7 @@ class LyricSyllable(OmkObject):
         if self.placement is SyllablePlacement.END:
             return f"{self.s} {hyphen}"
 
-    
+
 class LyricSequence(list):
     """A list of LyricSyllables,
     usually representing a complete verse, stanza, chorus, or other section."""
@@ -89,7 +94,7 @@ class LyricSequence(list):
         section_type: str | None = None,
         section_number: int | None = None,
         section_name: str | None = None,
-        language: str | None = None, # Two letter BCP 47 language code.
+        language: str | None = None,  # Two letter BCP 47 language code.
         id: OmkId | str | None = None,
     ) -> None:
         super().__init__(syllables)
@@ -102,4 +107,3 @@ class LyricSequence(list):
     def id(self):
         """The stable identity of the LyricSequence, across sessions and storage."""
         return self.__id
-    

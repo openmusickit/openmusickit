@@ -1,12 +1,23 @@
 import pytest
 
-
-from openmusickit.systems.wsmn.tonal.chords import ChordType, Chord, Quality
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+from openmusickit.systems.wsmn.tonal.chords import Chord, ChordType, Quality
 from openmusickit.systems.wsmn.tonal.symbols import (
-    C, D, E, F, G, maj, min, dom7, add2, add9, add4, add11,
-    hdim7, min7_flat5,
+    C,
+    D,
+    E,
+    F,
+    G,
+    add2,
+    add4,
+    add9,
+    add11,
+    dom7,
+    hdim7,
+    maj,
+    min,
+    min7_flat5,
 )
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
 
 def test_symbols_include_all_chord_types(chord_type_symbols):
@@ -77,12 +88,11 @@ def test_maj_min_have_distinct_third(pitch_symbols):
     assert E not in min
 
 
-
 def test_realize_chord_type_at_root(pitch_symbols):
     """Calling a ChordType with a TonalVector realizes it as a Chord rooted
     there. Also verifies the reverse-call form documented on
     ChordType.__call__: `tv(chord_type)` should produce the same Chord."""
-    for name, root in pitch_symbols.items():
+    for _name, root in pitch_symbols.items():
         chord = maj(root)
         assert isinstance(chord, Chord)
         assert chord.root == root
@@ -106,7 +116,8 @@ def test_realized_chords_transpose_every_chord_type_at_every_natural_root(chord_
     interval_quality's lookup table -- a pre-existing issue in
     tonal_arithmetic/interval_quality, unrelated to ChordType/Chord, and out
     of scope here."""
-    from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F, G, A, B
+    from openmusickit.systems.wsmn.tonal.symbols import A, B, C, D, E, F, G
+
     natural_roots = [C, D, E, F, G, A, B]
 
     for root in natural_roots:
@@ -119,8 +130,7 @@ def test_realized_chords_transpose_every_chord_type_at_every_natural_root(chord_
 def test_simple_chords_transpose_onto_altered_roots():
     """Simple (unaltered) chord types can be realized on sharp/flat roots
     too, not just naturals."""
-    from openmusickit.systems.wsmn.tonal.symbols import Cb, Cx, Fb, Gx
-    from openmusickit.systems.wsmn.tonal.symbols import maj7, min7
+    from openmusickit.systems.wsmn.tonal.symbols import Cb, Cx, Fb, Gx, maj7, min7
 
     for root in [Cb, Cx, Fb, Gx]:
         for chord_type in [maj, min, dom7, maj7, min7]:
