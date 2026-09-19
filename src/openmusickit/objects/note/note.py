@@ -153,7 +153,7 @@ class NoteEvent(SequentialObject, TonalObject):
         if self.is_rest:
             return f"Rest(duration={self.duration})"
         tones = sorted(repr(tone) for tone in self.tones)
-        return f"NoteEvent(tones=[{', '.join(tones)}], duration={self.duration})"
+        return f"{type(self).__name__}(tones=[{', '.join(tones)}], duration={self.duration})"
 
 
 def Rest(duration: Duration) -> NoteEvent:

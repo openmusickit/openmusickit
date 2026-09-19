@@ -28,9 +28,3 @@ class SilentTone(Tone):
     >>> SilentTone().pitch is None
     True
     """
-
-    def __repr__(self):
-        return "SilentTone()"
-
-    def __eq__(self, other):
-        return type(other) is SilentTone

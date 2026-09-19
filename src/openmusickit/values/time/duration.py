@@ -226,7 +226,7 @@ class TemporalUnit(TemporalElement):
         return self.__class__(new_count.numerator, new_base)
 
     def __repr__(self):
-        return f"TemporalUnit({self.count}, {repr(self.base)})"
+        return f"{type(self).__name__}({self.count}, {self.base!r})"
 
 
 class CompoundTemporalUnit(TemporalElement):
@@ -254,7 +254,7 @@ class CompoundTemporalUnit(TemporalElement):
         return self._units.count(item)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._units!r})"
+        return f"{type(self).__name__}({self._units!r})"
 
     @property
     def rational_length(self) -> Fraction:
@@ -359,4 +359,4 @@ class TemporalRatio:
         return hash(self.r)
 
     def __repr__(self):
-        return f"TemporalRatio({self._n!r}, {self._c!r})"
+        return f"{type(self).__name__}({self._n!r}, {self._c!r})"

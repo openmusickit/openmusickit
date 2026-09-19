@@ -553,7 +553,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((2,4,1))
         TonalVector((2, 4, 1))
         """
-        return f"TonalVector({repr(tuple(self))})"
+        return f"{type(self).__name__}({tuple(self)!r})"
 
     def __str__(self) -> str:
         """Returns a string that includes the __repr__ string,

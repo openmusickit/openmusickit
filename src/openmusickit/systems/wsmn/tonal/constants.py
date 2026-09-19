@@ -106,7 +106,7 @@ class Diatone:
         return self._z
 
     def __repr__(self):
-        return f"Diatone(d={self.d}, c={self.c}, q={self.q}, i='{self.i}', ln='{self.ln}', sf={self.sf}, f='{self.f}', z={self.z})"
+        return f"{type(self).__name__}(d={self.d}, c={self.c}, q={self.q}, i='{self.i}', ln='{self.ln}', sf={self.sf}, f='{self.f}', z={self.z})"
 
 
 # Set up Diatones for Major Scale
@@ -164,7 +164,7 @@ class Accidental:
         return self._ly
 
     def __repr__(self) -> str:
-        return f"Accidental(offset={self.offset}, v='{self.v}', uni='{self.u}', asc='{self.a}', ly='{self.ly}')"
+        return f"{type(self).__name__}(offset={self.offset}, v='{self.v}', uni='{self.u}', asc='{self.a}', ly='{self.ly}')"
 
 
 # Accidentals

@@ -72,7 +72,7 @@ class ClockDuration(Duration):
         return "RealTime"
 
     def __repr__(self):
-        return f"ClockDuration({self._microseconds})"
+        return f"{type(self).__name__}({self._microseconds})"
 
     def __str__(self):
         total_microseconds = int(round(self._microseconds))

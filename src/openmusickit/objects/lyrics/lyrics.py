@@ -53,7 +53,7 @@ class LyricSyllable(OmkObject):
             raise LyricConsistencyError(
                 f"Syllable should be in word. {self.s} is not in {self.word}."
             )
-        if self.location < 0 or type(self.location) != int:
+        if not isinstance(self.location, int) or self.location < 0:
             raise ValueError("location must be 0 or a positive integer")
         if self.s == self.word:
             if self.location > 0:

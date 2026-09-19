@@ -96,9 +96,9 @@ class TimeSignature(CompoundTemporalUnit):
 
     def __repr__(self):
         if self._presentation:
-            return f"TimeSignature({self._units!r}, {self._presentation})"
+            return f"{type(self).__name__}({self._units!r}, {self._presentation})"
         else:
-            return f"TimeSignature({self._units!r})"
+            return f"{type(self).__name__}({self._units!r})"
 
 
 def _scale_presentation(presentation: tuple[str, str] | None, scalar) -> tuple[str, str] | None:

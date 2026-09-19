@@ -42,7 +42,7 @@ class OmkEdge:
         return self._type
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.type}, origin={self.origin})"
+        return f"{type(self).__name__}({self.type}, origin={self.origin})"
 
 
 class TimingAnchor(StrEnum):
@@ -70,7 +70,7 @@ class Next(OmkEdge):
 
     def nudge(self, direction: NudgeDirection, amount: Duration) -> None:
         """Nudges the displacement of this Next edge in the specified direction by the specified amount."""
-        if type(amount) != type(self.displacement) and self.displacement is not None:
+        if self.displacement is not None and type(amount) is not type(self.displacement):
             raise TypeError(
                 f"""Current displacement type ({type(self.displacement)}) does not match nudge amount type ({type(amount)}).
                 Try reconciling duration types with a TemporalRatio."""
@@ -86,4 +86,4 @@ class Next(OmkEdge):
             raise ValueError(f"Invalid nudge direction: {direction}")
 
     def __repr__(self):
-        return f"Next(anchor={self.anchor}, displacement={self.displacement})"
+        return f"{type(self).__name__}(anchor={self.anchor}, displacement={self.displacement})"

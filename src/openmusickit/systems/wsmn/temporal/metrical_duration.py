@@ -416,13 +416,13 @@ class MeteredDuration(Duration):
 
     def __repr__(self):
         if self.dots == 0 and self._tr is None:
-            return f"MeteredDuration({self.n}, {self.d})"
+            return f"{type(self).__name__}({self.n}, {self.d})"
         elif self.dots == 0:
-            return f"MeteredDuration({self.n}, {self.d}, tr={self._tr!r})"
+            return f"{type(self).__name__}({self.n}, {self.d}, tr={self._tr!r})"
         elif self._tr is None:
-            return f"MeteredDuration({self.n}, {self.d}, dots={self.dots})"
+            return f"{type(self).__name__}({self.n}, {self.d}, dots={self.dots})"
         else:
-            return f"MeteredDuration({self.n}, {self.d}, dots={self.dots}, tr={self._tr!r})"
+            return f"{type(self).__name__}({self.n}, {self.d}, dots={self.dots}, tr={self._tr!r})"
 
 
 class TiedDuration(Duration):
@@ -498,7 +498,7 @@ class TiedDuration(Duration):
         return NotImplemented
 
     def __repr__(self):
-        return f"TiedDuration({self._members!r})"
+        return f"{type(self).__name__}({self._members!r})"
 
 
 def _merge(a: Duration, b: Duration) -> MeteredDuration | None:
