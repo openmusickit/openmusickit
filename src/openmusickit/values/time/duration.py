@@ -49,8 +49,8 @@ class TemporalElement(ABC):
     which can be measured and subdivided. For example:
     note durations, measures, beat cycles, gong cycles, and other units of time.
 
-    Any internally-consistent rhthmic/temporal system should be constructable
-    using a subclasses of TemporalElement and AbstractDuration.
+    Any internally-consistent rhythmic/temporal system should be constructable
+    using subclasses of TemporalElement and AbstractDuration.
 
     TemporalElements compare (and hash) by their rational_length,
     so a dotted quarter == 3 eighths == TemporalUnit(3, eighth).

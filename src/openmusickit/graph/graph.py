@@ -52,10 +52,9 @@ class OmkGraph:
 
     # Basic Add, Connect, Remove
 
-    def get_node(self, id: OmkId | str) -> OmkObject | None:
+    def get_node(self, node_id: OmkId | str) -> OmkObject | None:
         """Returns an OmkObj based on id. Returns None if no such object exists."""
-        id = str(id)
-        return self._graph.get_node(id)
+        return self._graph.get_node(str(node_id))
 
     def add_node(self, obj: OmkObject) -> None:
         """Adds node to the graph. If the node is already on the graph, does nothing."""
@@ -93,13 +92,13 @@ class OmkGraph:
 
     # Sequential Data
 
-    def add_next(self, current: SequentialEvent, next: SequentialEvent) -> None:
+    def add_next(self, current: SequentialEvent, following: SequentialEvent) -> None:
         """Places a SequentialEvent after another SequentialEvent.
 
         Current node must be on the graph before adding a next node.
         Next node can be on the graph or not."""
-        self.add_node(next)
-        self.add_edge(current, next, EdgeType.NEXT)
+        self.add_node(following)
+        self.add_edge(current, following, EdgeType.NEXT)
 
     def get_next(self, current: SequentialEvent) -> SequentialEvent | None:
         return self._graph.get_next(current)
@@ -108,15 +107,15 @@ class OmkGraph:
         return self._graph.get_previous(current)
 
     def insert_event(
-        self, event: SequentialEvent, prev: SequentialEvent, next: SequentialEvent
+        self, event: SequentialEvent, prev: SequentialEvent, following: SequentialEvent
     ) -> None:
         """Insert a SequentialEvent between two SequentialEvents.
 
         It makes no difference if the inserted object was already part of the graph."""
-        edge = self.get_edge(prev, next, EdgeType.NEXT)
+        edge = self.get_edge(prev, following, EdgeType.NEXT)
         self.remove_edge(edge)
         self.add_next(prev, event)
-        self.add_next(event, next)
+        self.add_next(event, following)
 
     def add_line(self, line: list[SequentialEvent]) -> None:
         """Create a new linear subgraph from a list of objects."""
@@ -129,10 +128,10 @@ class OmkGraph:
             prev = obj
 
     def insert_line_from_list(
-        self, line: list[SequentialEvent], prev: SequentialEvent, next: SequentialEvent
+        self, line: list[SequentialEvent], prev: SequentialEvent, following: SequentialEvent
     ) -> None:
         """Create a new linear subgraph from a list of objects and insert it between prev and next."""
-        edge = self.get_edge(prev, next, EdgeType.NEXT)
+        edge = self.get_edge(prev, following, EdgeType.NEXT)
         if edge is not None:
             self.remove_edge(edge)
         if not line:
@@ -140,7 +139,7 @@ class OmkGraph:
         self.add_next(prev, line[0])
         for i in range(len(line) - 1):
             self.add_next(line[i], line[i + 1])
-        self.add_next(line[-1], next)
+        self.add_next(line[-1], following)
 
     def define_span(
         self, start: SequentialEvent, end: SequentialEvent, spanner: Spanner | None = None

@@ -422,7 +422,7 @@ Preserve behavior outside the requested change.
 
 # Avoid speculative compatibility
 
-This is NEW DEVELPMENT and this project currently has NO USERS.
+This is NEW DEVELOPMENT and this project currently has NO USERS.
 
 Do not add backward-compatibility aliases, migrations, deprecation layers, overloaded signatures, fallback behavior, or legacy support unless there is evidence that compatibility is required.
 

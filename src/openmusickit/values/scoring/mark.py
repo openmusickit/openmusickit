@@ -45,6 +45,6 @@ class AttachmentMode(StrEnum):
 class Mark:
     name: str
     description: str | None = None
-    type: MarkType | None = None
+    kind: MarkType | None = None
     attachment_mode: AttachmentMode | None = None
     aliases: tuple[str, ...] = ()

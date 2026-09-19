@@ -74,12 +74,13 @@ maj = ChordType(
     suffix="",
 )
 
-min = ChordType(
+min_ = ChordType(
     tones=[C, Eb, G],
     name="minor",
     quality=Quality.MIN,
     suffix="min",
 )
+m = min_  # `min` alone would shadow the builtin; `min7`, `min6` etc. are fine
 
 dim = ChordType(
     tones=[C, Eb, Gb],

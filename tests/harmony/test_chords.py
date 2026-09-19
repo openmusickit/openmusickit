@@ -14,8 +14,8 @@ from openmusickit.systems.wsmn.tonal.symbols import (
     dom7,
     hdim7,
     maj,
-    min,
     min7_flat5,
+    min_,
 )
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
@@ -23,7 +23,7 @@ from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 def test_symbols_include_all_chord_types(chord_type_symbols):
     """Sanity check on the fixture itself: symbols.py currently defines 77
     named chord types."""
-    assert len(chord_type_symbols) == 77
+    assert len(chord_type_symbols) == 78  # 77 distinct types plus the `m` alias of `min_`
 
 
 def test_chord_type_must_contain_root():
@@ -80,12 +80,12 @@ def test_chord_type_quality_is_preserved(chord_type_symbols):
 
 
 def test_maj_min_have_distinct_third(pitch_symbols):
-    """maj and min share root and fifth, but differ on the third."""
+    """maj and min_ share root and fifth, but differ on the third."""
     assert C in maj and G in maj
-    assert C in min and G in min
+    assert C in min_ and G in min_
     assert E in maj
-    assert pitch_symbols["Eb"] in min
-    assert E not in min
+    assert pitch_symbols["Eb"] in min_
+    assert E not in min_
 
 
 def test_realize_chord_type_at_root(pitch_symbols):
@@ -133,23 +133,23 @@ def test_simple_chords_transpose_onto_altered_roots():
     from openmusickit.systems.wsmn.tonal.symbols import Cb, Cx, Fb, Gx, maj7, min7
 
     for root in [Cb, Cx, Fb, Gx]:
-        for chord_type in [maj, min, dom7, maj7, min7]:
+        for chord_type in [maj, min_, dom7, maj7, min7]:
             chord = chord_type(root)
             assert list(chord) == [t + root for t in chord_type]
             assert chord.root == root
 
 
 def test_arpeggiate_starts_on_bass():
-    """arpegiate() returns the chord's tones as a sequence starting with
+    """arpeggiate() returns the chord's tones as a sequence starting with
     the bass tone."""
-    arp = maj.arpegiate()
+    arp = maj.arpeggiate()
     assert arp[0] == maj.bass
     assert set(arp) == set(maj)
 
 
 def test_arpeggiate_inversion_starts_on_new_bass():
     first_inversion = maj.inversion(1)
-    arp = first_inversion.arpegiate()
+    arp = first_inversion.arpeggiate()
     assert arp[0] == first_inversion.bass == E
 
 

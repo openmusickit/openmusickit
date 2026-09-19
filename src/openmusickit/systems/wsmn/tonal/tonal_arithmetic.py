@@ -4,7 +4,7 @@ Add and subtract intervals, chromae, notes.
 These functions operate on tuples of the form `(d, c, o)`, where
 `d` is a required integer representing a diatonic value,
 `c` is a required integer representing a chromatic value,
-`o` is an optional integer reprenting an octave designation.
+`o` is an optional integer representing an octave designation.
 """
 
 # TODO: @tonal_args decorator
@@ -40,11 +40,8 @@ def tonal_sum(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
     if len(x) < len(y):
         raise TypeError("An octave designation cannot be added to an abstract tonal value.")
 
-    sum = tuple(xval + yval for xval, yval in itertools.zip_longest(x, y, fillvalue=0))
-
-    sum = _tonal_modulo(sum)
-
-    return sum
+    total = tuple(xval + yval for xval, yval in itertools.zip_longest(x, y, fillvalue=0))
+    return _tonal_modulo(total)
 
 
 # @tonal_args
@@ -453,7 +450,7 @@ def tonal_nearest_instance(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int,
     the octave qualifier of y is adjusted to be within a tritone of x.
 
     If x is not octave designated, y is returned with no octave designation.
-    If y is not octave designeted (but x is),
+    If y is not octave designated (but x is),
     y is returned with an octave designation making it closest to x.
 
     Examples

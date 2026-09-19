@@ -812,8 +812,8 @@ class TonalVector(tuple, Tone, Interval):
         except TypeError as e:
             raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector") from e
 
-    def qualify_octave(self, oct: int = 0) -> TonalVector:
-        """Returns a TonalVector with an octave designation set to `oct`.
+    def qualify_octave(self, octave: int = 0) -> TonalVector:
+        """Returns a TonalVector with an octave designation set to `octave`.
 
         Example
         -------
@@ -831,14 +831,14 @@ class TonalVector(tuple, Tone, Interval):
         TonalVector((3, 4, 2))
 
         """
-        return TonalVector((self.d, self.c, oct))
+        return TonalVector((self.d, self.c, octave))
 
-    def conditional_qualify_octave(self, oct: int = 0) -> TonalVector:
-        """Returns a TonalVector with an octave designation set to `oct`,
+    def conditional_qualify_octave(self, octave: int = 0) -> TonalVector:
+        """Returns a TonalVector with an octave designation set to `octave`,
         but does not change an existing octave designation if present."""
         if self.has_octave:
             return self
-        return TonalVector((self.d, self.c, oct))
+        return TonalVector((self.d, self.c, octave))
 
     def unqualify_octave(self) -> TonalVector:
         """Returns a TonalVector without an octave designation.
