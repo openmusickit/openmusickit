@@ -1185,6 +1185,15 @@ class TonalVector(tuple, Tone, Interval):
             """
             return f"{self.quality} {self.number}"
 
+        @property
+        def ascii(self) -> str:
+            """The interval spelled out; identical to `unicode` since interval names need no symbols.
+
+            >>> TonalVector((3,6)).interval.ascii
+            'augmented 4'
+            """
+            return self.unicode
+
         def __str__(self):
             """
             >>> str(TonalVector((0, 0, 0)).interval)
