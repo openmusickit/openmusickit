@@ -125,6 +125,11 @@ def _ly_relative_octave(d: int, prev: tuple) -> int:
     return (prev[2] * D_LEN + prev[0] + steps) // D_LEN
 
 
+def _ly_octave_marks(octaves: int) -> str:
+    """Lilypond octave marks for a signed octave distance: ' per octave up, , per octave down."""
+    return ("'" if octaves >= 0 else ",") * abs(octaves)
+
+
 def _pitch_from_match(m: re.Match, names: dict, mid_c: int) -> tuple:
     """(d, c[, o]) for a string matched by one of the _PITCH_PATTERNS."""
     d, chromatic_offset = names[m["name"]]
@@ -345,10 +350,10 @@ class TonalVector(tuple, Tone, Interval):
         # if a third value (octave) supplied
         try:
             self.o = self[2]
-            self._has_octave = True
+            self.has_octave = True
         except IndexError:
             self.o = None
-            self._has_octave = False
+            self.has_octave = False
         """
 
         self._pitch = self._PitchRepresentation(self)
@@ -396,12 +401,13 @@ class TonalVector(tuple, Tone, Interval):
         return DIATONES[self.d]
 
     @property
-    def _has_octave(self) -> bool:
-        if len(self) == 2:
-            return False
-        if len(self) == 3:
-            return True
-        raise ValueError("Somehow, unexpectedly, this TonalVector has the wrong size.")
+    def has_octave(self) -> bool:
+        """True if this TonalVector carries an octave designation.
+
+        >>> TonalVector((0, 0)).has_octave, TonalVector((0, 0, 0)).has_octave
+        (False, True)
+        """
+        return len(self) == 3
 
     @property
     def fifths_position(self) -> int:
@@ -437,7 +443,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((2, 4, 1)).fifths_position  # E, any octave
         4
         """
-        return (2 * self.d + 1) % 7 - 1 + 7 * self.pitch._modifier_value
+        return (2 * self.d + 1) % D_LEN - 1 + D_LEN * self.pitch.alteration
 
     @classmethod
     def from_string(
@@ -542,7 +548,7 @@ class TonalVector(tuple, Tone, Interval):
             octave = 0  # Lilypond's default octave is OMK's octave 0
         else:
             prev_note = cls(prev_note)
-            if not prev_note._has_octave:
+            if not prev_note.has_octave:
                 raise ValueError("prev_note must be octave-qualified.")
             octave = _ly_relative_octave(d, prev_note)
 
@@ -579,7 +585,7 @@ class TonalVector(tuple, Tone, Interval):
         'C♯'
 
         >>> print(TonalVector((2,3,1)))
-        TonalVector((2, 3, 1)) # E♭1
+        TonalVector((2, 3, 1)) # E♭5
         """
         return f"{repr(self)} # {self.pitch.unicode}"
 
@@ -830,7 +836,7 @@ class TonalVector(tuple, Tone, Interval):
     def conditional_qualify_octave(self, oct: int = 0) -> TonalVector:
         """Returns a TonalVector with an octave designation set to `oct`,
         but does not change an existing octave designation if present."""
-        if len(self) == 3:
+        if self.has_octave:
             return self
         return TonalVector((self.d, self.c, oct))
 
@@ -852,6 +858,11 @@ class TonalVector(tuple, Tone, Interval):
         """A TonalVector's pitch representation,
         which holds relevant details such as letter name, accidental, etc.
 
+        Strings meant for people (`unicode`, `ascii`, `verbose`) number octaves
+        with middle C as C4, the common convention; the `*_at(mid_c)` methods let a
+        caller pick another (C3 on some older MIDI gear, or 0 to see OMK's internal
+        octave). Internally a TonalVector always keeps middle C at octave 0.
+
         Example
         -------
 
@@ -862,96 +873,96 @@ class TonalVector(tuple, Tone, Interval):
         def __init__(self, vector: TonalVector):
             self._v = vector
 
-        # letter name
         @property
-        def _ln(self) -> str:
+        def letter(self) -> str:
             """The letter name (without sharps or flats) of the pitch.
 
             Examples
             --------
 
-            >>> TonalVector((0,0)).pitch._ln
+            >>> TonalVector((0,0)).pitch.letter
             'C'
 
-            >>> TonalVector((0,1)).pitch._ln
+            >>> TonalVector((0,1)).pitch.letter
             'C'
             """
             return self._v._diatone.letter.upper()
 
-        # how sharp or flat
         @property
-        def _modifier_value(self) -> int:
-            """A number representing the distance in halfsteps between the named pitch
+        def alteration(self) -> int:
+            """The distance in half steps between the named pitch
             and the natural version of the named pitch.
 
-            >>> TonalVector((0,0)).pitch._modifier_value # C natural
+            >>> TonalVector((0,0)).pitch.alteration # C natural
             0
 
-            >>> TonalVector((0,1)).pitch._modifier_value # C sharp
+            >>> TonalVector((0,1)).pitch.alteration # C sharp
             1
 
-            >>> TonalVector((0, 11)).pitch._modifier_value # C flat
+            >>> TonalVector((0, 11)).pitch.alteration # C flat
             -1
 
-            >>> TonalVector((4,6,1)).pitch._modifier_value # G flat
+            >>> TonalVector((4,6,1)).pitch.alteration # G flat
             -1
 
-            >>> TonalVector((6,0)).pitch._modifier_value # B sharp
+            >>> TonalVector((6,0)).pitch.alteration # B sharp
             1
             """
+            natural = self._v._diatone.chromatic
+            modifier = self._v.c - natural
 
-            modifier = self._v.c - self._v._diatone.chromatic
-
+            # correct for octave-break cases (C flat, B sharp)
             if abs(modifier) > 4:  # 4 = triple aug or triple dim
-                if self._v.c < self._v._diatone.chromatic:
-                    d_val_c = self._v._diatone.chromatic - C_LEN
-                if self._v.c > self._v._diatone.chromatic:
-                    d_val_c = self._v._diatone.chromatic + C_LEN
-                modifier = self._v.c - d_val_c
+                if self._v.c < natural:
+                    natural -= C_LEN
+                else:
+                    natural += C_LEN
+                modifier = self._v.c - natural
 
             return modifier
 
         @property
-        def _modifier(self) -> Accidental:
-            """Returns an Accidental, which contains
-            information about how to represent the modifier (sharp, flat, natural).
+        def accidental(self) -> Accidental:
+            """The Accidental (sharp, flat, natural, ...) with its spellings.
 
-            >>> TonalVector((0,0)).pitch._modifier
+            >>> TonalVector((0,0)).pitch.accidental
             Accidental(offset=0, name='natural', unicode='♮', ascii='', ly='')
 
-            >>> TonalVector((0,0)).pitch._modifier.name
+            >>> TonalVector((0,0)).pitch.accidental.name
             'natural'
             """
-            return ACCIDENTALS[self._modifier_value]
+            return ACCIDENTALS[self.alteration]
 
-        def _unicode(self, mid_c: int = 0) -> str:
-            """Returns a human readable representation of the pitch, with Unicode modifiers (♯, ♭).
-            The mid_c arg can be used to set the octave designation for middle C.
-            (In OMK, middle C == C0. In MIDI etc., middle C == C4).
+        def _spell(self, accidental: str, mid_c: int) -> str:
+            """Letter, then `accidental` if altered, then the octave number if qualified."""
+            text = self.letter
+            if self.alteration:
+                text += accidental
+            if self._v.has_octave:
+                text += str(self._v.o + mid_c)
+            return text
+
+        def unicode_at(self, mid_c: int = 4) -> str:
+            """The pitch with Unicode accidentals (♯, ♭), numbering octaves so that
+            middle C is C<mid_c>.
 
             Examples
             --------
 
-            >>> TonalVector((0,1)).pitch._unicode()
+            >>> TonalVector((0,1)).pitch.unicode_at()
             'C♯'
 
-            >>> TonalVector((1,1,0)).pitch._unicode(4)
-            'D♭4'
+            >>> TonalVector((1,1,0)).pitch.unicode_at(3)
+            'D♭3'
+
+            >>> TonalVector((1,1,0)).pitch.unicode_at(0)
+            'D♭0'
             """
-            u_str = self._ln
-
-            if self._modifier_value:
-                u_str = "".join([u_str, self._modifier.unicode])
-
-            if self._v._has_octave:
-                u_str = "".join([u_str, str(self._v.o + mid_c)])
-
-            return u_str
+            return self._spell(self.accidental.unicode, mid_c)
 
         @property
         def unicode(self) -> str:
-            """A human readable representation of the pitch, with Unicode modifiers (♯, ♭).
-            If the pitch has an octave designation, middle C == C0.
+            """The pitch with Unicode accidentals (♯, ♭); middle C is C4.
 
             Examples
             --------
@@ -960,54 +971,28 @@ class TonalVector(tuple, Tone, Interval):
             'C♯'
 
             >>> TonalVector((1,1,0)).pitch.unicode
-            'D♭0'
-            """
-            return self._unicode()
-
-        @property
-        def unicode_C4(self) -> str:
-            """A human readable representation of the pitch, with Unicode modifiers (♯, ♭).
-            If the pitch has an octave designation, middle C == C4.
-
-            Examples
-            --------
-
-            >>> TonalVector((0,1)).pitch.unicode_C4
-            'C♯'
-
-            >>> TonalVector((1,1,0)).pitch.unicode_C4
             'D♭4'
             """
-            return self._unicode(mid_c=4)
+            return self.unicode_at()
 
-        def _ascii(self, octave_modifier: int = 0, show_nat: bool = False):
-            """Returns a human readable representation of the pitch, with ascii modifiers (#, b).
-            The octave_modifier can be used to set the octave designation for middle C.
-            (In OMK, middle C == C0. In MIDI etc., middle C == C4).
+        def ascii_at(self, mid_c: int = 4) -> str:
+            """The pitch with ASCII accidentals (#, b), numbering octaves so that
+            middle C is C<mid_c>.
 
             Examples
             --------
 
-            >>> TonalVector((0,1)).pitch._ascii()
+            >>> TonalVector((0,1)).pitch.ascii_at()
             'C#'
 
-            >>> TonalVector((1,1,0)).pitch._ascii(4)
-            'Db4'
+            >>> TonalVector((1,1,0)).pitch.ascii_at(0)
+            'Db0'
             """
-            astr = self._ln
-
-            if self._modifier_value:
-                astr = "".join([astr, self._modifier.ascii])
-
-            if self._v._has_octave:
-                astr = "".join([astr, str(self._v.o + octave_modifier)])
-
-            return astr
+            return self._spell(self.accidental.ascii, mid_c)
 
         @property
         def ascii(self) -> str:
-            """A human readable representation of the pitch, with Ascii modifiers (#, b).
-            If the pitch has an octave designation, middle C == C0.
+            """The pitch with ASCII accidentals (#, b); middle C is C4.
 
             Examples
             --------
@@ -1016,25 +1001,33 @@ class TonalVector(tuple, Tone, Interval):
             'C#'
 
             >>> TonalVector((1,1,0)).pitch.ascii
-            'Db0'
-            """
-            return self._ascii()
-
-        @property
-        def ascii_C4(self):
-            """A human readable representation of the pitch, with Ascii modifiers (#, b).
-            If the pitch has an octave designation, middle C == C4.
-
-            Examples
-            --------
-
-            >>> TonalVector((0,1)).pitch.ascii_C4
-            'C#'
-
-            >>> TonalVector((1,1,0)).pitch.ascii_C4
             'Db4'
             """
-            return self._ascii(octave_modifier=4)
+            return self.ascii_at()
+
+        def verbose_at(self, mid_c: int = 4) -> str:
+            """The pitch with the accidental spelled out, numbering octaves so that
+            middle C is C<mid_c>.
+
+            >>> TonalVector((0,1,1)).pitch.verbose_at(0)
+            'Csharp1'
+            """
+            return self._spell(self.accidental.name, mid_c)
+
+        @property
+        def verbose(self) -> str:
+            """The pitch with the accidental spelled out; middle C is C4.
+
+            >>> TonalVector((0,0)).pitch.verbose
+            'C'
+
+            >>> TonalVector((0,1)).pitch.verbose
+            'Csharp'
+
+            >>> TonalVector((0,1,1)).pitch.verbose
+            'Csharp5'
+            """
+            return self.verbose_at()
 
         @property
         def ly(self) -> str:
@@ -1047,14 +1040,13 @@ class TonalVector(tuple, Tone, Interval):
             >>> TonalVector((0,1)).pitch.ly # C sharp
             'cis'
 
-            >>> TonalVector((6,10,1)).pitch.ly # B flat, with an octave designation
+            >>> TonalVector((6,10,1)).pitch.ly # B flat; the octave is not shown
             'bes'
             """
-
-            return "".join([self._ln.lower(), self._modifier.ly])
+            return f"{self.letter.lower()}{self.accidental.ly}"
 
         @property
-        def ly_abs8ve(self):
+        def ly_absolute(self) -> str:
             """The Lilypond representation of the pitch name,
             with an absolute octave designation.
             (see: http://lilypond.org/doc/v2.18/Documentation/learning/absolute-pitch-names)
@@ -1062,114 +1054,73 @@ class TonalVector(tuple, Tone, Interval):
             Examples
             --------
 
-            >>> TonalVector((0,0,1)).pitch.ly_abs8ve # C above middle C
+            >>> TonalVector((0,0,1)).pitch.ly_absolute # C above middle C
             "c'"
 
-            >>> TonalVector((6,10,-1)).pitch.ly_abs8ve # B flat below middle C
+            >>> TonalVector((6,10,-1)).pitch.ly_absolute # B flat below middle C
             'bes,'
 
-            >>> TonalVector((3,6,0)).pitch.ly_abs8ve # F sharp in octave of middle c
+            >>> TonalVector((3,6,0)).pitch.ly_absolute # F sharp in octave of middle c
             'fis'
 
-            >>> TonalVector((3,6)).pitch.ly_abs8ve # F sharp, no octave designation
+            >>> TonalVector((3,6)).pitch.ly_absolute # F sharp, no octave designation
             'fis'
 
-            >>> TonalVector((1,1,4)).pitch.ly_abs8ve # D flat, 4 octaves above middle c
+            >>> TonalVector((1,1,4)).pitch.ly_absolute # D flat, 4 octaves above middle c
             "des''''"
 
-            >>> TonalVector((1,1,-4)).pitch.ly_abs8ve # D flat, 4 octaves below middle c
+            >>> TonalVector((1,1,-4)).pitch.ly_absolute # D flat, 4 octaves below middle c
             'des,,,,'
             """
-
-            if not self._v._has_octave:
+            if not self._v.has_octave:
                 return self.ly
+            return self.ly + _ly_octave_marks(self._v.o)
 
-            if self._v.o < 0:
-                ostr = ","
-            else:
-                ostr = "'"
-
-            return "".join([self.ly, ostr * abs(self._v.o)])
-
-        def ly_rel8ve(self, prev=None):
-            """Returns the Lilypond representation of the pitch name,
+        def ly_relative(self, prev: tuple[int, ...] | None = None) -> str:
+            """The Lilypond representation of the pitch name,
             with a relative octave designation, based on the previous pitch.
 
-            >>> TonalVector((3,5,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((3,5,0)).pitch.ly_relative(TonalVector((0,0,0)))
             'f'
 
-            >>> TonalVector((4,7,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((4,7,0)).pitch.ly_relative(TonalVector((0,0,0)))
             "g'"
 
-            >>> TonalVector((3,5,-1)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((3,5,-1)).pitch.ly_relative(TonalVector((0,0,0)))
             'f,'
 
-            >>> TonalVector((4,7,-1)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((4,7,-1)).pitch.ly_relative(TonalVector((0,0,0)))
             'g'
 
-            >>> TonalVector((0,0,2)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((0,0,2)).pitch.ly_relative(TonalVector((0,0,0)))
             "c''"
 
             Accidentals don't affect the octave: F-sharp is a fourth above C
             and G-flat a fifth above, so G-flat gets an octave mark.
 
-            >>> TonalVector((3,6,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((3,6,0)).pitch.ly_relative(TonalVector((0,0,0)))
             'fis'
 
-            >>> TonalVector((4,6,0)).pitch.ly_rel8ve(TonalVector((0,0,0)))
+            >>> TonalVector((4,6,0)).pitch.ly_relative(TonalVector((0,0,0)))
             "ges'"
             """
             if prev is None:
-                return self.ly_abs8ve
-
-            octave_distance = self._v.o - _ly_relative_octave(self._v.d, prev)
-
-            if octave_distance < 0:
-                ostr = ","
-            else:
-                ostr = "'"
-
-            return "".join([self.ly, ostr * abs(octave_distance)])
-
-        @property
-        def verbose(self) -> str:
-            """
-            >>> TonalVector((0,0)).pitch.verbose
-            'C'
-
-            >>> TonalVector((0,1)).pitch.verbose
-            'Csharp'
-
-            >>> TonalVector((0,1,1)).pitch.verbose
-            'Csharp1'
-
-            """
-
-            try:
-                o = str(self._v.o)
-            except AttributeError:
-                o = ""
-
-            if self._modifier_value == 0:
-                mod_text = ""
-            else:
-                mod_text = self._modifier.name
-
-            return "".join([self._ln, mod_text, o])
+                return self.ly_absolute
+            return self.ly + _ly_octave_marks(self._v.o - _ly_relative_octave(self._v.d, prev))
 
         def __repr__(self):
             """
             >>> TonalVector((0, 0, 0)).pitch
             TonalVector((0, 0, 0)).pitch
             """
-            return "".join([self._v.__repr__(), ".pitch"])
+            return f"{self._v!r}.pitch"
 
         def __str__(self):
             """
             >>> str(TonalVector((0, 0, 0)).pitch)
-            'C0 | (0, 0, 0)'
+            'C4 | (0, 0, 0)'
             """
-            return "".join([self.unicode, " | ", str(tuple(self._v))])
+            return f"{self.unicode} | {tuple(self._v)}"
 
     class _IntervalRepresentation(IntervalRepresentation):
         def __init__(self, vector: TonalVector):
@@ -1188,7 +1139,7 @@ class TonalVector(tuple, Tone, Interval):
             self.number = vector.d + 1
 
             # Signed octave suffix ("+0", "+1", "-2"); empty for abstract vectors.
-            if vector._has_octave:
+            if vector.has_octave:
                 self.o = f"{vector.o:+d}"
             else:
                 self.o = ""
@@ -1214,14 +1165,14 @@ class TonalVector(tuple, Tone, Interval):
             'min6-2'
             """
 
-            return "".join([self.quality.abbr, str(self.number), self.o])
+            return f"{self.quality.abbr}{self.number}{self.o}"
 
         def __repr__(self):
             """
             >>> TonalVector((0, 0, 0)).interval
             TonalVector((0, 0, 0)).interval
             """
-            return "".join([self._v.__repr__(), ".interval"])
+            return f"{self._v!r}.interval"
 
         @property
         def unicode(self) -> str:
@@ -1232,11 +1183,11 @@ class TonalVector(tuple, Tone, Interval):
             >>> TonalVector((3,6)).interval.unicode
             'augmented 4'
             """
-            return f"{self.quality.__str__()} {self.number}"
+            return f"{self.quality} {self.number}"
 
         def __str__(self):
             """
             >>> str(TonalVector((0, 0, 0)).interval)
             'perfect 1 | (0, 0, 0)'
             """
-            return "".join([self.unicode, " | ", str(tuple(self._v))])
+            return f"{self.unicode} | {tuple(self._v)}"

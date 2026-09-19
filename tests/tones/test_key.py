@@ -278,7 +278,7 @@ def test_key_of_derives_signature_matching_every_tone(chromatic_tonics):
         for mode in DIATONIC_MODES:
             key = Key.of(tonic, mode)
             for tone in key.tones:
-                assert key.signature[tone.d] == tone.pitch._modifier_value, (key.name, tone)
+                assert key.signature[tone.d] == tone.pitch.alteration, (key.name, tone)
 
 
 def test_key_of_derived_signature_is_standard_with_the_expected_fifths(chromatic_tonics):
@@ -289,9 +289,7 @@ def test_key_of_derived_signature_is_standard_with_the_expected_fifths(chromatic
         for mode in DIATONIC_MODES:
             key = Key.of(tonic, mode)
             expected = (
-                LETTER_FIFTHS[tonic.d]
-                + 7 * tonic.pitch._modifier_value
-                + MODE_FIFTHS_OFFSET[mode.name]
+                LETTER_FIFTHS[tonic.d] + 7 * tonic.pitch.alteration + MODE_FIFTHS_OFFSET[mode.name]
             )
             assert key.signature.fifths == expected, key.name
             assert key.signature == KeySignature.from_alts(expected), key.name

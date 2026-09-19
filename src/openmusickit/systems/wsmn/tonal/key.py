@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from numbers import Real
 
 from openmusickit.systems.wsmn.tonal.chords import Quality
-from openmusickit.systems.wsmn.tonal.constants import C_LEN, DIATONES
+from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
 
@@ -87,7 +87,7 @@ class KeySignature(tuple):
 
         values = [0] * 7
         for i in range(abs(alts)):
-            values[order[i % 7]] += step
+            values[order[i % D_LEN]] += step
 
         return cls(*values)
 
@@ -222,9 +222,9 @@ class KeySignature(tuple):
             if new_tone.d in alts:
                 raise ValueError(
                     f"Cannot build a KeySignature: `operation` sent two letters to "
-                    f"{new_tone.pitch._ln}."
+                    f"{new_tone.pitch.letter}."
                 )
-            alts[new_tone.d] = new_tone.pitch._modifier_value
+            alts[new_tone.d] = new_tone.pitch.alteration
 
         return KeySignature(*(alts[i] for i in range(7)))
 
@@ -360,10 +360,10 @@ class Key:
         if signature is None:
             alts: dict[int, int] = {}
             for tone in tones:
-                alt = tone.pitch._modifier_value
+                alt = tone.pitch.alteration
                 if alts.setdefault(tone.d, alt) != alt:
                     raise ValueError(
-                        f"Cannot derive a KeySignature: {tone.pitch._ln} occurs with "
+                        f"Cannot derive a KeySignature: {tone.pitch.letter} occurs with "
                         f"more than one alteration in {mode.name}. Pass `signature` explicitly."
                     )
             signature = KeySignature(*(alts.get(i, 0) for i in range(7)))

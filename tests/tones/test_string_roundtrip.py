@@ -35,46 +35,32 @@ QUALIFIED_VECTORS = [TonalVector(t) for t in _octave_qualified_tuples()]
 ALL_VECTORS = ABSTRACT_VECTORS + QUALIFIED_VECTORS
 
 
-### pitch.unicode / pitch.ascii round-trip through from_string ###
-# These properties default to mid_c=0 (i.e. their own octave numbers align
-# with from_string's default mid_c=4 only if we pass a matching mid_c).
-# unicode/ascii render octave numbers with middle C == 0, so round-tripping
-# through from_string requires mid_c=0.
+### pitch.unicode / pitch.ascii / pitch.verbose round-trip through from_string ###
+# The display properties and from_string both default to middle C == C4;
+# the *_at(mid_c) forms round-trip when from_string is given the same mid_c.
 
 
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_unicode_roundtrip(tv):
-    assert TonalVector.from_string(tv.pitch.unicode, mid_c=0) == tv
+    assert TonalVector.from_string(tv.pitch.unicode) == tv
 
 
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_ascii_roundtrip(tv):
-    assert TonalVector.from_string(tv.pitch.ascii, mid_c=0) == tv
-
-
-### pitch.unicode_C4 / pitch.ascii_C4 round-trip through from_string ###
-# These render octave numbers with middle C == 4, matching from_string's
-# default mid_c=4.
-
-
-@pytest.mark.parametrize("tv", ALL_VECTORS)
-def test_unicode_c4_roundtrip(tv):
-    assert TonalVector.from_string(tv.pitch.unicode_C4) == tv
-
-
-@pytest.mark.parametrize("tv", ALL_VECTORS)
-def test_ascii_c4_roundtrip(tv):
-    assert TonalVector.from_string(tv.pitch.ascii_C4) == tv
-
-
-### pitch.verbose round-trip through from_string ###
-# verbose renders the raw internal octave number with no mid_c offset at
-# all, so it round-trips with mid_c=0.
+    assert TonalVector.from_string(tv.pitch.ascii) == tv
 
 
 @pytest.mark.parametrize("tv", ALL_VECTORS)
 def test_verbose_roundtrip(tv):
-    assert TonalVector.from_string(tv.pitch.verbose, mid_c=0) == tv
+    assert TonalVector.from_string(tv.pitch.verbose) == tv
+
+
+@pytest.mark.parametrize("mid_c", [0, 3])
+@pytest.mark.parametrize("tv", ALL_VECTORS)
+def test_custom_mid_c_roundtrip(tv, mid_c):
+    assert TonalVector.from_string(tv.pitch.unicode_at(mid_c), mid_c=mid_c) == tv
+    assert TonalVector.from_string(tv.pitch.ascii_at(mid_c), mid_c=mid_c) == tv
+    assert TonalVector.from_string(tv.pitch.verbose_at(mid_c), mid_c=mid_c) == tv
 
 
 ### interval.unicode round-trip through from_string ###
@@ -113,21 +99,21 @@ def test_ly_roundtrip_abstract_qualifies_at_octave_zero(tv):
     assert TonalVector.from_ly(tv.pitch.ly) == tv.qualify_octave(0)
 
 
-### pitch.ly_abs8ve round-trip through from_ly ###
-# ly_abs8ve does encode an absolute octave (via ' and , marks), so
+### pitch.ly_absolute round-trip through from_ly ###
+# ly_absolute does encode an absolute octave (via ' and , marks), so
 # octave-qualified vectors round-trip exactly.
 
 
 @pytest.mark.parametrize("tv", QUALIFIED_VECTORS)
-def test_ly_abs8ve_roundtrip(tv):
-    assert TonalVector.from_ly(tv.pitch.ly_abs8ve) == tv
+def test_ly_absolute_roundtrip(tv):
+    assert TonalVector.from_ly(tv.pitch.ly_absolute) == tv
 
 
-### pitch.ly_rel8ve round-trip through from_ly, using prev_note ###
+### pitch.ly_relative round-trip through from_ly, using prev_note ###
 
 
 @pytest.mark.parametrize("tv", QUALIFIED_VECTORS)
-def test_ly_rel8ve_roundtrip(tv):
+def test_ly_relative_roundtrip(tv):
     prev_note = TonalVector((0, 0, 0))
-    ly_str = tv.pitch.ly_rel8ve(prev_note)
+    ly_str = tv.pitch.ly_relative(prev_note)
     assert TonalVector.from_ly(ly_str, prev_note=prev_note) == tv
