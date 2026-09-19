@@ -30,25 +30,25 @@ class OmkGraph:
     @classmethod
     def load_from_json(cls, js_graph, graph_engine: GraphAdapter | None = None) -> OmkGraph:
         """Returns an OmkGraph built from a JSON serialization."""
-        pass
+        raise NotImplementedError
 
     @classmethod
     def load_from_file(cls, f: Path, graph_engine: GraphAdapter | None = None) -> OmkGraph:
-        pass
+        raise NotImplementedError
 
     def import_json_graph(self, js_graph) -> None:
         """Adds the contents of js_graph to the current graph.
         Do not assume metadata from the source graph is retained."""
-        pass
+        raise NotImplementedError
 
     def import_file(self, f: Path) -> None:
-        pass
+        raise NotImplementedError
 
     def export_to_json(self):
-        pass
+        raise NotImplementedError
 
-    def export_json_to_file(self, f: Path) -> None:  # Return some status object?
-        pass
+    def export_json_to_file(self, f: Path) -> None:
+        raise NotImplementedError
 
     # Basic Add, Connect, Remove
 

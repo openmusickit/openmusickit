@@ -88,7 +88,7 @@ class TimeSignature(CompoundTemporalUnit):
                 for tu, c in zip(self._units, new_counts, strict=False)
             ]
         except ScalingError as e:
-            raise ScalingError(f"Cannot scale {self!r} by {scalar}: {e}")
+            raise ScalingError(f"Cannot scale {self!r} by {scalar}: {e}") from e
 
         return TimeSignature(
             new_units, presentation=_scale_presentation(self._presentation, scalar)

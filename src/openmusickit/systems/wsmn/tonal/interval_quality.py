@@ -38,16 +38,10 @@ class IntervalQuality:
     """
 
     def __new__(cls, name, rel_number):
-
-        try:
-            return _get_quality(name)
-        except:
-            pass
-
-        try:
-            return _get_quality(rel_number)
-        except:
-            return super().__new__(cls)
+        # Interned: one instance per relative number, kept in `qualities`.
+        if rel_number in qualities:
+            return qualities[rel_number]
+        return super().__new__(cls)
 
     def __init__(self, name, rel_number):
         self.name = name

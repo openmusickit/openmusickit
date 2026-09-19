@@ -382,8 +382,8 @@ class MeteredDuration(Duration):
         """
         try:
             scalar = F(scalar)
-        except (TypeError, ValueError):
-            raise ScalingError(f"Cannot scale a MeteredDuration by {scalar!r}.")
+        except (TypeError, ValueError) as e:
+            raise ScalingError(f"Cannot scale a MeteredDuration by {scalar!r}.") from e
         if scalar <= 0:
             raise ScalingError("A MeteredDuration can only be scaled by a positive scalar.")
 

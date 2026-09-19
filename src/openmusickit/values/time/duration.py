@@ -222,7 +222,7 @@ class TemporalUnit(TemporalElement):
                 f"Cannot scale {self!r} by {scalar}: "
                 f"{new_count.denominator} does not divide the count, "
                 f"and the base cannot be scaled by {leftover}: {e}"
-            )
+            ) from e
         return self.__class__(new_count.numerator, new_base)
 
     def __repr__(self):
@@ -283,7 +283,7 @@ class CompoundTemporalUnit(TemporalElement):
         except ScalingError as e:
             raise ScalingError(
                 f"One or more members cannot complete the requested scaling operation: {e}"
-            )
+            ) from e
         return self.__class__(new_units)
 
 

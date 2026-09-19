@@ -382,8 +382,8 @@ class TonalVector(tuple, Tone, Interval):
     def o(self) -> int:
         try:
             return self[2]
-        except:
-            raise AttributeError("This TonalVector does not have an octave designation.")
+        except IndexError:
+            raise AttributeError("This TonalVector does not have an octave designation.") from None
 
     @property
     def _diatone(self) -> Diatone:
@@ -797,8 +797,8 @@ class TonalVector(tuple, Tone, Interval):
             return self + other
         try:
             return other(self)
-        except TypeError:
-            raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector")
+        except TypeError as e:
+            raise TypeError(f"'{type(other)}' does not have a call handler for TonalVector") from e
 
     def qualify_octave(self, oct: int = 0) -> TonalVector:
         """Returns a TonalVector with an octave designation set to `oct`.

@@ -525,10 +525,9 @@ def _tonal_unmodulo(x: tuple[int, ...]) -> tuple[int, ...]:
     if c - base_c < -6:
         c = c + C_LEN
 
-    try:
+    if len(x) == 3:
         return (d, c, x[2])
-    except:
-        return (d, c)
+    return (d, c)
 
 
 def _qualify_octave_as_needed(

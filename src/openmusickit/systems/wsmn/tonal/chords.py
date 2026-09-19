@@ -103,7 +103,7 @@ class ChordType(ToneCollection):
             try:
                 bass = list(self)[inv]
             except IndexError:
-                raise IndexError(f"Max inversion is {len(self) - 1}.")
+                raise IndexError(f"Max inversion is {len(self) - 1}.") from None
         else:
             raise TypeError("`inv` must be a TonalVector or an int.")
 
