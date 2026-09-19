@@ -168,9 +168,9 @@ class Tempo(TemporalRatio):
     >>> Tempo(120, quarter).r  # microseconds per whole note
     Fraction(2000000, 1)
     >>> ClockDuration.from_duration(quarter, Tempo(120, quarter)).seconds
-    0.5
+    Fraction(1, 2)
     >>> ClockDuration.from_duration(dotted_quarter, Tempo(60, dotted_quarter)).seconds
-    1.0
+    Fraction(1, 1)
     """
 
     def __init__(self, n: int, beat: Duration, clock_time: ClockDuration = ONE_MINUTE):
