@@ -288,18 +288,10 @@ class TonalVector(tuple, Tone, Interval):
     True
     """
 
-    _cache = {}
+    __slots__ = ()
 
     def __new__(cls, *args):
-        """TonalVector is immutable and interned.
-
-        >>> TonalVector((0,0)) is TonalVector(0,0)
-        True
-
-        >>> TonalVector((0,0)).d = 1
-        Traceback (most recent call last):
-        ...
-        AttributeError: ...
+        """TonalVector is an immutable value: a tuple, compared by value.
 
         The canonical way to create a TonalVector is to pass in a tuple:
 
@@ -310,42 +302,23 @@ class TonalVector(tuple, Tone, Interval):
 
         >>> TonalVector(0, 0, 0)
         TonalVector((0, 0, 0))
+        >>> TonalVector(0, 0) == TonalVector((0, 0))
+        True
+
+        There is no per-instance state, so nothing can be set on one:
+
+        >>> TonalVector((0, 0)).d = 1
+        Traceback (most recent call last):
+        ...
+        AttributeError: ...
+        >>> TonalVector((0, 0)).anything = 1
+        Traceback (most recent call last):
+        ...
+        AttributeError: ...
         """
-        # Normalize input: if already a tuple/list, leave it
         if len(args) == 1 and isinstance(args[0], (tuple, list)):
-            key = tuple(args[0])
-        else:
-            key = tuple(args)
-
-        if key in cls._cache:
-            return cls._cache[key]
-
-        self = super().__new__(cls, key)
-        cls._cache[key] = self
-        return self
-
-    def __init__(self, *args):
-        """
-        Examples
-        --------
-
-        >>> TonalVector(0,0) == TonalVector((0,0))
-        True
-
-        >>> TonalVector(0,0,0) == TonalVector((0,0,0,))
-        True
-
-        >>> TonalVector(0,0) is TonalVector((0,0))
-        True
-        """
-
-        if hasattr(self, "_initialized"):
-            return
-
-        self._pitch = self._PitchRepresentation(self)
-        self._interval = self._IntervalRepresentation(self)
-
-        self._initialized = True
+            args = tuple(args[0])
+        return super().__new__(cls, args)
 
     ## Basic property interface
 
@@ -360,7 +333,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((0, 0)).pitch.unicode
         'C'
         """
-        return self._pitch
+        return self._PitchRepresentation(self)
 
     @property
     def interval(self) -> TonalVector._IntervalRepresentation:
@@ -369,7 +342,7 @@ class TonalVector(tuple, Tone, Interval):
         >>> TonalVector((4, 7)).interval.unicode
         'perfect 5'
         """
-        return self._interval
+        return self._IntervalRepresentation(self)
 
     @property
     def d(self) -> int:

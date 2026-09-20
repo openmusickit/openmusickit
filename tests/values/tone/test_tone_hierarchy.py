@@ -1,6 +1,9 @@
 """The Tone / Interval class hierarchy: TonalVector and SilentTone are Tones,
 TonalVector is also an Interval, and the base-class contract behaves."""
 
+import copy
+import pickle
+
 import pytest
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
@@ -55,12 +58,15 @@ def test_pitch_and_interval_are_read_only():
         tv.interval = None
 
 
-def test_tonal_vector_init_runs_once_per_interned_value():
+def test_tonal_vector_is_a_plain_value():
+    """Equal by value however it is built, hashable, copyable, and with no
+    per-instance state to go stale."""
     tv = TonalVector((3, 5, 2))
-    pitch, interval = tv.pitch, tv.interval
-    assert TonalVector((3, 5, 2)) is tv
-    assert TonalVector(3, 5, 2).pitch is pitch
-    assert TonalVector([3, 5, 2]).interval is interval
+    assert TonalVector(3, 5, 2) == tv == TonalVector([3, 5, 2])
+    assert len({tv, TonalVector(3, 5, 2)}) == 1
+    assert copy.deepcopy(tv) == tv
+    assert pickle.loads(pickle.dumps(tv)) == tv
+    assert not hasattr(tv, "__dict__")
 
 
 def test_abandoned_machinery_is_gone():

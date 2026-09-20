@@ -214,7 +214,7 @@ def test_mode_pattern_is_frozen():
 
 def test_every_symbol_mode_is_a_seven_note_pattern_from_the_root():
     for mode in DIATONIC_MODES:
-        assert mode.tones[0] is TonalVector((0, 0)), mode.name
+        assert mode.tones[0] == TonalVector((0, 0)), mode.name
         assert len(mode.tones) == 7, mode.name
         assert [t.d for t in mode.tones] == list(range(7)), mode.name
 
@@ -252,9 +252,9 @@ def test_key_of_transposes_the_mode_to_the_tonic(chromatic_tonics):
     for tonic in chromatic_tonics:
         for mode in DIATONIC_MODES:
             key = Key.of(tonic, mode)
-            assert key.tonic is tonic
-            assert key.tones[0] is tonic
-            assert key.tones.root is tonic
+            assert key.tonic == tonic
+            assert key.tones[0] == tonic
+            assert key.tones.root == tonic
             assert len(key.tones) == 7
             # letters ascend from the tonic, each used exactly once
             assert [t.d for t in key.tones] == [(tonic.d + i) % 7 for i in range(7)], key.name

@@ -88,9 +88,11 @@ class Tone(ABC):
     Tone and Interval should be subclassed to represent
     the members and relationships of any other pitch or sonic system.
 
-    Subclasses of Tone should normally be immutable and internable,
+    Subclasses of Tone should be immutable and hashable, comparing by value,
     as they represent abstract values ('C# above middle C'),
-    rather than concrete instance of a note in a score."""
+    rather than concrete instances of a note in a score."""
+
+    __slots__ = ()
 
     @property
     @abstractmethod

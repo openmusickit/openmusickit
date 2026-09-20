@@ -21,6 +21,8 @@ class Interval(ABC):
     True
     """
 
+    __slots__ = ()
+
     @property
     @abstractmethod
     def tonal_system(self) -> TonalSystem:

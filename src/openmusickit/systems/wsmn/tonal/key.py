@@ -61,6 +61,15 @@ class KeySignature(tuple):
 
         return super().__new__(cls, values)
 
+    def __getnewargs__(self) -> tuple:
+        """Lets copy and pickle rebuild a KeySignature through `__new__`.
+
+        >>> import copy
+        >>> copy.deepcopy(KeySignature(c=1, f=1)) == KeySignature(c=1, f=1)
+        True
+        """
+        return tuple(self)
+
     # Convenience constructor for "normal" keysignatures.
 
     @classmethod
@@ -284,7 +293,7 @@ class ModePattern:
     quality: ChordQuality | None = None
 
     def __post_init__(self):
-        if self.tones[0] is not TonalVector((0, 0)):
+        if self.tones[0] != TonalVector((0, 0)):
             raise ValueError("A ModePattern must begin with TonalVector((0, 0))")
 
 

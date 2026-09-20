@@ -1,105 +1,111 @@
+"""The quality of a WSMN interval: perfect, major, minor, augmented, diminished, and so on.
+
+There are nineteen qualities, held in `QUALITIES` and keyed by a *relative
+number*: 0 for perfect, +0.5/-0.5 for major/minor, and each augmentation or
+diminution a further 1 away from there. Whether a quality is reached from
+perfect or from major/minor is part of its identity (an augmented 4th and an
+augmented 3rd are one half-step above different things), which is why the
+numbers are spaced by halves.
+"""
+
+from __future__ import annotations
+
 import functools
 import math
+from dataclasses import dataclass
 
 from openmusickit.systems.wsmn.tonal.constants import C_LEN, DIATONES
 
-q_vals = {
-    -4.5: "quad_diminished-from_maj_min",
-    -4.0: "quad_diminished-from_perfect",
-    -3.5: "trpl_diminished-from_maj_min",
-    -3.0: "trpl_diminished-from_perfect",
-    -2.5: "dbl_diminished-from_maj_min",
-    -2: "dbl_diminished-from_perfect",
-    -1.5: "diminished-from_maj_min",
-    -1: "diminished-from_perfect",
-    -0.5: "minor",
-    0: "perfect",
-    0.5: "major",
-    1: "augmented-from_perfect",
-    1.5: "augmented-from_maj_min",
-    2: "dbl_augmented-from_perfect",
-    2.5: "dbl_augmented-from_maj_min",
-    3.0: "trpl_augmented-from_perfect",
-    3.5: "trpl_augmented-from_maj_min",
-    4.0: "quad_augmented-from_perfect",
-    4.5: "quad_augmented-from_maj_min",
-}
 
-qualities = dict()
-
-
+@dataclass(frozen=True, slots=True)
 class IntervalQuality:
-    """
-    >>> len(qualities)
-    19
+    """One of the nineteen interval qualities; see `QUALITIES`.
 
-    >>> qualities[0]
+    >>> QUALITIES[0]
     IntervalQuality("perfect", 0)
+    >>> QUALITIES[0.5] + 1
+    IntervalQuality("augmented-from_maj_min", 1.5)
     """
 
-    def __new__(cls, name, rel_number):
-        # Interned: one instance per relative number, kept in `qualities`.
-        if rel_number in qualities:
-            return qualities[rel_number]
-        return super().__new__(cls)
-
-    def __init__(self, name, rel_number):
-        self.name = name
-        self.__rel_number = rel_number
-        qualities[rel_number] = self
+    name: str
+    rel_number: float
 
     @property
-    def chromatic_modifier(self):
-        """
-        >>> _get_quality("major").chromatic_modifier
+    def chromatic_modifier(self) -> int:
+        """Half-steps above the diatonic base of the interval.
+
+        >>> QUALITIES[0.5].chromatic_modifier  # major
         0
-
-        >>> _get_quality("minor").chromatic_modifier
+        >>> QUALITIES[-0.5].chromatic_modifier  # minor
         -1
-
-        >>> _get_quality("diminished-from_maj_min").chromatic_modifier
+        >>> QUALITIES[-1.5].chromatic_modifier  # diminished, from major/minor
         -2
         """
-        return math.floor(self.__rel_number)
+        return math.floor(self.rel_number)
 
     # Arithmetic operations
 
-    def augment(self, halfsteps=1):
-        aug_number = self.__rel_number + halfsteps
-        return qualities[aug_number]
+    def augment(self, halfsteps: int = 1) -> IntervalQuality:
+        return QUALITIES[self.rel_number + halfsteps]
 
-    def diminish(self, halfsteps=1):
+    def diminish(self, halfsteps: int = 1) -> IntervalQuality:
         return self.augment(-halfsteps)
 
-    def __add__(self, halfsteps):
+    def __add__(self, halfsteps: int) -> IntervalQuality:
         return self.augment(halfsteps)
 
-    def __sub__(self, halfsteps):
-        return self.__add__(-halfsteps)
+    def __sub__(self, halfsteps: int) -> IntervalQuality:
+        return self.augment(-halfsteps)
 
     # String representations
 
     @property
-    def abbr(self):
+    def abbr(self) -> str:
         return " ".join([wrd[:3] for wrd in str(self).split()])
 
-    def __str__(self):
+    def __str__(self) -> str:
         return " ".join(self.name.split("-")[0].split("_"))
 
-    def __repr__(self):
-        return "".join(['IntervalQuality("', self.name, '", ', str(self.__rel_number), ")"])
+    def __repr__(self) -> str:
+        return f'{type(self).__name__}("{self.name}", {self.rel_number})'
 
 
-# Instantiate the Interval Qualities
-for number, name in q_vals.items():
-    IntervalQuality(name, number)
+QUALITIES: dict[float, IntervalQuality] = {
+    rel_number: IntervalQuality(name, rel_number)
+    for rel_number, name in {
+        -4.5: "quad_diminished-from_maj_min",
+        -4.0: "quad_diminished-from_perfect",
+        -3.5: "trpl_diminished-from_maj_min",
+        -3.0: "trpl_diminished-from_perfect",
+        -2.5: "dbl_diminished-from_maj_min",
+        -2: "dbl_diminished-from_perfect",
+        -1.5: "diminished-from_maj_min",
+        -1: "diminished-from_perfect",
+        -0.5: "minor",
+        0: "perfect",
+        0.5: "major",
+        1: "augmented-from_perfect",
+        1.5: "augmented-from_maj_min",
+        2: "dbl_augmented-from_perfect",
+        2.5: "dbl_augmented-from_maj_min",
+        3.0: "trpl_augmented-from_perfect",
+        3.5: "trpl_augmented-from_maj_min",
+        4.0: "quad_augmented-from_perfect",
+        4.5: "quad_augmented-from_maj_min",
+    }.items()
+}
+"""The nineteen qualities, keyed by relative number.
+
+>>> len(QUALITIES)
+19
+"""
 
 
-# --- lookup by number, tuple or name ---
+# --- lookup by number or (d, c) tuple ---
 
 
 @functools.singledispatch
-def _get_quality(q, d=None):
+def _get_quality(q, d=None) -> IntervalQuality:
     """
     >>> _get_quality(['x','y'], 2)
     Traceback (most recent call last):
@@ -116,7 +122,7 @@ def _(q, d=None):
     >>> _get_quality(0)
     IntervalQuality("perfect", 0)
     """
-    return qualities[q]
+    return QUALITIES[q]
 
 
 @_get_quality.register(tuple)
@@ -142,78 +148,3 @@ def _(v, _=None):
         modifier = c - d_val_c
 
     return _get_quality(base_q_val + modifier)
-
-
-@_get_quality.register(str)
-def _(q, d=None):
-    """
-    >>> _get_quality("M")
-    IntervalQuality("major", 0.5)
-
-    >>> _get_quality("maj")
-    IntervalQuality("major", 0.5)
-
-    >>> _get_quality("major")
-    IntervalQuality("major", 0.5)
-
-    >>> _get_quality("m")
-    IntervalQuality("minor", -0.5)
-
-    >>> _get_quality("min")
-    IntervalQuality("minor", -0.5)
-
-    >>> _get_quality("aug", 2)
-    IntervalQuality("augmented-from_maj_min", 1.5)
-
-    >>> _get_quality("double diminished", 4)
-    IntervalQuality("dbl_diminished-from_perfect", -2)
-
-    >>> _get_quality("perfect")
-    IntervalQuality("perfect", 0)
-
-    >>> _get_quality("P")
-    IntervalQuality("perfect", 0)
-
-    >>> _get_quality("d", 1)
-    IntervalQuality("diminished-from_maj_min", -1.5)
-    """
-
-    for _rel_number, quality in qualities.items():
-        if quality.name.lower() == q.lower():
-            return quality
-
-    for _rel_number, quality in qualities.items():
-        if (len(q) == 1 and q == "M") or q.lower() == "maj":
-            return _get_quality("major")
-        if (len(q) == 1 and q == "m") or q.lower() == "min":
-            return _get_quality("minor")
-
-        if q.lower() == "p" or q.lower() == "per":
-            return _get_quality("perfect")
-
-        if q.lower() in ["a", "d"] or any(qstr in q.lower() for qstr in ["dim", "aug", "dbl"]):
-            return _get_quality_x(q, d)
-
-
-def _get_quality_x(q, d):  # x= extended
-    q = q.lower()
-    base_quality = DIATONES[d].quality_type.value
-
-    if q == "a" or "aug" in q:
-        q_add = 1  # quality addend
-
-    if q == "d" or "dim" in q:
-        q_add = -1
-
-    if "dbl" in q or "double" in q:
-        q_add = q_add * 2
-
-    if base_quality == 0:
-        q_val = q_add
-
-    if base_quality == 0.5:
-        if q_add < 0:
-            base_quality = -base_quality
-        q_val = base_quality + q_add
-
-    return _get_quality(q_val)
