@@ -460,6 +460,27 @@ Do not manufacture additional steps simply to appear thorough.
 
 ---
 
+# Commit messages
+
+Commit only when asked. When you do, the subject line is:
+
+```
+Claude: <what changed>
+```
+
+The prefix marks agent-authored commits so the developer can tell them apart from their own
+in the log. After the prefix, say what changed in a few terse words, imperative or
+noun-phrase, no trailing period. Several related changes are separated by semicolons:
+
+```
+Claude: freeze MetricalDuration and TiedDuration
+Claude: single errors module with OmkError base; GraphError; SHARP_ORDER
+```
+
+A body is optional; add one only when the subject cannot carry the reason for the change.
+
+---
+
 # Communicating results
 
 Be concise and specific.
