@@ -5,20 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## Lyrics design (2026-09-18)
-
-Open questions, to be talked through before touching
-[src/openmusickit/objects/lyrics.py](../src/openmusickit/objects/lyrics.py):
-
-- Is a syllable itself the sequential event, or does a `LyricEvent` own a
-  syllable (or a run of them)? The code has a TODO saying lyrics need to be
-  events; they are currently plain `OmkObject`s placed with NEXT edges.
-- `LyricSequence` subclasses `list` and carries an `OmkId`; every other
-  collection in OMK wraps a tuple (`ToneCollection`, `CompoundTemporalUnit`,
-  `TiedDuration`). Its `section_name` default was `"None None"` (now `None`).
-- Validation rules in `LyricSyllable.__post_init__` (placement vs location)
-  were written before the event question was settled.
-
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)
@@ -90,3 +76,19 @@ and `graph/` no longer import anything from `systems/wsmn`. The
 key-signature-without-key case is `Key.from_signature(...)`; that surfaced a
 real distinction, so `NoKey` now has `signature=None` (nothing to transpose)
 while an empty bare signature is a signature (transposes to two sharps).
+
+### Lyrics design (2026-09-18, resolved 2026-09-19)
+
+`LyricSyllable` is a `SequentialEvent` (it keeps its name: no `{Thing}Event`
+convention exists, and the name says one syllable goes in it). It holds a
+shared frozen `Word` (`values/text/word.py`) and an `index`; text, placement
+and lexical stress are read from the Word, which also carries the accent
+pattern, so the old placement/location validation collapses to a bounds
+check. No separate syllable value: nothing is shared, hashed, or transformed
+at the syllable level. `LyricSequence` is gone; `LyricSection(Spanner)`
+carries the section metadata and language and spans first to last syllable
+(the pattern general `Section`s will follow). `parse_lyrics` and
+`OmkGraph.add_lyrics` build everything from typed text (`'`/`,` mark
+primary/secondary stress). Also fixed on the way: `syl_str` for `END` had the
+hyphen on the wrong side, and `unlink_lyric_sequence` stopped on `==` rather
+than `is`. See `_plans/completed/lyrics.md`.

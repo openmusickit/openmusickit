@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 from uuid import UUID
 
 from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
-from openmusickit.objects.lyrics import LyricSequence, LyricSyllable
+from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyrics
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, TonalObject
 from openmusickit.values.tone.tone import Tone
 
@@ -198,15 +198,60 @@ class OmkGraph:
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
 
     # Lyrics
-    def add_lyric_syllable(self, lyric_syllable: LyricSyllable) -> None:
-        self.add_node(lyric_syllable)
+
+    def add_lyrics(
+        self,
+        lyrics: str | Iterable[LyricSyllable],
+        section: LyricSection | None = None,
+        after: LyricSyllable | None = None,
+    ) -> list[LyricSyllable]:
+        """Adds a line of lyric syllables, joined by NEXT edges.
+
+        A string is parsed with `parse_lyrics`. `section`, if given, is added
+        as a Spanner over the first and last syllable. `after` appends the
+        line to an existing one. Returns the syllables in order, ready for
+        `zip_lyrics_to_objects`.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F
+        >>> graph = OmkGraph(GraphMeta())
+        >>> notes = [NoteEvent(tones={tone}) for tone in (C, D, E, F)]
+        >>> graph.add_line(notes)
+        >>> verse = LyricSection(section_type="verse", section_number=1, language="la")
+        >>> syllables = graph.add_lyrics("Al-le-lu-ia", section=verse)
+        >>> graph.zip_lyrics_to_objects(syllables[0], notes[0])
+        >>> " ".join(str(s) for s in syllables)
+        'Al - - le - - lu - - ia'
+        >>> graph.get_next(syllables[0]) is syllables[1], graph.get_next(syllables[-1])
+        (True, None)
+        >>> graph.get_edge(verse, syllables[0], EdgeType.STARTS_AT).type
+        <EdgeType.STARTS_AT: 'starts_at'>
+        >>> graph.get_edge(verse, syllables[-1], EdgeType.ENDS_AT).type
+        <EdgeType.ENDS_AT: 'ends_at'>
+        >>> graph.get_edge(notes[2], syllables[2], EdgeType.LYRIC).type
+        <EdgeType.LYRIC: 'lyric'>
+
+        Appending continues the line:
+
+        >>> more = graph.add_lyrics("A-men", after=syllables[-1])
+        >>> graph.get_next(syllables[-1]) is more[0]
+        True
+        """
+        syllables = parse_lyrics(lyrics) if isinstance(lyrics, str) else list(lyrics)
+        if not syllables:
+            if section is not None:
+                raise ValueError("A LyricSection needs at least one syllable to span.")
+            return syllables
+        if after is not None:
+            self.add_next(after, syllables[0])
+        self.add_line(syllables)
+        if section is not None:
+            self.add_spanner(section, syllables[0], syllables[-1])
+        return syllables
 
     def connect_lyric_to_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:
+        self.add_node(lyric_syllable)
         self.add_edge(obj, lyric_syllable, EdgeType.LYRIC)
-
-    def add_lyric_sequence(self, lyric_sequence: LyricSequence) -> None:
-        """Creates a new linear subgraph from a sequence of lyric syllables."""
-        self.add_line(list(lyric_sequence))
 
     def zip_lyrics_to_objects(
         self, start_syllable: LyricSyllable, start_object: SequentialEvent
@@ -229,7 +274,7 @@ class OmkGraph:
         If no stop syllable is provided, the sequence will be unlinked until the end."""
         syllable = start_syllable
         while syllable is not None:
-            if stop_syllable is not None and syllable == stop_syllable:
+            if syllable is stop_syllable:
                 break
             next_syllable = self.get_next(syllable)
             for edge in list(self._graph.incident_edges(syllable, EdgeType.LYRIC)):

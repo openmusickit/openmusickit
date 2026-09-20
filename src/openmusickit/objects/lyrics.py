@@ -1,16 +1,9 @@
-from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from uuid import UUID, uuid4
 
 from openmusickit.errors import LyricConsistencyError
-from openmusickit.objects.omk_object import OmkObject
-
-
-class LexicalStress(StrEnum):
-    UNSTRESSED = auto()
-    SECONDARY = auto()
-    PRIMARY = auto()
+from openmusickit.objects.omk_object import SequentialEvent, Spanner
+from openmusickit.values.text.word import LexicalStress, Word
 
 
 class SyllablePlacement(StrEnum):
@@ -28,84 +21,141 @@ class SyllablePlacement(StrEnum):
         return self in (SyllablePlacement.END, SyllablePlacement.WHOLE)
 
 
-# TODO: Lyrics need to be an event, as they occur in sequence.
-
-
 @dataclass(kw_only=True, slots=True)
-class LyricSyllable(OmkObject):
-    """A single syllable of lyric text.
+class LyricSyllable(SequentialEvent):
+    """One sung syllable: the `index`-th syllable of `word`.
 
-    The syllable string should not include hyphens."""
+    The syllables of a word share one `Word`, so the text, the position in
+    the word and the lexical stress are all read from it. Syllables are
+    placed in sequence with NEXT edges and attached to the notes they are
+    sung on with LYRIC edges (one syllable to many notes is a melisma; many
+    syllables to one note is a reciting tone). The duration is normally
+    `None`: the sung length is the attached notes'.
 
-    text: str
-    word: str | None  # The full word. Identical to `text` in single-syllable words.
-    location: int | None = (
-        0  # The zero-indexed location of the syllable in the word. `0` for single-syllable words.
-    )
-    placement: SyllablePlacement | None = SyllablePlacement.WHOLE
-    lexical_stress: LexicalStress | None = None
-    language: str | None = None  # Two letter BCP 47 language code.
+    >>> word = Word.from_string("Al-le-'lu-ia")
+    >>> lu = LyricSyllable(word=word, index=2)
+    >>> lu.text, lu.placement, lu.lexical_stress
+    ('lu', <SyllablePlacement.MIDDLE: 'middle'>, <LexicalStress.PRIMARY: 'primary'>)
+    >>> [str(LyricSyllable(word=word, index=i)) for i in range(4)]
+    ['Al -', '- le -', '- lu -', '- ia']
+    >>> LyricSyllable(word=word, index=4)
+    Traceback (most recent call last):
+    ...
+    openmusickit.errors.LyricConsistencyError: Index 4 is out of range for Word('Al', 'le', 'lu', 'ia', stress={2: 'primary'}).
+    """
+
+    word: Word
+    index: int = 0
 
     def __post_init__(self):
-        """Validates syllable placement/location is consistent."""
-        if self.word is None:
-            self.word = self.text
+        if not 0 <= self.index < len(self.word):
+            raise LyricConsistencyError(f"Index {self.index} is out of range for {self.word!r}.")
 
-        if self.text not in self.word:
-            raise LyricConsistencyError(
-                f"Syllable should be in word. {self.text} is not in {self.word}."
-            )
-        if not isinstance(self.location, int) or self.location < 0:
-            raise LyricConsistencyError("location must be 0 or a positive integer")
-        if self.text == self.word:
-            if self.location > 0:
-                raise LyricConsistencyError(
-                    f"Syllables representing an entire word should have location of 0, got {self.location}."
-                )
-            if self.placement is not SyllablePlacement.WHOLE:
-                raise LyricConsistencyError(
-                    f"Syllables representing an entire word should have placement of 'whole', got {self.placement}."
-                )
-        else:
-            if self.placement is SyllablePlacement.WHOLE:
-                raise LyricConsistencyError(
-                    f"placement='whole', but {self.text} is not the whole word {self.word}"
-                )
+    @property
+    def text(self) -> str:
+        return self.word[self.index]
+
+    @property
+    def lexical_stress(self) -> LexicalStress | None:
+        return self.word.stress_at(self.index)
+
+    @property
+    def placement(self) -> SyllablePlacement:
+        """
+        >>> LyricSyllable(word=Word(["sing"])).placement
+        <SyllablePlacement.WHOLE: 'whole'>
+        >>> [LyricSyllable(word=Word(["Je", "sus"]), index=i).placement for i in range(2)]
+        [<SyllablePlacement.BEGINNING: 'beginning'>, <SyllablePlacement.END: 'end'>]
+        """
+        if len(self.word) == 1:
+            return SyllablePlacement.WHOLE
+        if self.index == 0:
+            return SyllablePlacement.BEGINNING
+        if self.index == len(self.word) - 1:
+            return SyllablePlacement.END
+        return SyllablePlacement.MIDDLE
+
+    def syl_str(self, hyphen: str = "-") -> str:
+        """The syllable with the hyphens that connect it to its neighbours."""
+        placement = self.placement
+        if placement is SyllablePlacement.WHOLE:
+            return self.text
+        if placement is SyllablePlacement.BEGINNING:
+            return f"{self.text} {hyphen}"
+        if placement is SyllablePlacement.END:
+            return f"{hyphen} {self.text}"
+        return f"{hyphen} {self.text} {hyphen}"
 
     def __str__(self):
         return self.syl_str()
 
-    def syl_str(self, hyphen: str = "-") -> str:
-        if self.placement in [SyllablePlacement.WHOLE, None]:
-            return self.text
-        if self.placement is SyllablePlacement.BEGINNING:
-            return f"{self.text} {hyphen}"
-        if self.placement is SyllablePlacement.MIDDLE:
-            return f"{hyphen} {self.text} {hyphen}"
-        if self.placement is SyllablePlacement.END:
-            return f"{self.text} {hyphen}"
+    def __repr__(self):
+        duration = f", duration={self.duration!r}" if self.duration is not None else ""
+        return f"{type(self).__name__}({self.syl_str()!r}{duration})"
 
 
-class LyricSequence(list):
-    """A list of LyricSyllables,
-    usually representing a complete verse, stanza, chorus, or other section."""
+@dataclass(kw_only=True, slots=True)
+class LyricSection(Spanner):
+    """A verse, chorus, refrain, ...: a Spanner over a line of LyricSyllables
+    (STARTS_AT the first, ENDS_AT the last), carrying what is true of the
+    whole text rather than of any one syllable.
 
-    def __init__(
-        self,
-        syllables: Iterable[LyricSyllable] = (),
-        section_type: str | None = None,
-        section_number: int | None = None,
-        section_name: str | None = None,
-        language: str | None = None,  # Two letter BCP 47 language code.
-        id: UUID | str | None = None,
-    ) -> None:
-        super().__init__(syllables)
-        self.section_type = section_type
-        self.section_number = section_number
-        self.section_name = section_name or f"{section_type} {section_number}"
-        self.__id = UUID(id) if isinstance(id, str) else id or uuid4()
+    `section_name` defaults to "<type> <number>" when a type is given:
 
-    @property
-    def id(self) -> UUID:
-        """The stable identity of the LyricSequence, across sessions and storage."""
-        return self.__id
+    >>> LyricSection(section_type="verse", section_number=2).section_name
+    'verse 2'
+    >>> LyricSection(section_type="refrain").section_name
+    'refrain'
+    >>> LyricSection().section_name is None
+    True
+    """
+
+    section_type: str | None = None
+    section_number: int | None = None
+    section_name: str | None = None
+    language: str | None = None  # BCP 47 language tag ("en", "la", "zh-Hant", ...).
+
+    def __post_init__(self):
+        if self.section_name is None and self.section_type is not None:
+            parts = (self.section_type, self.section_number)
+            self.section_name = " ".join(str(part) for part in parts if part is not None)
+
+
+def parse_lyrics(
+    text: str,
+    hyphen: str = "-",
+    primary: str | None = "'",
+    secondary: str | None = ",",
+) -> list[LyricSyllable]:
+    """Turns typed lyrics into LyricSyllables, one per syllable, in order.
+
+    Whitespace separates words and `hyphen` separates syllables; each word
+    goes through `Word.from_string`, so the stress marks work the same way
+    (`primary=None` turns them off). A token ending in the hyphen continues
+    into the next token, so "Al- le- lu- ia" and a line-wrapped
+    "Al-\\nle-lu-ia" both spell one word.
+
+    >>> syllables = parse_lyrics("Al-le-'lu-ia, sing to 'Je-sus")
+    >>> syllables
+    [LyricSyllable('Al -'), LyricSyllable('- le -'), LyricSyllable('- lu -'), LyricSyllable('- ia,'), LyricSyllable('sing'), LyricSyllable('to'), LyricSyllable('Je -'), LyricSyllable('- sus')]
+    >>> [s.text for s in syllables if s.lexical_stress is LexicalStress.PRIMARY]
+    ['lu', 'Je']
+    >>> syllables[0].word is syllables[3].word
+    True
+    >>> [str(s) for s in parse_lyrics("Al- le-\\nlu- ia")]
+    ['Al -', '- le -', '- lu -', '- ia']
+    >>> parse_lyrics("")
+    []
+    """
+    words: list[str] = []
+    for token in text.split():
+        if words and words[-1].endswith(hyphen):
+            words[-1] += token
+        else:
+            words.append(token)
+
+    syllables = []
+    for spelling in words:
+        word = Word.from_string(spelling, hyphen, primary, secondary)
+        syllables.extend(LyricSyllable(word=word, index=i) for i in range(len(word)))
+    return syllables

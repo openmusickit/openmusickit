@@ -3,10 +3,11 @@
 Most Values are abstract base classes representing fundamental musical concepts,
 and need to be subclassed within a specific tonal or temporal musical system."""
 
-from . import scoring, time, tone
+from . import scoring, text, time, tone
 
 __all__ = [
     "scoring",
+    "text",
     "time",
     "tone",
 ]
