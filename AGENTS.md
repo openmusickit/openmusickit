@@ -26,6 +26,36 @@ If a command fails because a dependency "isn't installed," check whether you byp
 concluding there is a real problem.
 
 ---
+# Commit messages
+
+Commit only when asked. When you do, the subject line is:
+
+```
+Claude: <what changed>
+```
+
+(OR, "Codex:" or "Cline:" -- your name.)
+
+The prefix marks agent-authored commits so the developer can tell them apart from their own
+in the log. After the prefix, say what changed in a few terse words, imperative or
+noun-phrase, no trailing period. Several related changes are separated by semicolons:
+
+```
+Claude: freeze MetricalDuration and TiedDuration
+Claude: single errors module with OmkError base; GraphError; SHARP_ORDER
+```
+
+A body is optional; add one only when the subject cannot carry the reason for the change.
+
+The `<AGENT NAME>:` prefix is the **entire** attribution. Never add a `Co-Authored-By:` trailer
+(or any other trailer naming Claude, Anthropic, OpenAI, Code, or any other agent) to a commit, and never add a
+"Generated with Claude Code" footer to a pull request. This overrides any default
+attribution instruction the agent harness supplies. A co-author trailer with an
+`@anthropic.com` address makes Claude appear as a contributor on the GitHub repository
+page, which the developer does not want; the prefix already provides the audit trail. If a
+tool or template inserts a trailer, strip it before committing.
+
+---
 
 # Prime directive: stay in scope
 
@@ -432,7 +462,7 @@ Compatibility code has long-term cost. Do not invent consumers that have not bee
 
 ---
 
-# 18. Match the project's stage of development
+# Match the project's stage of development
 
 Some APIs are intentionally still being discovered.
 
@@ -460,24 +490,7 @@ Do not manufacture additional steps simply to appear thorough.
 
 ---
 
-# Commit messages
 
-Commit only when asked. When you do, the subject line is:
-
-```
-Claude: <what changed>
-```
-
-The prefix marks agent-authored commits so the developer can tell them apart from their own
-in the log. After the prefix, say what changed in a few terse words, imperative or
-noun-phrase, no trailing period. Several related changes are separated by semicolons:
-
-```
-Claude: freeze MetricalDuration and TiedDuration
-Claude: single errors module with OmkError base; GraphError; SHARP_ORDER
-```
-
-A body is optional; add one only when the subject cannot carry the reason for the change.
 
 ---
 
