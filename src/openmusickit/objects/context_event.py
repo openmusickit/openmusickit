@@ -18,7 +18,7 @@ class ContextEvent(SequentialEvent):
 
     >>> isinstance(ContextEvent().duration, ZeroDuration)
     True
-    
+
     >>> ContextEvent(duration=None)
     Traceback (most recent call last):
     ...
