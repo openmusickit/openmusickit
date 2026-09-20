@@ -22,9 +22,11 @@ class ChordEvent(SequentialEvent, TonalObject):
 
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, maj, M3
         >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+        >>> 
         >>> event = ChordEvent(chord=C(maj))
         >>> event.transform_tones(TonalVector.transpose, M3)
         >>> str(event.chord)
+        
         'E'
         """
         self.chord = self.chord.transform(operation, *args, **kwargs)
