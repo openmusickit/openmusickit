@@ -5,16 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## Factory functions, one at a time (2026-09-18)
-
-`Rest(duration)` ([src/openmusickit/objects/note_event.py](../src/openmusickit/objects/note_event.py))
-is a CapWords function that builds a `NoteEvent` holding a `SilentTone`. It is
-deliberately *not* a class: a `Rest` subclass could be un-rested by `add_tone`
-and would then be a lie. This is a special case that papers over an OMK concept
-(a note event with silent content) to present the music-theory concept (a rest);
-it is not a convention to document or repeat. Other places where a CapWords
-factory might be wanted should be considered individually, here, as they come up.
-
 ## Lyrics design (2026-09-18)
 
 Open questions, to be talked through before touching
