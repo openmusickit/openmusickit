@@ -37,48 +37,84 @@ class TemporalSystem:
         return self.universal or other.universal or self == other
 
 
-def _length_of(other) -> Fraction | None:
-    """Return the rational length of anything that can be measured:
-    a TemporalElement, or an iterable of TemporalElements.
-    Returns None if `other` cannot be measured."""
-    if isinstance(other, TemporalElement):
-        return other.rational_length
+class TemporalElement(ABC):
+    """Any class that represents a structured period of time. For example:
+    note durations, measures, beat cycles, gong cycles, and other units of time.
+
+    Any internally-consistent rhythmic/temporal system should be constructable
+    using subclasses of TemporalElement and Duration.
+
+    The base contract is only that an element belongs to a TemporalSystem. How
+    elements compare is the system's business: systems whose elements reduce
+    to a single number use `Measurable`, which supplies comparison, hashing
+    and scaling from that number; systems whose elements do not (a chant
+    notation, say) define their own comparison, or none.
+    """
+
+    __slots__ = ()
+
+    @property
+    @abstractmethod
+    def temporal_system(self) -> TemporalSystem:
+        """The TemporalSystem this element belongs to (for introspection and compatibility checks)."""
+
+
+def _measure(other) -> tuple[Fraction, TemporalSystem] | None:
+    """The rational length and system of anything measurable:
+    a Measurable, or an iterable of them (measured as the sum of its members,
+    in the system of the first). Returns None if `other` cannot be measured."""
+    if isinstance(other, Measurable):
+        return other.rational_length, other.temporal_system
     if isinstance(other, (str, bytes)):
         return None
     try:
         members = list(other)
     except TypeError:
         return None
-    if not all(isinstance(m, TemporalElement) for m in members):
+    if not all(isinstance(m, Measurable) for m in members):
         return None
-    return sum((m.rational_length for m in members), Fraction(0))
+    total = sum((m.rational_length for m in members), Fraction(0))
+    system = members[0].temporal_system if members else ANY_TEMPORAL_SYSTEM
+    return total, system
 
 
 @total_ordering
-class TemporalElement(ABC):
-    """Any class that represents a structured period of time
-    which can be measured and subdivided. For example:
-    note durations, measures, beat cycles, gong cycles, and other units of time.
+class Measurable(TemporalElement):
+    """A TemporalElement that reduces to a single rational length,
+    in its system's own unit (fractions of a whole note in WSMN,
+    microseconds in clock time).
 
-    Any internally-consistent rhythmic/temporal system should be constructable
-    using subclasses of TemporalElement and Duration.
-
-    TemporalElements compare (and hash) by their rational_length,
-    so a dotted quarter == 3 eighths == TemporalUnit(3, eighth).
-    Any TemporalElement can also be compared against an iterable of TemporalElements,
+    Measurables compare (and hash) by their rational_length,
+    so a dotted quarter == 3 eighths == TemporalUnit(3, eighth),
+    and can be compared against an iterable of Measurables,
     which is measured as the sum of its members.
 
+    Comparison is only defined within a temporal system (or with a universal
+    element such as ZeroDuration); elements of incompatible systems are never
+    equal, and ordering them raises TypeError. To relate them, convert
+    first with a TemporalRatio.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> from openmusickit.values.time.clock_time import ClockDuration
+    >>> quarter == ClockDuration(250_000)
+    False
+    >>> quarter < ClockDuration(250_000)
+    Traceback (most recent call last):
+    ...
+    TypeError: ...
     """
+
+    __slots__ = ()
 
     @property
     @abstractmethod
     def rational_length(self) -> Fraction:
-        """Returns a fraction value representing the length of the TemporalElement,
-        as defined within the TemporalSystem."""
+        """Returns a fraction value representing the length of the element,
+        as defined within its TemporalSystem."""
 
     @abstractmethod
-    def scale(self, scalar: int | Fraction) -> TemporalElement:
-        """Return a TemporalElement scaled by a positive scalar, according to its TemporalSystem.
+    def scale(self, scalar: int | Fraction) -> Measurable:
+        """Return this element scaled by a positive scalar, according to its TemporalSystem.
 
         The result's ``rational_length`` must equal ``self.rational_length * scalar``.
         Implementations should return an element of the same type where the system
@@ -95,16 +131,22 @@ class TemporalElement(ABC):
         """
 
     def __eq__(self, other) -> bool:
-        other_length = _length_of(other)
-        if other_length is None:
+        measured = _measure(other)
+        if measured is None:
             return NotImplemented
-        return self.rational_length == other_length
+        length, system = measured
+        if not self.temporal_system.compatible_with(system):
+            return NotImplemented
+        return self.rational_length == length
 
     def __lt__(self, other) -> bool:
-        other_length = _length_of(other)
-        if other_length is None:
+        measured = _measure(other)
+        if measured is None:
             return NotImplemented
-        return self.rational_length < other_length
+        length, system = measured
+        if not self.temporal_system.compatible_with(system):
+            return NotImplemented
+        return self.rational_length < length
 
     def __hash__(self):
         return hash(self.rational_length)
@@ -121,10 +163,7 @@ class Duration(TemporalElement):
     Some temporal systems may need many different Duration types.
     """
 
-    @property
-    @abstractmethod
-    def temporal_system(self) -> TemporalSystem:
-        """The TemporalSystem this duration belongs to (for introspection)."""
+    __slots__ = ()
 
     @abstractmethod
     def __neg__(self) -> Duration:
@@ -148,8 +187,10 @@ ANY_TEMPORAL_SYSTEM = TemporalSystem(
 )
 
 
-class ZeroDuration(Duration):
-    """A Duration of zero length (instantaneous)."""
+class ZeroDuration(Duration, Measurable):
+    """A Duration of zero length (instantaneous), belonging to every system."""
+
+    __slots__ = ()
 
     @property
     def temporal_system(self) -> TemporalSystem:
@@ -172,8 +213,8 @@ class ZeroDuration(Duration):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class TemporalUnit(TemporalElement):
-    """A length of musical time defined as n number of TemporalElements.
+class TemporalUnit(Measurable):
+    """A length of musical time defined as n number of a Measurable Duration.
     This is used to represent (among other things)
     time signatures and tuple definitions.
 
@@ -220,7 +261,7 @@ class TemporalUnit(TemporalElement):
     """
 
     count: int
-    base: Duration
+    base: Measurable
 
     def __post_init__(self):
         if self.count < 0:
@@ -273,13 +314,18 @@ class TemporalUnit(TemporalElement):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class CompoundTemporalUnit(TemporalElement):
-    """An ordered series of temporal elements, measured as their total length."""
+class CompoundTemporalUnit(Measurable):
+    """An ordered series of Measurables, measured as their total length."""
 
-    units: tuple[TemporalElement, ...]
+    units: tuple[Measurable, ...]
 
-    def __init__(self, units: Iterable[TemporalElement]):
+    def __init__(self, units: Iterable[Measurable]):
         object.__setattr__(self, "units", tuple(units))
+
+    @property
+    def temporal_system(self) -> TemporalSystem:
+        """The system of the first member (an empty series belongs to every system)."""
+        return self.units[0].temporal_system if self.units else ANY_TEMPORAL_SYSTEM
 
     def __iter__(self):
         return iter(self.units)
@@ -293,10 +339,10 @@ class CompoundTemporalUnit(TemporalElement):
     def __contains__(self, item):
         return item in self.units
 
-    def index(self, item: TemporalElement) -> int:
+    def index(self, item: Measurable) -> int:
         return self.units.index(item)
 
-    def count(self, item: TemporalElement) -> int:
+    def count(self, item: Measurable) -> int:
         return self.units.count(item)
 
     def __repr__(self):
@@ -306,12 +352,12 @@ class CompoundTemporalUnit(TemporalElement):
     def rational_length(self) -> Fraction:
         return sum((tu.rational_length for tu in self.units), Fraction(0))
 
-    def remainder(self, series: Iterable[TemporalElement]) -> Fraction:
+    def remainder(self, series: Iterable[Measurable]) -> Fraction:
         """Returns the length of self minus the total length of `series`.
         Negative if `series` overflows self."""
         return self.rational_length - sum((s.rational_length for s in series), Fraction(0))
 
-    def first_out_of_bounds(self, series: Iterable[TemporalElement]) -> int | None:
+    def first_out_of_bounds(self, series: Iterable[Measurable]) -> int | None:
         """Returns the index of the first items in `series`
         that exceeds the length of self.
         Returns None if the total length of series is <= length of self."""
@@ -335,7 +381,7 @@ class CompoundTemporalUnit(TemporalElement):
 
 @dataclass(frozen=True, slots=True)
 class TemporalRatio:
-    """The ratio of two TemporalUnits.
+    """The ratio of two Measurables (usually TemporalUnits).
 
     Used for the following:
 
@@ -366,8 +412,8 @@ class TemporalRatio:
 
     """
 
-    nominal: TemporalElement
-    contextual: TemporalElement
+    nominal: Measurable
+    contextual: Measurable
 
     @property
     def multiplier(self) -> Fraction:

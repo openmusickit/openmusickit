@@ -9,6 +9,7 @@ from openmusickit.errors import ScalingError
 from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
 from openmusickit.values.time.duration import (
     Duration,
+    Measurable,
     TemporalRatio,
     TemporalSystem,
     TemporalUnit,
@@ -17,7 +18,7 @@ from openmusickit.values.time.duration import (
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class MetricalDuration(Duration):
+class MetricalDuration(Duration, Measurable):
     """The duration of notes, rests, or other temporal musical items
     as understood and notated in Western Standard Music Notation.
 
@@ -435,7 +436,7 @@ class MetricalDuration(Duration):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class TiedDuration(Duration):
+class TiedDuration(Duration, Measurable):
     """A single sounding duration notated as two or more tied symbols,
     e.g. quarter tied to sixteenth (5/16).
 

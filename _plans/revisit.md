@@ -5,25 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `rational_length` on the abstract TemporalElement (2026-09-18)
-
-`rational_length` is a WSMN notion (the named fractional value of a metrical
-duration), yet it is declared abstract on the system-agnostic
-`TemporalElement` in `values/time/duration.py` and should probably not be.
-It is load-bearing on the base contract, so removing it is a redesign rather
-than a cleanup:
-
-- `TemporalElement.__eq__`, `__lt__`, `__hash__` and `_length_of` compare by it;
-- `TemporalRatio.r` divides the two sides' `rational_length`, including the
-  metrical-over-clock ratios built by `Tempo`;
-- `ClockDuration.from_duration`, `ClockDuration.rational_length` (microseconds);
-- `CompoundTemporalUnit.remainder` / `first_out_of_bounds`;
-- `TemporalUnit.rational_length`.
-
-Removing it means redefining how elements compare and how `TemporalRatio`
-computes its multiplier across systems. `ClockDuration` currently keeps
-`__eq__`/`__lt__` overrides so it is never compared to metrical time directly.
-
 ## Factory functions, one at a time (2026-09-18)
 
 `Rest(duration)` ([src/openmusickit/objects/note_event.py](../src/openmusickit/objects/note_event.py))
@@ -108,3 +89,14 @@ interchangeably with its string (which is why the adapter stringified
 everything); its uuid4-only check was the one thing that would have broken
 old scores if the generator ever changed. Any UUID version parses and
 coexists; switching generators later is a `default_factory` change.
+
+### `rational_length` on the abstract TemporalElement (2026-09-18, resolved 2026-09-19)
+
+Not every temporal system reduces its elements to one number (chant does
+not), so the base no longer requires it. `TemporalElement` now declares only
+`temporal_system`; `Measurable(TemporalElement)` carries `rational_length`,
+`scale`, and comparison/hashing by length, allowed only between elements of
+`compatible_with` systems. Every WSMN element, `ClockDuration` and
+`ZeroDuration` are Measurable; `TemporalRatio` and `TemporalUnit.base`
+require it (a ratio is a numeric conversion). `ClockDuration`'s hand-written
+cross-system guards are gone; the name `rational_length` stays.

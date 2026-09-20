@@ -370,7 +370,7 @@ def test_compound_temporal_unit_sequence_protocol():
     assert tu_q in ctu
 
     # membership, index and count use value equality (1 quarter == 2 eighths),
-    # consistent with TemporalElement.__eq__
+    # consistent with Measurable.__eq__
     assert ctu.index(tu_e) == 0
     assert ctu.count(tu_q) == 2
     assert TemporalUnit(1, md.MetricalDuration(1, 2)) not in ctu

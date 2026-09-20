@@ -32,7 +32,7 @@ class TemporalError(OmkError):
 
 
 class ScalingError(TemporalError):
-    """Raised when a TemporalElement cannot perform the requested scaling operation.
+    """Raised when a Measurable cannot perform the requested scaling operation.
 
     This covers scalars that are invalid in any system (zero, negative,
     non-rational), and scaled values that a particular TemporalSystem

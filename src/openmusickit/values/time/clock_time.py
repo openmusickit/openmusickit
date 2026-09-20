@@ -9,7 +9,7 @@ from fractions import Fraction
 from openmusickit.errors import TemporalCompatibilityError
 from openmusickit.values.time.duration import (
     Duration,
-    TemporalElement,
+    Measurable,
     TemporalRatio,
     TemporalSystem,
     TemporalUnit,
@@ -18,8 +18,8 @@ from openmusickit.values.time.duration import (
 CLOCK_TIME = TemporalSystem("Clock time", "Real time, measured in microseconds.")
 
 
-@dataclass(frozen=True, slots=True)
-class ClockDuration(Duration):
+@dataclass(frozen=True, slots=True, eq=False)
+class ClockDuration(Duration, Measurable):
     """A duration measured in microseconds of real time.
 
     The stored value may be a Fraction so that conversions from metrical time
@@ -60,20 +60,6 @@ class ClockDuration(Duration):
 
     def __truediv__(self, scalar):
         return ClockDuration(self.microseconds / scalar)
-
-    # Clock time is deliberately not comparable to metrical time: `rational_length`
-    # is a WSMN notion (the named fractional value), whereas here it is a count of
-    # microseconds. To compare or combine the two, convert first with
-    # `ClockDuration.from_duration(duration, ratio)` using a TemporalRatio/Tempo.
-    def __eq__(self, other):
-        if isinstance(other, ClockDuration):
-            return self.microseconds == other.microseconds
-        return NotImplemented
-
-    def __lt__(self, other):
-        if isinstance(other, ClockDuration):
-            return self.microseconds < other.microseconds
-        return NotImplemented
 
     @property
     def temporal_system(self) -> TemporalSystem:
@@ -128,8 +114,8 @@ class ClockDuration(Duration):
         return cls(total_microseconds)
 
     @classmethod
-    def from_duration(cls, duration: TemporalElement, ratio: TemporalRatio) -> ClockDuration:
-        """Convert any metered TemporalElement (a note value, a TemporalUnit,
+    def from_duration(cls, duration: Measurable, ratio: TemporalRatio) -> ClockDuration:
+        """Convert any Measurable (a note value, a TemporalUnit,
         a time signature, a tied duration...) into clock time.
 
         `ratio` relates metrical time to clock time; it is usually built with `Tempo`:

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-from openmusickit.values.time.duration import Duration
+from openmusickit.values.time.duration import Duration, Measurable
 from openmusickit.values.tone.tone import Tone
 
 
@@ -56,7 +56,7 @@ class SequentialEvent(OmkObject):
     duration: Duration | None = None
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name == "duration" and value is not None and value.rational_length < 0:
+        if name == "duration" and isinstance(value, Measurable) and value.rational_length < 0:
             raise ValueError(f"A SequentialEvent cannot have a negative duration: {value!r}")
         super().__setattr__(name, value)
 
