@@ -258,3 +258,68 @@ def test_unlink_stops_at_the_given_object_not_an_equal_one(graph_with_notes):
         for n, s in zip(notes[:3], syllables[:3], strict=True)
     )
     assert len(list(graph.edges_between(notes[3], syllables[3], EdgeType.LYRIC))) == 1
+
+
+# --- zip: melismas, rests, context events -------------------------------------
+
+
+def _sung(graph, note):
+    return [s.text for s in graph._graph.successors(note, LyricSyllable, EdgeType.LYRIC)]
+
+
+def test_zip_skips_notes_inside_a_binding_span(graph_with_notes):
+    from openmusickit.objects.marking import MarkSpanner
+    from openmusickit.systems.wsmn.scoring.symbols import slur
+
+    graph, notes = graph_with_notes
+    graph.add_spanner(MarkSpanner(mark=slur), notes[1], notes[2])
+    syllables = graph.add_lyrics("Al-le-lu-ia")
+    graph.zip_lyrics_to_objects(syllables[0], notes[0])
+    assert [_sung(graph, n) for n in notes] == [["Al"], ["le"], [], ["lu"]]
+    assert list(graph._graph.predecessors(syllables[3], edge_type=EdgeType.LYRIC)) == []
+
+
+def test_zip_ties_bind_but_hairpins_and_phrase_marks_do_not(graph_with_notes):
+    from openmusickit.objects.marking import MarkSpanner
+    from openmusickit.systems.wsmn.scoring.symbols import crescendo, phrase_mark, tie
+
+    graph, notes = graph_with_notes
+    graph.add_spanner(MarkSpanner(mark=crescendo), notes[0], notes[3])
+    graph.add_spanner(MarkSpanner(mark=phrase_mark), notes[0], notes[3])
+    graph.add_spanner(MarkSpanner(mark=tie), notes[2], notes[3])
+    syllables = graph.add_lyrics("Al-le-lu-ia")
+    graph.zip_lyrics_to_objects(syllables[0], notes[0])
+    assert [_sung(graph, n) for n in notes] == [["Al"], ["le"], ["lu"], []]
+
+
+def test_zip_skips_rests_and_context_events():
+    from openmusickit.objects.context_event import ModalContextEvent
+    from openmusickit.objects.note_event import Rest
+
+    graph = OmkGraph(GraphMeta())
+    key, c, rest, d = ModalContextEvent(), NoteEvent(tones={C}), Rest(None), NoteEvent(tones={D})
+    graph.add_line([key, c, rest, d])
+    syllables = graph.add_lyrics("Je-sus")
+    graph.zip_lyrics_to_objects(syllables[0], key)
+    assert _sung(graph, key) == [] and _sung(graph, rest) == []
+    assert _sung(graph, c) == ["Je"] and _sung(graph, d) == ["sus"]
+
+
+def test_zip_a_span_ending_where_another_starts_continues(graph_with_notes):
+    from openmusickit.objects.marking import MarkSpanner
+    from openmusickit.systems.wsmn.scoring.symbols import slur
+
+    graph, notes = graph_with_notes
+    graph.add_spanner(MarkSpanner(mark=slur), notes[0], notes[1])
+    graph.add_spanner(MarkSpanner(mark=slur), notes[1], notes[3])
+    syllables = graph.add_lyrics("Al-le-lu-ia")
+    graph.zip_lyrics_to_objects(syllables[0], notes[0])
+    # notes[1] ends the first slur, so it is inside it; the second slur then has no onset of its own
+    assert [_sung(graph, n) for n in notes] == [["Al"], [], ["le"], ["lu"]]
+
+
+def test_zip_stops_when_syllables_run_out(graph_with_notes):
+    graph, notes = graph_with_notes
+    syllables = graph.add_lyrics("A-men")
+    graph.zip_lyrics_to_objects(syllables[0], notes[0])
+    assert [_sung(graph, n) for n in notes] == [["A"], ["men"], [], []]

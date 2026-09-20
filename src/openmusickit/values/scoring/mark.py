@@ -43,8 +43,21 @@ class AttachmentMode(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Mark:
+    """A mark as it appears in a notation system's vocabulary (a staccato dot,
+    a slur, a fermata, `mf`). The thing placed in a score is a `Marking` or a
+    `MarkSpanner` holding one of these.
+
+    Most of a Mark is descriptive. The few attributes code acts on are added
+    one at a time, named for what the mark means musically rather than for
+    the code that reads them: `kind` and `attachment_mode` classify it, and
+    `binds` says that the events under a span mark are one articulation
+    (one bow, one breath, one syllable), as under a slur or a tie. A mark
+    that binds cannot begin a new lyric syllable except on its first note.
+    """
+
     name: str
     description: str | None = None
     kind: MarkType | None = None
     attachment_mode: AttachmentMode | None = None
     aliases: tuple[str, ...] = ()
+    binds: bool = False

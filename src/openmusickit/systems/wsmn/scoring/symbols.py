@@ -22,6 +22,9 @@ Examples
 
 >>> crescendo.attachment_mode
 <AttachmentMode.EITHER: 'either'>
+
+>>> slur.binds, phrase_mark.binds
+(True, False)
 """
 
 from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
@@ -663,6 +666,7 @@ slur = Mark(
     kind=MarkType.PHRASING,
     attachment_mode=AttachmentMode.SPAN,
     aliases=("legato slur",),
+    binds=True,
 )
 
 phrase_mark = Mark(
@@ -678,6 +682,7 @@ tie = Mark(
     description="A tie: two notes of the same pitch are joined into one sustained duration.",
     kind=MarkType.PHRASING,
     attachment_mode=AttachmentMode.SPAN,
+    binds=True,
 )
 
 laissez_vibrer = Mark(

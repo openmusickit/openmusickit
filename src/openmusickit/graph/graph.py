@@ -7,8 +7,11 @@ from uuid import UUID
 from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
+from openmusickit.objects.context_event import ContextEvent
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyrics
-from openmusickit.objects.omk_object import OmkObject, SequentialEvent, TonalObject
+from openmusickit.objects.marking import Marked, Marking
+from openmusickit.objects.note_event import NoteEvent
+from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
 from openmusickit.values.tone.tone import Tone
 
 
@@ -182,7 +185,7 @@ class OmkGraph:
 
     # Annotations (articulations, memos, analysis)
 
-    def add_articulation(self, articulation: OmkObject, obj: OmkObject) -> None:
+    def add_articulation(self, articulation: Marking, obj: OmkObject) -> None:
         self.add_node(articulation)
         self.add_edge(articulation, obj, EdgeType.MARKS)
 
@@ -192,7 +195,7 @@ class OmkGraph:
 
     # Spanners (slurs, crescendos, phrasing)
 
-    def add_spanner(self, spanner: OmkObject, start: SequentialEvent, end: SequentialEvent) -> None:
+    def add_spanner(self, spanner: Spanner, start: SequentialEvent, end: SequentialEvent) -> None:
         self.add_node(spanner)
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
@@ -250,19 +253,81 @@ class OmkGraph:
         return syllables
 
     def connect_lyric_to_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:
+        """Records that `obj` *begins* `lyric_syllable`: a LYRIC edge marks a
+        syllable's onset. The notes that go on sustaining it (a melisma) get
+        no edge of their own; a sung note without one continues the previous
+        syllable, and a rest ends it."""
         self.add_node(lyric_syllable)
         self.add_edge(obj, lyric_syllable, EdgeType.LYRIC)
 
     def zip_lyrics_to_objects(
         self, start_syllable: LyricSyllable, start_object: SequentialEvent
     ) -> None:
-        """Connects a sequence of lyric syllables to a sequence of musical objects in a one-to-one manner."""
+        """Attaches a line of syllables to a line of events, one syllable per
+        syllable onset, until either line runs out.
+
+        Walking the events from `start_object`, a syllable begins on every
+        event except: a rest; a `ContextEvent` (nothing to sing); and an
+        event that lies under a binding `MarkSpanner` (`mark.binds`: a slur
+        or a tie) without starting it -- those continue the syllable begun
+        on the span's first note. An event that ends one binding span and
+        starts another is inside the first, so it continues rather than
+        begins.
+
+        >>> from openmusickit.objects.marking import MarkSpanner
+        >>> from openmusickit.objects.note_event import Rest
+        >>> from openmusickit.systems.wsmn.scoring.symbols import slur, crescendo
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F, G
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e, rest, f, g = (NoteEvent(tones={C}), NoteEvent(tones={D}),
+        ...                        NoteEvent(tones={E}), Rest(None),
+        ...                        NoteEvent(tones={F}), NoteEvent(tones={G}))
+        >>> graph.add_line([c, d, e, rest, f, g])
+        >>> graph.add_spanner(MarkSpanner(mark=slur), d, e)          # d-e is a melisma
+        >>> graph.add_spanner(MarkSpanner(mark=crescendo), f, g)     # a hairpin binds nothing
+        >>> syllables = graph.add_lyrics("Al-le-lu-ia")
+        >>> graph.zip_lyrics_to_objects(syllables[0], c)
+        >>> for note in (c, d, e, rest, f, g):
+        ...     sung = [str(s) for s in graph._graph.successors(note, LyricSyllable, EdgeType.LYRIC)]
+        ...     print(note, sung)
+        NoteEvent(tones=[TonalVector((0, 0))], duration=None) ['Al -']
+        NoteEvent(tones=[TonalVector((1, 2))], duration=None) ['- le -']
+        NoteEvent(tones=[TonalVector((2, 4))], duration=None) []
+        Rest(duration=None) []
+        NoteEvent(tones=[TonalVector((3, 5))], duration=None) ['- lu -']
+        NoteEvent(tones=[TonalVector((4, 7))], duration=None) ['- ia']
+        """
         syllable = start_syllable
         obj = start_object
+        bound_until: SequentialEvent | None = None  # last event of the binding span we are under
         while syllable is not None and obj is not None:
-            self.connect_lyric_to_object(syllable, obj)
-            syllable = self.get_next(syllable)
+            if bound_until is not None:
+                if obj is bound_until:
+                    bound_until = None
+            elif self._begins_syllable(obj):
+                self.connect_lyric_to_object(syllable, obj)
+                syllable = self.get_next(syllable)
+                bound_until = self._binding_span_end(obj)
             obj = self.get_next(obj)
+
+    def _begins_syllable(self, obj: SequentialEvent) -> bool:
+        """Whether a syllable can begin on `obj`, ignoring any span it is under."""
+        if isinstance(obj, ContextEvent):
+            return False
+        if isinstance(obj, NoteEvent) and obj.is_rest:
+            return False
+        return True
+
+    def _binding_span_end(self, obj: SequentialEvent) -> SequentialEvent | None:
+        """The last event of a binding MarkSpanner (slur, tie) that starts at
+        `obj`, or None if no such span starts here."""
+        for spanner in self._graph.predecessors(
+            obj, Marked, EdgeType.STARTS_AT, predicate=lambda node: node.mark.binds
+        ):
+            for end in self._graph.successors(spanner, edge_type=EdgeType.ENDS_AT):
+                if end is not obj:
+                    return end
+        return None
 
     def unlink_lyric_from_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:
         self.remove_edge(self.get_edge(obj, lyric_syllable, EdgeType.LYRIC))

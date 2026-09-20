@@ -19,12 +19,13 @@ is a LyricSyllable object (which contains the syllable text),
 and is connected to the NoteEvent by an edge of type LYRIC.
 """
 
-from . import chord_event, context_event, lyrics, note_event, omk_object
+from . import chord_event, context_event, lyrics, marking, note_event, omk_object
 
 __all__ = [
     "chord_event",
     "context_event",
     "lyrics",
+    "marking",
     "note_event",
     "omk_object",
 ]

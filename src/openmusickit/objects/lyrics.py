@@ -27,10 +27,10 @@ class LyricSyllable(SequentialEvent):
 
     The syllables of a word share one `Word`, so the text, the position in
     the word and the lexical stress are all read from it. Syllables are
-    placed in sequence with NEXT edges and attached to the notes they are
-    sung on with LYRIC edges (one syllable to many notes is a melisma; many
-    syllables to one note is a reciting tone). The duration is normally
-    `None`: the sung length is the attached notes'.
+    placed in sequence with NEXT edges, and a LYRIC edge from a note marks
+    the syllable's onset: the notes that go on sustaining it (a melisma)
+    carry no edge, and a note may begin several syllables (a reciting
+    tone). The duration is normally `None`: the sung length is the notes'.
 
     >>> word = Word.from_string("Al-le-'lu-ia")
     >>> lu = LyricSyllable(word=word, index=2)
