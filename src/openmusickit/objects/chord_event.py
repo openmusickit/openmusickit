@@ -6,7 +6,7 @@ from openmusickit.values.tone.tone import Tone
 from openmusickit.values.tone.tone_collection import ToneCollection
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class ChordEvent(SequentialEvent, TonalObject):
     """A ChordEvent is a SequentialEvent containing a ToneCollection, representing a named set of tones.
     ChordEvents are typically represented in a score as a single symbol (such as in a lead sheet or chord chart),

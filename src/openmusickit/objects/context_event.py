@@ -9,7 +9,7 @@ from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.time.duration import Duration, ZeroDuration
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class ContextEvent(SequentialEvent):
     """An instantaneous event that changes the interpretation
     of subsequent material.
@@ -28,7 +28,7 @@ class ContextEvent(SequentialEvent):
     duration: Duration = field(default_factory=ZeroDuration, init=False)
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class KeySignatureEvent(ContextEvent, TonalObject):
     """A key signature in a score, defined using a Key (which specifies tonality and alterations)
     xor a KeySignature (which only specifies alterations).

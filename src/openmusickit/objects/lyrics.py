@@ -31,7 +31,7 @@ class SyllablePlacement(StrEnum):
 # TODO: Lyrics need to be an event, as they occur in sequence.
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class LyricSyllable(OmkObject):
     """A single syllable of lyric text.
 

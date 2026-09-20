@@ -32,20 +32,16 @@ class EdgeOrigin(StrEnum):
     INFERRED = auto()
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class OmkEdge:
     type: EdgeType
     origin: EdgeOrigin = EdgeOrigin.ASSERTED
     _id: OmkId = field(default_factory=OmkId.new, init=False, repr=False, compare=False)
-    _meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
+    meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
 
     @property
     def id(self) -> OmkId:
         return self._id
-
-    @property
-    def meta(self) -> dict[str, Any]:
-        return self._meta
 
     def __repr__(self):
         return f"{type(self).__name__}({self.type}, origin={self.origin})"
@@ -61,7 +57,7 @@ class NudgeDirection(StrEnum):
     BACKWARD = auto()
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class Next(OmkEdge):
     type: EdgeType = field(default=EdgeType.NEXT, init=False)
     anchor: TimingAnchor = TimingAnchor.OFFSET

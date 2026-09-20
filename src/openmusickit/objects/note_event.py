@@ -8,7 +8,7 @@ from openmusickit.values.tone.tone import Tone
 from openmusickit.values.tone.tone_collection import apply_tone_operation
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class NoteEvent(SequentialEvent, TonalObject):
     """A NoteEvent is a SequentialEvent that contains zero or more Tones played simultaneously within a single voice, line, or part.
 

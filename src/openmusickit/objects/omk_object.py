@@ -8,29 +8,34 @@ from openmusickit.values.time.duration import Duration
 from openmusickit.values.tone.tone import Tone
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class OmkObject:
     """Base class for everything that can be a node in the graph.
 
     Equality means "same musical content": the id (which stands for the
-    object's place in a graph) and the free-form metadata are excluded, so
-    two separately built B-flat quarter notes compare equal while remaining
-    distinct objects (`is` is unaffected). Objects are mutable and unhashable.
+    object's place in a graph) and `meta` are excluded, so two separately
+    built B-flat quarter notes compare equal while remaining distinct objects
+    (`is` is unaffected). Objects are mutable and unhashable.
+
+    `meta` is free-form storage for consumers of OMK (an app's on-screen
+    placement of a note, an importer's source reference); OMK itself never
+    reads it. Objects are slotted, so no other attributes can be added:
+
+    >>> OmkObject().anything = 1
+    Traceback (most recent call last):
+    ...
+    AttributeError: ...
     """
 
     _id: OmkId = field(default_factory=OmkId.new, init=False, repr=False, compare=False)
-    _meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
+    meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
 
     @property
     def id(self) -> OmkId:
         return self._id
 
-    @property
-    def meta(self) -> dict[str, Any]:
-        return self._meta
 
-
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class SequentialEvent(OmkObject):
     """An OmkObject that takes up time and can be placed in sequence (with NEXT edges).
 
@@ -67,7 +72,7 @@ class TonalObject(ABC):
         applying `operation(tone, *args, **kwargs)` to it."""
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class Spanner(OmkObject):
     """Used with edges of type STARTS_AT and ENDS_AT
     to group a sequence of SequentialEvents together.
