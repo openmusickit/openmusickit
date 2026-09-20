@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 
 from openmusickit.errors import OmkWarning
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
-from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.time.duration import Duration, ZeroDuration
+from openmusickit.values.tone.modal_context import ModalContext
+from openmusickit.values.tone.tone import Tone
 
 
 @dataclass(kw_only=True, slots=True)
@@ -29,96 +29,65 @@ class ContextEvent(SequentialEvent):
 
 
 @dataclass(kw_only=True, slots=True)
-class KeySignatureEvent(ContextEvent, TonalObject):
-    """A key signature in a score, defined using a Key (which specifies tonality and alterations)
-    xor a KeySignature (which only specifies alterations).
+class ModalContextEvent(ContextEvent, TonalObject):
+    """Sets the modal context (in WSMN, the key or key signature) for the
+    material that follows.
 
-    `None` for both implies an undefined or undecided key signature.
-    For an empty key signature with no alterations and no tonal implications,
-    use `key=openmusickit.systems.wsmn.tonal.symbols.NoKey`.
-
-    `key` and `key_signature` are what was given; `signature` is the effective
-    KeySignature either way. Use `set_key`/`set_key_signature` to replace one
-    with the other.
+    `None` means undefined or undecided. For WSMN, "no key" is
+    `symbols.NoKey` and a bare key signature is `Key.from_signature(...)`;
+    the printed signature is reached through the Key
+    (`event.modal_context.signature`), never through the event.
     """
 
-    key: Key | None = None
-    key_signature: KeySignature | None = None
+    modal_context: ModalContext | None = None
 
-    def __post_init__(self):
-        if self.key is not None and self.key_signature is not None:
-            raise ValueError("A Key includes a KeySignature, do not specify both.")
+    def transform_tones(self, operation: Callable[..., Tone], *args, **kwargs) -> None:
+        """Replaces the modal context, in place, with `modal_context.transform(operation, ...)`.
 
-    @property
-    def signature(self) -> KeySignature | None:
-        """The effective key signature: the Key's, or the bare KeySignature, or None."""
-        if self.key is not None:
-            return self.key.signature
-        return self.key_signature
-
-    def set_key(self, key: Key) -> None:
-        self.key_signature = None
-        self.key = key
-
-    def set_key_signature(self, key_signature: KeySignature) -> None:
-        self.key = None
-        self.key_signature = key_signature
-
-    def transform_tones(self, operation: Callable[..., TonalVector], *args, **kwargs) -> None:
-        """Transforms this key signature event in place: the Key is replaced by
-        `Key.transform(operation, ...)`, or the bare KeySignature by
-        `KeySignature.transform(operation, ...)`.
-
-        An empty event (no Key and no KeySignature) and one holding `NoKey` are left
-        as they are, with an `OmkWarning` that callers can catch or filter.
+        An event with no modal context is left as it is, with an `OmkWarning`
+        that callers can catch or filter.
 
         Examples
         --------
 
-        >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, m3, P5, Major, NoKey
-        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection
+        >>> from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, m3, P5, Major
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector, TonalDirection
 
         A Key moves to a new tonic, keeping its mode:
 
-        >>> event = KeySignatureEvent(key=Key.of(C, Major))
+        >>> event = ModalContextEvent(modal_context=Key.of(C, Major))
         >>> event.transform_tones(TonalVector.transpose, M2)
-        >>> event.key.name, event.signature
+        >>> event.modal_context.name, event.modal_context.signature
         ('D Major', KeySignature(c=1, f=1))
 
         >>> event.transform_tones(TonalVector.transpose, P5, TonalDirection.DOWN)
-        >>> event.key.name
+        >>> event.modal_context.name
         'G Major'
 
-        A bare KeySignature is transformed letter by letter:
+        A bare key signature is transformed letter by letter:
 
-        >>> event = KeySignatureEvent(key_signature=KeySignature())
+        >>> event = ModalContextEvent(modal_context=Key.from_signature(KeySignature()))
         >>> event.transform_tones(TonalVector.transpose, m3)
-        >>> event.signature
-        KeySignature(e=-1, a=-1, b=-1)
-        >>> event.key is None
-        True
+        >>> event.modal_context.signature, event.modal_context.tonic
+        (KeySignature(e=-1, a=-1, b=-1), None)
 
-        Empty and NoKey events warn and are unchanged:
+        An empty event warns and is unchanged:
 
         >>> import warnings
-        >>> event = KeySignatureEvent(key=NoKey)
+        >>> event = ModalContextEvent()
         >>> with warnings.catch_warnings(record=True) as caught:
         ...     warnings.simplefilter("always")
         ...     event.transform_tones(TonalVector.transpose, M2)
-        >>> event.key is NoKey, str(caught[0].message)
-        (True, 'You are attempting to transform an empty key signature. Nothing will happen.')
+        >>> event.modal_context is None, str(caught[0].message)
+        (True, 'You are attempting to transform an event with no modal context. Nothing will happen.')
         """
-        key = self.key
-
-        if (key is None and self.key_signature is None) or (key is not None and key.tonic is None):
+        if self.modal_context is None:
             warnings.warn(
-                "You are attempting to transform an empty key signature. Nothing will happen.",
+                "You are attempting to transform an event with no modal context. Nothing will happen.",
                 OmkWarning,
                 stacklevel=2,
             )
             return
 
-        if key is None:
-            self.set_key_signature(self.key_signature.transform(operation, *args, **kwargs))
-        else:
-            self.set_key(key.transform(operation, *args, **kwargs))
+        self.modal_context = self.modal_context.transform(operation, *args, **kwargs)

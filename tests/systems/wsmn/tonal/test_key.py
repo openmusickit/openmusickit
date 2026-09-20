@@ -395,9 +395,16 @@ def test_no_key():
     assert NoKey.tonic is None
     assert NoKey.mode is None
     assert NoKey.name == "No Key"
-    assert NoKey.signature == KeySignature()
-    assert NoKey.signature.fifths == 0
+    assert NoKey.signature is None
     assert len(NoKey.tones) == 0
+
+
+def test_no_key_is_not_an_empty_signature():
+    """NoKey stays NoKey under transposition; a bare empty signature moves."""
+    empty = Key.from_signature(KeySignature())
+    assert empty != NoKey
+    assert NoKey.transform(TonalVector.transpose, M2) == NoKey
+    assert empty.transform(TonalVector.transpose, M2).signature == KeySignature(c=1, f=1)
 
 
 def test_key_is_frozen():

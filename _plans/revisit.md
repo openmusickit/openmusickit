@@ -29,16 +29,6 @@ Open questions, to be talked through before touching
 - Validation rules in `LyricSyllable.__post_init__` (placement vs location)
   were written before the event question was settled.
 
-## KeySignatureEvent layering (2026-09-18)
-
-[src/openmusickit/objects/context_event.py](../src/openmusickit/objects/context_event.py)
-imports the concrete WSMN types `Key`, `KeySignature` and `TonalVector` into the
-system-agnostic `objects` layer, while `NoteEvent` and `ChordEvent` depend only
-on the abstract `Tone` / `ToneCollection`. Either `values/tone` grows an abstract
-key/key-signature that WSMN implements, or `KeySignatureEvent` moves under
-`systems/wsmn/`. goals.md section 1 (Western concepts are implementations on top
-of general abstractions) argues for the former.
-
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)
@@ -100,3 +90,13 @@ not), so the base no longer requires it. `TemporalElement` now declares only
 `ZeroDuration` are Measurable; `TemporalRatio` and `TemporalUnit.base`
 require it (a ratio is a numeric conversion). `ClockDuration`'s hand-written
 cross-system guards are gone; the name `rational_length` stays.
+
+### KeySignatureEvent layering (2026-09-18, resolved 2026-09-19)
+
+`values/tone/modal_context.py` defines the abstract `ModalContext` (tonic,
+tones, name, transform); WSMN's `Key` implements it. `KeySignatureEvent` is
+now `ModalContextEvent` with a single `modal_context` field, and `objects/`
+and `graph/` no longer import anything from `systems/wsmn`. The
+key-signature-without-key case is `Key.from_signature(...)`; that surfaced a
+real distinction, so `NoKey` now has `signature=None` (nothing to transpose)
+while an empty bare signature is a signature (transposes to two sharps).

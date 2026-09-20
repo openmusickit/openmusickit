@@ -7,6 +7,7 @@ from numbers import Real
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality
 from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES, SHARP_ORDER
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
+from openmusickit.values.tone.modal_context import ModalContext
 from openmusickit.values.tone.tone_collection import ToneCollection, apply_tone_operation
 
 
@@ -298,17 +299,20 @@ class ModePattern:
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
-class Key:
-    """A key in the tonal or modal system.
+class Key(ModalContext):
+    """A key in the tonal or modal system: WSMN's ModalContext.
 
-    `tonic` is None only for the "no key" case (atonal music, unpitched parts),
-    which is represented in score formats as an open key signature
-    (MusicXML `<mode>none</mode>`). See `symbols.NoKey`.
+    `tonic` is None when no tonality is asserted. That is either "no key"
+    (atonal music, unpitched parts: `symbols.NoKey`, which also has no
+    signature, corresponding to MusicXML `<mode>none</mode>`), or a bare
+    signature such as "three flats" that is not saying E-flat major or
+    C minor (see `from_signature`). The two differ under transposition: a
+    bare signature moves with the music; no key stays no key.
     """
 
     tonic: TonalVector | None
     tones: ToneCollection
-    signature: KeySignature
+    signature: KeySignature | None
     mode: ModePattern | None = None
     name: str | None = None
 
@@ -318,7 +322,12 @@ class Key:
 
     def _default_name(self) -> str:
         if self.tonic is None:
-            return "No Key"
+            if self.signature is None:
+                return "No Key"
+            fifths = self.signature.fifths
+            if fifths == 0:
+                return "no sharps or flats"
+            return f"{abs(fifths)} {'sharps' if fifths > 0 else 'flats'}"
         if self.mode is not None:
             return f"{self.tonic.pitch.unicode} {self.mode.name}"
         return f"{self.tonic.pitch.unicode} (unspecified mode)"
@@ -383,6 +392,22 @@ class Key:
             mode=mode,
         )
 
+    @classmethod
+    def from_signature(cls, signature: KeySignature) -> Key:
+        """A key signature asserting no tonality: the alterations, and nothing else.
+
+        >>> three_flats = Key.from_signature(KeySignature.from_alts(-3))
+        >>> three_flats.name, three_flats.tonic, len(three_flats.tones)
+        ('3 flats', None, 0)
+
+        An empty signature is still a signature, unlike `NoKey`:
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import NoKey
+        >>> Key.from_signature(KeySignature()).name, NoKey.signature
+        ('no sharps or flats', None)
+        """
+        return cls(tonic=None, tones=ToneCollection(name=None), signature=signature)
+
     def transform(self, operation: Callable[..., TonalVector], *args, **kwargs) -> Key:
         """Returns a new Key made by applying `operation` to this key's tonic
         (and to its tones and signature).
@@ -390,8 +415,9 @@ class Key:
         If the key has a mode pattern, the new key is that mode on the new tonic
         (as in `Key.of`), with the signature transformed alongside so that an
         explicitly given signature is carried over. Otherwise the tones and
-        signature are transformed directly. `NoKey` has no tonic and is
-        returned unchanged.
+        signature are transformed directly. A bare signature (no tonic) is
+        transformed letter by letter; `NoKey` has nothing to transform and is
+        returned as it is.
 
         For operations other than transposition, "keep the mode" and "transform
         the tones" can disagree (C Major inverted about C is C Major by the
@@ -403,16 +429,21 @@ class Key:
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, Major, NoKey
         >>> Key.of(C, Major).transform(TonalVector.transpose, M2).name
         'D Major'
-        >>> NoKey.transform(TonalVector.transpose, M2) is NoKey
+        >>> NoKey.transform(TonalVector.transpose, M2) == NoKey
         True
+        >>> from openmusickit.systems.wsmn.tonal.symbols import m3
+        >>> Key.from_signature(KeySignature()).transform(TonalVector.transpose, m3).signature
+        KeySignature(e=-1, a=-1, b=-1)
         """
-        if self.tonic is None:
+        if self.signature is None:
             return self
+        signature = self.signature.transform(operation, *args, **kwargs)
+        if self.tonic is None:
+            return Key.from_signature(signature)
 
         new_tonic = apply_tone_operation(
             operation, self.tonic, *args, expected=TonalVector, **kwargs
         )
-        signature = self.signature.transform(operation, *args, **kwargs)
 
         if self.mode is not None:
             return Key.of(new_tonic, self.mode, signature)

@@ -17,7 +17,7 @@ TonalVector((6, 10))
 """
 
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality, ChordType
-from openmusickit.systems.wsmn.tonal.key import Key, KeySignature, ModePattern
+from openmusickit.systems.wsmn.tonal.key import Key, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.tone.tone_collection import ToneCollection
 
@@ -738,10 +738,11 @@ Locrian = ModePattern(
     quality=ChordQuality.HDM,
 )
 
-# An open key signature with no tonic or mode, for atonal music and unpitched parts.
-# Corresponds to MusicXML `<key><fifths>0</fifths><mode>none</mode></key>`.
+# No key: no tonic, no mode, and no key signature, for atonal music and
+# unpitched parts. Corresponds to MusicXML `<key><fifths>0</fifths><mode>none</mode></key>`.
+# (A signature with no sharps or flats is a different thing: `Key.from_signature(KeySignature())`.)
 NoKey = Key(
     tonic=None,
     tones=ToneCollection(name="No Key"),
-    signature=KeySignature(),
+    signature=None,
 )

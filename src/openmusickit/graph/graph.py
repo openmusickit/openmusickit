@@ -155,16 +155,16 @@ class OmkGraph:
 
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.objects.chord_event import ChordEvent
-        >>> from openmusickit.objects.context_event import KeySignatureEvent
+        >>> from openmusickit.objects.context_event import ModalContextEvent
         >>> from openmusickit.systems.wsmn.tonal.key import Key
         >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Gx, B, maj, M3, Major
-        >>> key, note, chord = (KeySignatureEvent(key=Key.of(C, Major)),
+        >>> key, note, chord = (ModalContextEvent(modal_context=Key.of(C, Major)),
         ...                     NoteEvent(tones={C, E, G}), ChordEvent(chord=C(maj)))
         >>> graph = OmkGraph(GraphMeta())
         >>> graph.add_line([key, note, chord])
         >>> graph.transform_tones(key, chord, TonalVector.transpose, M3)
-        >>> key.key.name, note.tones == {E, Gx, B}, str(chord.chord)
+        >>> key.modal_context.name, note.tones == {E, Gx, B}, str(chord.chord)
         ('E Major', True, 'E')
         """
         obj = start
