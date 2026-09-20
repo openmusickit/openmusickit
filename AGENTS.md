@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file describes how AI coding agents should work in the Open Music Kit (OMK) and Composer Workbench repositories.
+This file describes how AI coding agents should work in the Open Music Kit (OMK) and related repositories.
 
 The most important principle is simple:
 
