@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
+from uuid import UUID, uuid4
 
-from openmusickit.utils.id import OmkId
 from openmusickit.values.time.duration import Duration
 from openmusickit.values.tone.tone import Tone
 
@@ -11,6 +11,11 @@ from openmusickit.values.tone.tone import Tone
 @dataclass(kw_only=True, slots=True)
 class OmkObject:
     """Base class for everything that can be a node in the graph.
+
+    Every object has an `id`: a UUID that stays with it across sessions and
+    storage, distinct from any ids a graph backend or database assigns. Value
+    types (a pitch, a chord type, a quarter note) have no id; only things that
+    appear in a score do.
 
     Equality means "same musical content": the id (which stands for the
     object's place in a graph) and `meta` are excluded, so two separately
@@ -27,11 +32,11 @@ class OmkObject:
     AttributeError: ...
     """
 
-    _id: OmkId = field(default_factory=OmkId.new, init=False, repr=False, compare=False)
+    _id: UUID = field(default_factory=uuid4, init=False, repr=False, compare=False)
     meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
 
     @property
-    def id(self) -> OmkId:
+    def id(self) -> UUID:
         return self._id
 
 

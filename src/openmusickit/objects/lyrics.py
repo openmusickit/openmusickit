@@ -1,10 +1,10 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum, auto
+from uuid import UUID, uuid4
 
 from openmusickit.errors import LyricConsistencyError
 from openmusickit.objects.omk_object import OmkObject
-from openmusickit.utils.id import OmkId
 
 
 class LexicalStress(StrEnum):
@@ -97,15 +97,15 @@ class LyricSequence(list):
         section_number: int | None = None,
         section_name: str | None = None,
         language: str | None = None,  # Two letter BCP 47 language code.
-        id: OmkId | str | None = None,
+        id: UUID | str | None = None,
     ) -> None:
         super().__init__(syllables)
         self.section_type = section_type
         self.section_number = section_number
         self.section_name = section_name or f"{section_type} {section_number}"
-        self.__id = OmkId(id)
+        self.__id = UUID(id) if isinstance(id, str) else id or uuid4()
 
     @property
-    def id(self) -> OmkId:
+    def id(self) -> UUID:
         """The stable identity of the LyricSequence, across sessions and storage."""
         return self.__id

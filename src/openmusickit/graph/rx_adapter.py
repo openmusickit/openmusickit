@@ -1,4 +1,5 @@
 from collections.abc import Callable, Iterator
+from uuid import UUID
 
 import rustworkx as rx
 from bidict import bidict
@@ -7,7 +8,6 @@ from openmusickit.errors import GraphError
 from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.objects.omk_object import OmkObject
-from openmusickit.utils.id import OmkId
 
 
 class RustworkxAdapter(GraphAdapter):
@@ -15,8 +15,8 @@ class RustworkxAdapter(GraphAdapter):
 
     Implementation note:
     This adapter uses Rustworkx's PyDiGraph as the underlying graph structure.
-    OmkObjects and OmkEdges are registered by the string value of their OmkId with their Rustworkx integer ids in bidirectional indices.
-    OmkGraph users supply OmkObjects and OmkEdges (usually directly, but in some cases by their OmkId),
+    OmkObjects and OmkEdges are registered by the string form of their id with their Rustworkx integer ids in bidirectional indices.
+    OmkGraph users supply OmkObjects and OmkEdges (usually directly, but in some cases by their id),
     and the adapter handles the conversion to Rustworkx integer ids internally.
     (Users should not need to interact with Rustworkx integer ids directly.)
 
@@ -25,8 +25,8 @@ class RustworkxAdapter(GraphAdapter):
 
     def __init__(self):
         self.graph = rx.PyDiGraph()
-        self._node_index = bidict()  # OmkId: rxid
-        self._edge_index = bidict()  # OmkId: rxid
+        self._node_index = bidict()  # str(id): rxid
+        self._edge_index = bidict()  # str(id): rxid
 
     # ID and registration helpers
 
@@ -35,13 +35,13 @@ class RustworkxAdapter(GraphAdapter):
 
         self._node_index[str(node.id)] = rxid
 
-    def _unregister_node(self, node: OmkObject | OmkId | str) -> None:
+    def _unregister_node(self, node: OmkObject | UUID | str) -> None:
         del self._node_index[str(node.id if hasattr(node, "_id") else node)]
 
     def _unregister_node_rxid(self, rxid: int) -> None:
         del self._node_index.inverse[rxid]
 
-    def _rxid(self, node: OmkObject | OmkEdge | OmkId | str) -> int:
+    def _rxid(self, node: OmkObject | OmkEdge | UUID | str) -> int:
         """Returns the Rustworks integer id of the OmkObject or OmkEdge."""
         try:  # it's a node
             return self._node_index[str(node.id if hasattr(node, "_id") else node)]
@@ -61,7 +61,7 @@ class RustworkxAdapter(GraphAdapter):
         """Registers an edge and its Rustworkx integer id to self._edge_index."""
         self._edge_index[str(edge.id)] = rxid
 
-    def _unregister_edge(self, edge: OmkEdge | OmkId | str) -> None:
+    def _unregister_edge(self, edge: OmkEdge | UUID | str) -> None:
         del self._edge_index[str(edge.id if hasattr(edge, "_id") else edge)]
 
     def _get_edge_by_rxid(self, rxid: int) -> OmkEdge:
@@ -72,7 +72,7 @@ class RustworkxAdapter(GraphAdapter):
     def add_node(self, node: OmkObject) -> None:
         """Add a node to the graph.
 
-        Does nothing if the node (by OmkId) is already present."""
+        Does nothing if the node (by id) is already present."""
         if str(node.id) in self._node_index:
             return
         rxid = self.graph.add_node(node)
@@ -110,8 +110,8 @@ class RustworkxAdapter(GraphAdapter):
 
     # Retrieval operations
 
-    def get_node(self, node_id: OmkId | str) -> OmkObject:
-        """Return the node with the given OmkId."""
+    def get_node(self, node_id: UUID | str) -> OmkObject:
+        """Return the node with the given id."""
         return self.graph.get_node_data(self._rxid(node_id))
 
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from uuid import UUID
 
 from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
 from openmusickit.objects.lyrics import LyricSequence, LyricSyllable
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, TonalObject
-from openmusickit.utils.id import OmkId
 from openmusickit.values.tone.tone import Tone
 
 
@@ -52,7 +52,7 @@ class OmkGraph:
 
     # Basic Add, Connect, Remove
 
-    def get_node(self, node_id: OmkId | str) -> OmkObject | None:
+    def get_node(self, node_id: UUID | str) -> OmkObject | None:
         """Returns an OmkObj based on id. Returns None if no such object exists."""
         return self._graph.get_node(str(node_id))
 

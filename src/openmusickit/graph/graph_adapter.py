@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
+from uuid import UUID
 
 from openmusickit.graph.edge import EdgeType, OmkEdge
 from openmusickit.objects.omk_object import OmkObject
-from openmusickit.utils.id import OmkId
 
 
 class GraphAdapter(ABC):
@@ -28,8 +28,8 @@ class GraphAdapter(ABC):
         """Remove an edge from the graph."""
 
     @abstractmethod
-    def get_node(self, node_id: OmkId) -> OmkObject:
-        """Return the node with the given OmkId."""
+    def get_node(self, node_id: UUID | str) -> OmkObject:
+        """Return the node with the given id."""
 
     @abstractmethod
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:

@@ -1,6 +1,5 @@
-from . import id, number_names
+from . import number_names
 
 __all__ = [
-    "id",
     "number_names",
 ]

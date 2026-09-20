@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import Any
+from uuid import UUID, uuid4
 
 from openmusickit.errors import TemporalCompatibilityError
-from openmusickit.utils.id import OmkId
 from openmusickit.values.time.duration import Duration, ZeroDuration
 
 
@@ -36,11 +36,11 @@ class EdgeOrigin(StrEnum):
 class OmkEdge:
     type: EdgeType
     origin: EdgeOrigin = EdgeOrigin.ASSERTED
-    _id: OmkId = field(default_factory=OmkId.new, init=False, repr=False, compare=False)
+    _id: UUID = field(default_factory=uuid4, init=False, repr=False, compare=False)
     meta: dict[str, Any] = field(default_factory=dict, init=False, repr=False, compare=False)
 
     @property
-    def id(self) -> OmkId:
+    def id(self) -> UUID:
         return self._id
 
     def __repr__(self):
