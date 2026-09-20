@@ -26,7 +26,6 @@ class ChordEvent(SequentialEvent, TonalObject):
         >>> event = ChordEvent(chord=C(maj))
         >>> event.transform_tones(TonalVector.transpose, M3)
         >>> str(event.chord)
-        
         'E'
         """
         self.chord = self.chord.transform(operation, *args, **kwargs)
