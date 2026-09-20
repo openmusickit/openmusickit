@@ -140,7 +140,13 @@ def _tonal_modulo(x: tuple[int, ...]) -> tuple[int, ...]:
     >>> _tonal_modulo((7, 12, 1))
     (0, 0, 2)
 
+    >>> _tonal_modulo((7,))
+    Traceback (most recent call last):
+    ...
+    ValueError: A tonal tuple has 2 or 3 elements, not 1: (7,)
+
     """
+    _check_length(x)
 
     # From (0,0) to (6,11) (inclusive), no modulo is needed.
     if 0 <= x[0] < D_LEN and 0 <= x[1] < C_LEN:
@@ -153,8 +159,24 @@ def _tonal_modulo(x: tuple[int, ...]) -> tuple[int, ...]:
     if len(x) == 2:
         return (d_val, c_val)
 
-    if len(x) == 3:
-        return (d_val, c_val, (x[2] + d_oct))
+    return (d_val, c_val, (x[2] + d_oct))
+
+
+def _check_length(x: tuple[int, ...]) -> None:
+    """Raises ValueError unless x is a 2- or 3-tuple.
+
+    Examples
+    --------
+
+    >>> _check_length((0, 0))
+    >>> _check_length((0, 0, 0))
+    >>> _check_length((0, 0, 0, 0))
+    Traceback (most recent call last):
+    ...
+    ValueError: A tonal tuple has 2 or 3 elements, not 4: (0, 0, 0, 0)
+    """
+    if len(x) not in (2, 3):
+        raise ValueError(f"A tonal tuple has 2 or 3 elements, not {len(x)}: {x}")
 
 
 def tonal_abs(x: tuple[int, ...]) -> int:
@@ -340,8 +362,10 @@ def abs_interval(x: tuple[int, ...]) -> tuple[int, ...]:
     >>> abs_interval((0,11,0))
     (0, 1, 0)
     """
+    _check_length(x)
+    y = tonal_invert(x)
+
     if len(x) == 2:
-        y = tonal_invert(x)
         if x[0] == y[0]:
             if _tonal_unmodulo(x)[1] < 0:
                 return y
@@ -350,20 +374,18 @@ def abs_interval(x: tuple[int, ...]) -> tuple[int, ...]:
 
         return tonal_lower_of(x, y)
 
-    if len(x) == 3:
-        y = tonal_invert(x)
-        if x[2] < 0:
+    if x[2] < 0:
+        return y
+    if y[2] < 0:
+        return x
+
+    if x[0] == y[0] and x[2] == y[2] == 0:
+        if _tonal_unmodulo(x)[1] < 0:
             return y
-        if y[2] < 0:
+        if _tonal_unmodulo(y)[1] < 0:
             return x
 
-        if x[0] == y[0] and x[2] == y[2] == 0:
-            if _tonal_unmodulo(x)[1] < 0:
-                return y
-            if _tonal_unmodulo(y)[1] < 0:
-                return x
-
-        return tonal_lower_of(x, y)
+    return tonal_lower_of(x, y)
 
 
 def tonal_abs_diff(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:

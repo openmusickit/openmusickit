@@ -25,14 +25,6 @@ oldest part of the tonal arithmetic core; to be cleaned up in a dedicated sessio
 together with the rest of `interval_quality.py` (module-global `qualities`
 registry, `__new__` interning, bare `except:`).
 
-## `_tonal_modulo` implicit None (2026-09-18)
-
-`tonal_arithmetic._tonal_modulo`
-([src/openmusickit/systems/wsmn/tonal/tonal_arithmetic.py](../src/openmusickit/systems/wsmn/tonal/tonal_arithmetic.py))
-returns `None` for tuples that are not of length 2 or 3. Same arithmetic core as
-the item above; handle together (the whole module also uses `tuple[int]` to mean
-variable-length tuples and has a bare `except:` in `_tonal_unmodulo`).
-
 ## Signed durations / edge displacement (2026-09-18)
 
 `ZeroDuration.__sub__` returns `-other` but no `Duration` defines `__neg__`;
@@ -111,3 +103,12 @@ on the abstract `Tone` / `ToneCollection`. Either `values/tone` grows an abstrac
 key/key-signature that WSMN implements, or `KeySignatureEvent` moves under
 `systems/wsmn/`. goals.md section 1 (Western concepts are implementations on top
 of general abstractions) argues for the former.
+
+## Resolved
+
+### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)
+
+`_tonal_modulo` and `abs_interval` now go through `_check_length`, which raises
+`ValueError` for anything but a 2- or 3-tuple. The `tuple[int]` annotations and
+the bare `except:` mentioned in the original note had already been cleaned up by
+the consistency audit.
