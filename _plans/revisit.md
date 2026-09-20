@@ -19,9 +19,11 @@ the consistency audit.
 Durations are signed quantities. `Duration` requires `__neg__` and provides
 `__sub__` as `self + (-other)`; `MetricalDuration` carries the sign on its
 numerator, and opposite-sign sums resolve by length through `from_length`
-(cancelling to `ZeroDuration`). `Next.displacement` is therefore a plain signed
+(cancelling to `ZeroDuration`). An edge displacement is therefore a plain signed
 `Duration`. A negative duration is never an event length: `SequentialEvent`
-raises `ValueError` on any attempt to set one.
+raises `ValueError` on any attempt to set one. (2026-09-20: the displacement
+moved from `Next` to `TimedEdge` -- `Branch` and `Simultaneous`; NEXT carries
+no timing. See `_plans/compound-lines.md`.)
 
 ### TonalVector construction and interning (2026-09-18, resolved 2026-09-19)
 

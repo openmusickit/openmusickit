@@ -27,11 +27,14 @@ True
 
 >>> quarter + eighth == dotted_quarter
 True
+
+>>> quarter + grace_eighth == quarter
+True
 """
 
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
-from openmusickit.values.time.duration import TemporalRatio, TemporalUnit
+from openmusickit.values.time.duration import GraceDuration, TemporalRatio, TemporalUnit
 
 # --- plain note values -------------------------------------------------------
 
@@ -124,6 +127,16 @@ thirtysecond_in_triplet = demisemiquaver_in_triplet = MetricalDuration(
 sixtyfourth_in_triplet = hemidemisemiquaver_in_triplet = MetricalDuration(
     1, 64, ratio=triplet(sixtyfourth)
 )
+
+# --- grace notes -------------------------------------------------------------
+# zero metrical width; the nominal value is the symbol written.
+# The slashed grace (acciaccatura) is played before the beat; the appoggiatura on it.
+
+grace_eighth = acciaccatura_eighth = GraceDuration(eighth)
+grace_sixteenth = acciaccatura_sixteenth = GraceDuration(sixteenth)
+appoggiatura_quarter = GraceDuration(quarter, on_beat=True)
+appoggiatura_eighth = GraceDuration(eighth, on_beat=True)
+appoggiatura_sixteenth = GraceDuration(sixteenth, on_beat=True)
 
 # --- time signatures ---------------------------------------------------------
 

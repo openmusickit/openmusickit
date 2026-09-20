@@ -169,7 +169,7 @@ class Duration(TemporalElement):
     def __neg__(self) -> Duration:
         """The same length in the opposite direction.
 
-        Durations are signed quantities so that displacements (see `Next.nudge`)
+        Durations are signed quantities so that displacements (see `TimedEdge.nudge`)
         can be computed with ordinary arithmetic. A negative duration is never
         the length of an event: `SequentialEvent` rejects one.
         """
@@ -210,6 +210,67 @@ class ZeroDuration(Duration, Measurable):
 
     def __neg__(self) -> ZeroDuration:
         return self
+
+    def __repr__(self):
+        return f"{type(self).__name__}()"
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class GraceDuration(ZeroDuration):
+    """A notated duration that takes no metrical time: a grace note.
+
+    `nominal` is the symbol written (an eighth, a sixteenth); the width of the
+    event in its line is zero, so a run of grace notes adds nothing to the
+    length of a line, and a grace note stays in the NEXT chain like any other
+    event. How much time it actually steals, and from which neighbour, is a
+    matter of realization, outside core.
+
+    `on_beat` records the semantic distinction that notation marks with a
+    slash: False for the acciaccatura (before the beat, stealing from the
+    preceding note), True for the appoggiatura (on the beat, stealing from
+    the note it decorates).
+
+    Like every Measurable, a grace compares and hashes by its length, which is
+    zero, so all graces are equal to each other and to ZeroDuration; compare
+    `nominal` to tell them apart:
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth, sixteenth
+    >>> GraceDuration(eighth) == GraceDuration(sixteenth)
+    True
+    >>> GraceDuration(eighth).nominal == GraceDuration(sixteenth).nominal
+    False
+    >>> quarter + GraceDuration(eighth) + GraceDuration(sixteenth) == quarter
+    True
+    >>> GraceDuration(eighth).temporal_system.name
+    'Western Standard Music Notation'
+    >>> GraceDuration(eighth).scale(2)
+    GraceDuration(MetricalDuration(1, 4))
+    """
+
+    nominal: Duration
+    on_beat: bool = False
+
+    @property
+    def temporal_system(self) -> TemporalSystem:
+        return self.nominal.temporal_system
+
+    def scale(self, scalar: int | Fraction) -> GraceDuration:
+        """Scales the notated symbol; the width stays zero."""
+        return GraceDuration(self.nominal.scale(scalar), self.on_beat)
+
+    def __radd__(self, other):
+        # a Duration that does not know about graces (`ClockDuration + grace`)
+        # absorbs one, and `sum(durations)` may start from 0
+        if isinstance(other, Duration):
+            return other
+        if other == 0:
+            return self
+        return NotImplemented
+
+    def __repr__(self):
+        if self.on_beat:
+            return f"{type(self).__name__}({self.nominal!r}, on_beat=True)"
+        return f"{type(self).__name__}({self.nominal!r})"
 
 
 @dataclass(frozen=True, slots=True, eq=False)

@@ -82,13 +82,17 @@ class RustworkxAdapter(GraphAdapter):
         """Add an edge from source to target to the graph.
 
         Raises an exception if there is already an edge of the same type between source and target.
-        Raises an exception if edge_type is NEXT and source already has an outgoing edge of type NEXT."""
+        Raises an exception if edge_type is NEXT and source already has an outgoing edge of type NEXT,
+        or target already has an incoming one (a line is a chain: one NEXT in, one NEXT out)."""
         if self.has_edge(source, target, edge.type):
             raise GraphError(
                 f"An edge of type {edge.type!r} already exists between {source!r} and {target!r}."
             )
-        if edge.type == EdgeType.NEXT and any(self.out_edges(source, EdgeType.NEXT)):
-            raise GraphError(f"Source {source!r} already has an outgoing edge of type NEXT.")
+        if edge.type == EdgeType.NEXT:
+            if any(self.out_edges(source, EdgeType.NEXT)):
+                raise GraphError(f"Source {source!r} already has an outgoing edge of type NEXT.")
+            if any(self.in_edges(target, EdgeType.NEXT)):
+                raise GraphError(f"Target {target!r} already has an incoming edge of type NEXT.")
         rxid = self.graph.add_edge(self._rxid(source), self._rxid(target), edge)
         self._register_edge(edge, rxid)
 
@@ -131,15 +135,16 @@ class RustworkxAdapter(GraphAdapter):
 
     def get_edge_endpoints(self, edge: OmkEdge) -> tuple[OmkObject, OmkObject]:
         """Return the source and target nodes of the given edge as a tuple (source, target)."""
-        return self.graph.get_edge_endpoints_by_index(self._rxid(edge))
+        source_rxid, target_rxid = self.graph.get_edge_endpoints_by_index(self._rxid(edge))
+        return self._get_node_by_rxid(source_rxid), self._get_node_by_rxid(target_rxid)
 
     def get_source_of_edge(self, edge: OmkEdge) -> OmkObject:
         """Return the source node of the given edge."""
-        return self.graph.get_edge_endpoints_by_index(self._rxid(edge))[0]
+        return self.get_edge_endpoints(edge)[0]
 
     def get_target_of_edge(self, edge: OmkEdge) -> OmkObject:
         """Return the target node of the given edge."""
-        return self.graph.get_edge_endpoints_by_index(self._rxid(edge))[1]
+        return self.get_edge_endpoints(edge)[1]
 
     def has_node(self, node: OmkObject) -> bool:
         """Return True if node is present in the graph."""

@@ -9,6 +9,9 @@ from openmusickit.values.time.duration import Duration, ZeroDuration
 
 class EdgeType(StrEnum):
     NEXT = auto()
+    BRANCHES = auto()
+    SIMULTANEOUS = auto()
+    PERFORMS = auto()
     IMPLEMENTS = auto()
     REALIZES = auto()
     ANNOTATES = auto()
@@ -18,7 +21,6 @@ class EdgeType(StrEnum):
     HARMONIZES = auto()
     VARIATION_OF = auto()
     DERIVATIVE_OF = auto()
-    SIMULTANEOUS = auto()
     CONTAINS = auto()
     REFERENCES = auto()
     USER_DEFINED = auto()
@@ -59,18 +61,36 @@ class NudgeDirection(StrEnum):
 
 @dataclass(kw_only=True, slots=True)
 class Next(OmkEdge):
+    """Sequence within a line: the target follows the source, and nothing else.
+
+    A line is a maximal chain of NEXT edges; an event has at most one incoming
+    and one outgoing NEXT (`OmkGraph.add_next` enforces this). Relative timing
+    between lines is carried by `TimedEdge`s, never by NEXT.
+    """
+
     type: EdgeType = field(default=EdgeType.NEXT, init=False)
-    anchor: TimingAnchor = TimingAnchor.OFFSET
+
+
+@dataclass(kw_only=True, slots=True)
+class TimedEdge(OmkEdge):
+    """An edge that places its target in time relative to its source.
+
+    The target starts at the `anchor` of the source (its onset or its offset)
+    plus a signed `displacement`; `None` means no displacement, so the target
+    coincides with the anchor.
+    """
+
+    anchor: TimingAnchor = TimingAnchor.ONSET
     displacement: Duration | None = None
 
     def nudge(self, direction: NudgeDirection, amount: Duration) -> None:
-        """Nudges the displacement of this Next edge in the specified direction by the specified amount.
+        """Nudges the displacement of this edge in the specified direction by the specified amount.
 
-        The displacement is a signed Duration: negative means the following
-        event starts before the anchor.
+        The displacement is a signed Duration: negative means the target
+        starts before the anchor.
 
         >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, half
-        >>> edge = Next()
+        >>> edge = Branch()
         >>> edge.nudge(NudgeDirection.FORWARD, quarter)
         >>> edge.nudge(NudgeDirection.BACKWARD, half)
         >>> edge.displacement
@@ -96,3 +116,27 @@ class Next(OmkEdge):
 
     def __repr__(self):
         return f"{type(self).__name__}(anchor={self.anchor}, displacement={self.displacement})"
+
+
+@dataclass(kw_only=True, slots=True)
+class Branch(TimedEdge):
+    """From an event of a parent line to the head of a child line that the
+    same performer does at the same time: a second voice, the other hand.
+
+    A branch asserts ownership: span walks over the parent include the child.
+    A head has at most one incoming Branch and no incoming NEXT.
+    """
+
+    type: EdgeType = field(default=EdgeType.BRANCHES, init=False)
+
+
+@dataclass(kw_only=True, slots=True)
+class Simultaneous(TimedEdge):
+    """A pin between events of two independent lines: this happens when that
+    does (give or take the displacement). Symmetric in meaning, stored directed.
+
+    A pin asserts nothing about who performs either line; span walks never
+    cross one.
+    """
+
+    type: EdgeType = field(default=EdgeType.SIMULTANEOUS, init=False)

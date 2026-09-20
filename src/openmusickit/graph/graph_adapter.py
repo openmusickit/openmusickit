@@ -17,7 +17,8 @@ class GraphAdapter(ABC):
     def add_edge(self, source: OmkObject, target: OmkObject, edge: OmkEdge) -> None:
         """Add an edge from source to target to the graph.
 
-        Raises GraphError if there is already an edge of the same type between source and target."""
+        Raises GraphError if there is already an edge of the same type between source and target,
+        or if the edge is a NEXT and the source already has one out or the target one in."""
 
     @abstractmethod
     def remove_node(self, node: OmkObject) -> None:
