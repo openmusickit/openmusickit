@@ -741,8 +741,4 @@ Locrian = ModePattern(
 # No key: no tonic, no mode, and no key signature, for atonal music and
 # unpitched parts. Corresponds to MusicXML `<key><fifths>0</fifths><mode>none</mode></key>`.
 # (A signature with no sharps or flats is a different thing: `Key.from_signature(KeySignature())`.)
-NoKey = Key(
-    tonic=None,
-    tones=ToneCollection(name="No Key"),
-    signature=None,
-)
+NoKey = Key(tonic=None, signature=None)

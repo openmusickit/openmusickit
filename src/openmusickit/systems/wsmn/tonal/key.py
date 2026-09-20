@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from numbers import Real
 
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality
@@ -311,8 +311,8 @@ class Key(ModalContext):
     """
 
     tonic: TonalVector | None
-    tones: ToneCollection
     signature: KeySignature | None
+    tones: ToneCollection = field(default_factory=ToneCollection)  # empty: no tones asserted
     mode: ModePattern | None = None
     name: str | None = None
 
@@ -406,7 +406,7 @@ class Key(ModalContext):
         >>> Key.from_signature(KeySignature()).name, NoKey.signature
         ('no sharps or flats', None)
         """
-        return cls(tonic=None, tones=ToneCollection(name=None), signature=signature)
+        return cls(tonic=None, signature=signature)
 
     def transform(self, operation: Callable[..., TonalVector], *args, **kwargs) -> Key:
         """Returns a new Key made by applying `operation` to this key's tonic
