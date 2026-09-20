@@ -108,6 +108,20 @@ class Duration(TemporalElement):
     def temporal_system(self) -> TemporalSystem:
         """The TemporalSystem this duration belongs to (for introspection)."""
 
+    @abstractmethod
+    def __neg__(self) -> Duration:
+        """The same length in the opposite direction.
+
+        Durations are signed quantities so that displacements (see `Next.nudge`)
+        can be computed with ordinary arithmetic. A negative duration is never
+        the length of an event: `SequentialEvent` rejects one.
+        """
+
+    def __sub__(self, other):
+        if not isinstance(other, Duration):
+            return NotImplemented
+        return self + (-other)
+
 
 ANY_TEMPORAL_SYSTEM = TemporalSystem(
     "Any", "Placeholder for durations that belong to no particular temporal system."
@@ -133,10 +147,8 @@ class ZeroDuration(Duration):
             raise TypeError(f"Cannot add {type(other)} to a Duration.")
         return other
 
-    def __sub__(self, other: Duration):
-        if not isinstance(other, Duration):
-            raise TypeError(f"Cannot subtract {type(other)} from a Duration.")
-        return -other
+    def __neg__(self) -> ZeroDuration:
+        return self
 
 
 @dataclass(frozen=True, slots=True, eq=False)

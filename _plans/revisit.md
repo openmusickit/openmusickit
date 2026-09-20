@@ -25,17 +25,6 @@ oldest part of the tonal arithmetic core; to be cleaned up in a dedicated sessio
 together with the rest of `interval_quality.py` (module-global `qualities`
 registry, `__new__` interning, bare `except:`).
 
-## Signed durations / edge displacement (2026-09-18)
-
-`ZeroDuration.__sub__` returns `-other` but no `Duration` defines `__neg__`;
-`Next.nudge(BACKWARD, amount)` does `self.displacement -= amount` but
-`MetricalDuration` has no `__sub__`. Both raise `TypeError` on first use; neither
-is called anywhere yet. Question: are durations signed quantities (add
-`__neg__`/`__sub__` to the `Duration` contract), or is displacement a signed
-offset stored on the `Next` edge with durations staying positive lengths?
-Files: [src/openmusickit/values/time/duration.py](../src/openmusickit/values/time/duration.py),
-[src/openmusickit/graph/edge.py](../src/openmusickit/graph/edge.py).
-
 ## `rational_length` on the abstract TemporalElement (2026-09-18)
 
 `rational_length` is a WSMN notion (the named fractional value of a metrical
@@ -112,3 +101,12 @@ of general abstractions) argues for the former.
 `ValueError` for anything but a 2- or 3-tuple. The `tuple[int]` annotations and
 the bare `except:` mentioned in the original note had already been cleaned up by
 the consistency audit.
+
+### Signed durations / edge displacement (2026-09-18, resolved 2026-09-19)
+
+Durations are signed quantities. `Duration` requires `__neg__` and provides
+`__sub__` as `self + (-other)`; `MetricalDuration` carries the sign on its
+numerator, and opposite-sign sums resolve by length through `from_length`
+(cancelling to `ZeroDuration`). `Next.displacement` is therefore a plain signed
+`Duration`. A negative duration is never an event length: `SequentialEvent`
+raises `ValueError` on any attempt to set one.

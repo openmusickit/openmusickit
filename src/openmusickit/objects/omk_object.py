@@ -32,7 +32,23 @@ class OmkObject:
 
 @dataclass(kw_only=True)
 class SequentialEvent(OmkObject):
+    """An OmkObject that takes up time and can be placed in sequence (with NEXT edges).
+
+    The duration is a length, so it cannot be negative, however it is set:
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> SequentialEvent(duration=-quarter)
+    Traceback (most recent call last):
+    ...
+    ValueError: A SequentialEvent cannot have a negative duration: MetricalDuration(-1, 4)
+    """
+
     duration: Duration | None = None
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "duration" and value is not None and value.rational_length < 0:
+            raise ValueError(f"A SequentialEvent cannot have a negative duration: {value!r}")
+        super().__setattr__(name, value)
 
     def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any) -> None:
         new_duration = operation(self.duration, operand)

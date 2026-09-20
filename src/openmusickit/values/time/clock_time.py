@@ -52,6 +52,9 @@ class ClockDuration(Duration):
             return NotImplemented
         return ClockDuration(self.microseconds - other.microseconds)
 
+    def __neg__(self) -> ClockDuration:
+        return ClockDuration(-self.microseconds)
+
     def __mul__(self, scalar):
         return ClockDuration(self.microseconds * scalar)
 

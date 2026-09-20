@@ -43,6 +43,14 @@ class MetricalDuration(Duration):
     MetricalDurations compare, sort, and hash by their real length,
     so ``MetricalDuration(3, 8) == MetricalDuration(1, 4, dots=1)``.
 
+    A negative numerator is a negative duration: the same notated value in the
+    opposite direction, produced by ``-duration`` or by subtraction. It is a
+    signed quantity for arithmetic (an edge displacement, for instance), never
+    the length of an event.
+
+    >>> quarter - MetricalDuration(1, 2)
+    MetricalDuration(-1, 4)
+
     """
 
     numerator: int
@@ -89,6 +97,8 @@ class MetricalDuration(Duration):
             Notes longer than a whole note use a power-of-two numerator
             over a denominator of 1: (2, 1) breve, (4, 1) longa, (8, 1) maxima.
 
+            A negative numerator gives a negative duration.
+
         denominator : int
             The denominator of the nominal note value. Must be a power of two.
 
@@ -112,7 +122,7 @@ class MetricalDuration(Duration):
         ------
         ValueError
             If numerator/denominator is not a single notatable symbol (e.g. 5/8),
-            if the denominator is not a power of two, if the numerator is not positive,
+            if the denominator is not a power of two, if the numerator is zero,
             if dots is negative, or if a full dotted value is given
             together with additional dots.
 
@@ -128,18 +138,21 @@ class MetricalDuration(Duration):
         if (
             isinstance(self.numerator, bool)
             or not isinstance(self.numerator, int)
-            or self.numerator <= 0
+            or self.numerator == 0
         ):
             raise ValueError(
-                "The numerator must be a positive integer. (Use ZeroDuration for a zero-length duration.)"
+                "The numerator must be a non-zero integer. (Use ZeroDuration for a zero-length duration.)"
             )
 
         if self.dots < 0:
             raise ValueError("A duration cannot have negative dots.")
 
+        # The sign is carried on the numerator; normalise the magnitude.
+        sign = -1 if self.numerator < 0 else 1
+
         # reduce, then split the numerator into (power of two) * (odd part).
         # The odd part encodes the dots: 1 -> none, 3 -> one, 7 -> two, 15 -> three...
-        value = F(self.numerator, self.denominator)
+        value = F(abs(self.numerator), self.denominator)
         odd = value.numerator
         while odd % 2 == 0:
             odd //= 2
@@ -161,7 +174,7 @@ class MetricalDuration(Duration):
         # the base (undotted) value: strip the dot factor back out
         base = value * (2**implied_dots) / odd
 
-        object.__setattr__(self, "numerator", base.numerator)
+        object.__setattr__(self, "numerator", sign * base.numerator)
         object.__setattr__(self, "denominator", base.denominator)
         object.__setattr__(self, "dots", self.dots + implied_dots)
 
@@ -377,16 +390,24 @@ class MetricalDuration(Duration):
             base = F(self.numerator, self.denominator) * scalar
             return MetricalDuration(base.numerator, base.denominator, self.dots, self.ratio)
 
-        return MetricalDuration.from_length(self.nominal_length * scalar, ratio=self.ratio)
+        return _from_signed_length(self.nominal_length * scalar, ratio=self.ratio)
+
+    def __neg__(self) -> MetricalDuration:
+        return MetricalDuration(-self.numerator, self.denominator, self.dots, self.ratio)
 
     def __add__(self, other):
         """Add two durations.
 
         Returns a single MetricalDuration when the sum is notatable as one symbol
         (quarter + eighth = dotted quarter), otherwise a TiedDuration.
-        Durations in different tuplets always produce a TiedDuration."""
+        Durations in different tuplets always produce a TiedDuration.
+        Durations of opposite sign are resolved by length, so the result is
+        the canonical spelling of the difference (``from_length``), or
+        ZeroDuration when they cancel."""
         if isinstance(other, ZeroDuration):
             return self
+        if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
+            return _from_signed_length(self.rational_length + other.rational_length)
         if isinstance(other, TiedDuration):
             return TiedDuration([self]) + other
         if isinstance(other, Duration):
@@ -457,9 +478,14 @@ class TiedDuration(Duration):
             result = result + m.scale(scalar)
         return result
 
+    def __neg__(self) -> TiedDuration:
+        return TiedDuration(-m for m in self.members)
+
     def __add__(self, other):
         if isinstance(other, ZeroDuration):
             return self
+        if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
+            return _from_signed_length(self.rational_length + other.rational_length)
         if isinstance(other, TiedDuration):
             result = self
             for m in other:
@@ -490,6 +516,25 @@ class TiedDuration(Duration):
 
     def __repr__(self):
         return f"{type(self).__name__}({list(self.members)!r})"
+
+
+def _is_negative(d: Duration) -> bool:
+    return d.rational_length < 0
+
+
+def _from_signed_length(length: F, *, ratio: TemporalRatio | None = None) -> Duration:
+    """``from_length`` for a length of either sign; zero becomes ZeroDuration.
+
+    >>> _from_signed_length(F(-3, 8))
+    MetricalDuration(-1, 4, dots=1)
+    >>> isinstance(_from_signed_length(F(0)), ZeroDuration)
+    True
+    """
+    if length == 0:
+        return ZeroDuration()
+    if length < 0:
+        return -MetricalDuration.from_length(-length, ratio=ratio)
+    return MetricalDuration.from_length(length, ratio=ratio)
 
 
 def _merge(a: Duration, b: Duration) -> MetricalDuration | None:

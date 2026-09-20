@@ -2,8 +2,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import Any
 
+from openmusickit.errors import TemporalCompatibilityError
 from openmusickit.utils.id import OmkId
-from openmusickit.values.time.duration import Duration, ZeroDuration
+from openmusickit.values.time.duration import ANY_TEMPORAL_SYSTEM, Duration, ZeroDuration
 
 
 class EdgeType(StrEnum):
@@ -67,15 +68,31 @@ class Next(OmkEdge):
     displacement: Duration | None = None
 
     def nudge(self, direction: NudgeDirection, amount: Duration) -> None:
-        """Nudges the displacement of this Next edge in the specified direction by the specified amount."""
-        if self.displacement is not None and type(amount) is not type(self.displacement):
-            raise TypeError(
-                f"""Current displacement type ({type(self.displacement)}) does not match nudge amount type ({type(amount)}).
-                Try reconciling duration types with a TemporalRatio."""
-            )
+        """Nudges the displacement of this Next edge in the specified direction by the specified amount.
 
+        The displacement is a signed Duration: negative means the following
+        event starts before the anchor.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, half
+        >>> edge = Next()
+        >>> edge.nudge(NudgeDirection.FORWARD, quarter)
+        >>> edge.nudge(NudgeDirection.BACKWARD, half)
+        >>> edge.displacement
+        MetricalDuration(-1, 4)
+
+        Raises
+        ------
+        TemporalCompatibilityError
+            if ``amount`` belongs to a different temporal system than the current displacement.
+        """
         if self.displacement is None:
             self.displacement = ZeroDuration()
+        if self.displacement.temporal_system not in (ANY_TEMPORAL_SYSTEM, amount.temporal_system):
+            raise TemporalCompatibilityError(
+                f"Cannot nudge a displacement in {self.displacement.temporal_system.name} "
+                f"by an amount in {amount.temporal_system.name}. "
+                "Convert the amount first with a TemporalRatio."
+            )
         if direction == NudgeDirection.BACKWARD:
             self.displacement -= amount
         else:
