@@ -11,12 +11,30 @@ from openmusickit.errors import ScalingError
 
 @dataclass(frozen=True, slots=True)
 class TemporalSystem:
-    """A named system of musical time (see `TonalSystem` for the tonal counterpart)."""
+    """A named system of musical time (see `TonalSystem` for the tonal counterpart).
+
+    Every Duration reports its system through `temporal_system`, so that code
+    combining durations can refuse to mix systems. A `universal` system is one
+    whose elements belong to no system in particular (a ZeroDuration) and may
+    be combined with anything.
+    """
 
     name: str
     description: str
+    universal: bool = False
 
-    pass
+    def compatible_with(self, other: TemporalSystem) -> bool:
+        """True if elements of the two systems may be combined:
+        the same system, or either one universal.
+
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME
+        >>> from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
+        >>> WSMN_TEMPORAL.compatible_with(CLOCK_TIME)
+        False
+        >>> WSMN_TEMPORAL.compatible_with(ANY_TEMPORAL_SYSTEM)
+        True
+        """
+        return self.universal or other.universal or self == other
 
 
 def _length_of(other) -> Fraction | None:
@@ -124,7 +142,9 @@ class Duration(TemporalElement):
 
 
 ANY_TEMPORAL_SYSTEM = TemporalSystem(
-    "Any", "Placeholder for durations that belong to no particular temporal system."
+    "Any",
+    "Placeholder for durations that belong to no particular temporal system.",
+    universal=True,
 )
 
 

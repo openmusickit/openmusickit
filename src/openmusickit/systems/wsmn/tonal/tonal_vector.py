@@ -16,9 +16,10 @@ from openmusickit.systems.wsmn.tonal.constants import (
     QualityType,
     SolfegeStyle,
 )
+from openmusickit.systems.wsmn.tonal.wsmn import WSMN
 from openmusickit.utils.number_names import ORDINALS
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
-from openmusickit.values.tone.tone import PitchRepresentation, Tone
+from openmusickit.values.tone.tone import PitchRepresentation, TonalSystem, Tone
 
 # --- Vocabulary and grammar for TonalVector.from_string / from_ly ---
 #
@@ -347,6 +348,10 @@ class TonalVector(tuple, Tone, Interval):
         self._initialized = True
 
     ## Basic property interface
+
+    @property
+    def tonal_system(self) -> TonalSystem:
+        return WSMN
 
     @property
     def pitch(self) -> TonalVector._PitchRepresentation:

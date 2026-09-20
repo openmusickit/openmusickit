@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from openmusickit.values.tone.tone import TonalSystem
 
-class Interval(ABC):  # noqa: B024 -- a marker base: the contract is set by each tonal system
+
+class Interval(ABC):
     """An Interval is a relationship between two tones,
     as defined within a specific tonal or sonic system.
 
@@ -18,6 +20,11 @@ class Interval(ABC):  # noqa: B024 -- a marker base: the contract is set by each
     >>> isinstance(TonalVector((0, 0)), Interval)
     True
     """
+
+    @property
+    @abstractmethod
+    def tonal_system(self) -> TonalSystem:
+        """The TonalSystem this interval belongs to (for introspection and compatibility checks)."""
 
     @classmethod
     def from_string(cls, s: str) -> Interval:

@@ -4,9 +4,10 @@ TonalVector is also an Interval, and the base-class contract behaves."""
 import pytest
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+from openmusickit.systems.wsmn.tonal.wsmn import WSMN
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from openmusickit.values.tone.silent_tone import SilentTone
-from openmusickit.values.tone.tone import PitchRepresentation, Tone
+from openmusickit.values.tone.tone import ANY_TONAL_SYSTEM, PitchRepresentation, TonalSystem, Tone
 
 
 def test_tonal_vector_is_tone_and_interval():
@@ -66,6 +67,13 @@ def test_abandoned_machinery_is_gone():
     for name in ("to_array", "__array__", "abstract_array_len", "qualified_array_len"):
         assert not hasattr(Tone, name)
         assert not hasattr(Interval, name)
-    for name in ("abstract_vector_len", "qualified_vector_len", "tonal_system"):
+    for name in ("abstract_vector_len", "qualified_vector_len"):
         assert not hasattr(TonalVector, name)
     assert not hasattr(Tone, "TONAL_SYSTEM")
+
+
+def test_tonal_system_is_declared_by_each_subclass():
+    assert TonalVector((0, 0)).tonal_system is WSMN
+    assert SilentTone().tonal_system is ANY_TONAL_SYSTEM
+    assert WSMN.compatible_with(ANY_TONAL_SYSTEM)
+    assert not WSMN.compatible_with(TonalSystem("Other", "..."))

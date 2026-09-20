@@ -4,7 +4,7 @@ from typing import Any
 
 from openmusickit.errors import TemporalCompatibilityError
 from openmusickit.utils.id import OmkId
-from openmusickit.values.time.duration import ANY_TEMPORAL_SYSTEM, Duration, ZeroDuration
+from openmusickit.values.time.duration import Duration, ZeroDuration
 
 
 class EdgeType(StrEnum):
@@ -87,7 +87,7 @@ class Next(OmkEdge):
         """
         if self.displacement is None:
             self.displacement = ZeroDuration()
-        if self.displacement.temporal_system not in (ANY_TEMPORAL_SYSTEM, amount.temporal_system):
+        if not self.displacement.temporal_system.compatible_with(amount.temporal_system):
             raise TemporalCompatibilityError(
                 f"Cannot nudge a displacement in {self.displacement.temporal_system.name} "
                 f"by an amount in {amount.temporal_system.name}. "

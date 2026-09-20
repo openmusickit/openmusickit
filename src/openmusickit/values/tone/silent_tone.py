@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from openmusickit.values.tone.tone import Tone
+from openmusickit.values.tone.tone import ANY_TONAL_SYSTEM, TonalSystem, Tone
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,8 +23,14 @@ class SilentTone(Tone):
     >>> isinstance(SilentTone(), Tone)
     True
 
-    A silence has no pitch:
+    A silence has no pitch, and belongs to no particular tonal system:
 
     >>> SilentTone().pitch is None
     True
+    >>> SilentTone().tonal_system.universal
+    True
     """
+
+    @property
+    def tonal_system(self) -> TonalSystem:
+        return ANY_TONAL_SYSTEM

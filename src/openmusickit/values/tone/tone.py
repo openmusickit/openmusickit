@@ -6,13 +6,20 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class TonalSystem:
-    """A named system of tones, pitches, and intervals.
+    """A named system of tones, pitches, and intervals
+    (see `TemporalSystem` for the temporal counterpart).
+
+    Every Tone and Interval reports its system through `tonal_system`, so that
+    code combining them can refuse to mix systems. A `universal` system is one
+    whose members belong to no system in particular (a SilentTone) and may be
+    combined with anything.
 
     To fully implement a TonalSystem:
 
     - Instantiate a TonalSystem with a name and description.
     - Subclass Tone along with PitchRepresentation
     - Subclass Interval along with IntervalRepresentation
+    - Return the TonalSystem instance from their `tonal_system` property
     - Optionally, create a `symbols` module that instantiates and assigns
       commonly used Tones and Intervals to meaningfully named variables.
 
@@ -32,9 +39,29 @@ class TonalSystem:
 
     name: str
     description: str
+    universal: bool = False
+
+    def compatible_with(self, other: TonalSystem) -> bool:
+        """True if members of the two systems may be combined:
+        the same system, or either one universal.
+
+        >>> from openmusickit.systems.wsmn.tonal.wsmn import WSMN
+        >>> WSMN.compatible_with(TonalSystem("Other", "..."))
+        False
+        >>> WSMN.compatible_with(ANY_TONAL_SYSTEM)
+        True
+        """
+        return self.universal or other.universal or self == other
 
 
-class Tone(ABC):  # noqa: B024 -- a marker base: the contract is set by each tonal system
+ANY_TONAL_SYSTEM = TonalSystem(
+    "Any",
+    "Placeholder for tones that belong to no particular tonal system.",
+    universal=True,
+)
+
+
+class Tone(ABC):
     """A Tone is a defined pitch or sound type within a TonalSystem.
 
     Subclasses of Tone define a type of musical sound, noise, or silence
@@ -64,6 +91,11 @@ class Tone(ABC):  # noqa: B024 -- a marker base: the contract is set by each ton
     Subclasses of Tone should normally be immutable and internable,
     as they represent abstract values ('C# above middle C'),
     rather than concrete instance of a note in a score."""
+
+    @property
+    @abstractmethod
+    def tonal_system(self) -> TonalSystem:
+        """The TonalSystem this tone belongs to (for introspection and compatibility checks)."""
 
     @classmethod
     def from_string(cls, s: str) -> Tone:
