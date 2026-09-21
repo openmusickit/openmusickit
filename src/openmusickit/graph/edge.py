@@ -59,13 +59,16 @@ class NudgeDirection(StrEnum):
     BACKWARD = auto()
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True, slots=True, repr=False)
 class Next(OmkEdge):
     """Sequence within a line: the target follows the source, and nothing else.
 
     A line is a maximal chain of NEXT edges; an event has at most one incoming
     and one outgoing NEXT (`OmkGraph.add_next` enforces this). Relative timing
     between lines is carried by `TimedEdge`s, never by NEXT.
+
+    >>> Next()
+    Next(next, origin=asserted)
     """
 
     type: EdgeType = field(default=EdgeType.NEXT, init=False)
@@ -118,7 +121,7 @@ class TimedEdge(OmkEdge):
         return f"{type(self).__name__}(anchor={self.anchor}, displacement={self.displacement})"
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True, slots=True, repr=False)
 class Branch(TimedEdge):
     """From an event of a parent line to the head of a child line that the
     same performer does at the same time: a second voice, the other hand.
@@ -132,12 +135,14 @@ class Branch(TimedEdge):
     (<EdgeType.BRANCHES: 'branches'>, <TimingAnchor.OFFSET: 'offset'>, MetricalDuration(1, 4))
     >>> Branch().anchor, Branch().displacement is None
     (<TimingAnchor.ONSET: 'onset'>, True)
+    >>> late
+    Branch(anchor=offset, displacement=MetricalDuration(1, 4))
     """
 
     type: EdgeType = field(default=EdgeType.BRANCHES, init=False)
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True, slots=True, repr=False)
 class Simultaneous(TimedEdge):
     """A pin between events of two independent lines: this happens when that
     does (give or take the displacement). Symmetric in meaning, stored directed.
@@ -149,6 +154,8 @@ class Simultaneous(TimedEdge):
     >>> early = Simultaneous(displacement=-quarter)
     >>> early.type, early.anchor, early.displacement
     (<EdgeType.SIMULTANEOUS: 'simultaneous'>, <TimingAnchor.ONSET: 'onset'>, MetricalDuration(-1, 4))
+    >>> early
+    Simultaneous(anchor=onset, displacement=MetricalDuration(-1, 4))
     """
 
     type: EdgeType = field(default=EdgeType.SIMULTANEOUS, init=False)

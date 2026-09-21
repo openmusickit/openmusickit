@@ -5,13 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `Branch` and `Simultaneous` regenerate `__repr__` (2026-09-21, noticed in passing)
-
-`TimedEdge` defines a compact `__repr__`, but its subclasses are plain
-`@dataclass`es with the default `repr=True`, so `repr(Branch())` is the
-generated form with every field. Cosmetic; `@dataclass(repr=False)` on the
-two subclasses would restore the intended form.
-
 ## NEXT cycles are valid, and walkers do not stop (2026-09-21)
 
 Testing plan, Part 5 item 1, with the developer's note: cyclic music (a
@@ -215,3 +208,11 @@ its type, displacement and metadata to hand. The adapter's `remove_edge`
 still returns `None`. Pinned by `test_remove_edge_returns_the_removed_edge`,
 which puts the same edge object back through the adapter and checks the
 snapshot.
+
+### `Branch` and `Simultaneous` regenerate `__repr__` (2026-09-21, resolved 2026-09-21)
+
+`Next`, `Branch` and `Simultaneous` are `@dataclass(repr=False)`, so
+they inherit the compact `__repr__` of `OmkEdge` and `TimedEdge`
+(`Branch(anchor=onset, displacement=None)`); `Next` had the same
+generated form against `OmkEdge.__repr__`. Each class docstring shows its
+repr.
