@@ -5,6 +5,46 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
+## `abs_int_diff` returns a negative count (2026-09-21)
+
+`abs_int_diff((0, 0), (6, 1))` (C and B double-sharp) is `-1`. The nearest
+difference between them is a doubly diminished second, an interval of minus
+one half-step, and `abs_int_diff` returns `tonal_int` of that interval
+rather than its magnitude. `abs_interval((6, 1, -1))` has the same shape:
+it returns `(1, 11, 0)`, whose `tonal_int` is `-1`. Pinned by
+`test_abs_int_diff_is_never_negative` in
+`tests/systems/wsmn/tonal/test_tonal_arithmetic.py`. Only pairs whose
+difference is beyond a double alteration are affected; every in-domain pair
+satisfies the "smaller side of the octave" law.
+
+## `tonal_int` misreads alterations beyond triple (2026-09-21)
+
+`tonal_int` adjusts the chromatic value into a window of three half-steps
+either side of the letter's natural, so a quadruple alteration wraps: the
+difference of D-sharp and F-double-flat is `(2, 0, 0)`, a third of zero
+half-steps, and `tonal_int` of it is 12. Such tuples arise only as
+differences of two doubly altered pitches, so `int(a - b)` is wrong for
+those pairs while `(a - b) + b == a` still holds. Either the domain (at
+most triple alterations) should be documented on `tonal_int` and `__int__`,
+or the window widened to six like `_tonal_unmodulo`. Pinned by
+`test_tonal_int_is_additive_beyond_the_domain`.
+
+## `tonal_lower_of` returns an un-normalized tuple on a tie (2026-09-21)
+
+`tonal_lower_of` unmodulos both arguments and, when they are the same size,
+returns one of them without re-normalizing: `tonal_lower_of((6, 0), (6, 0))`
+is `(6, 12)` and `tonal_lower_of((6, 11, 0), (0, 11, 1))` is `(0, -1, 1)`.
+Pinned by `test_lower_of_returns_a_normalized_tuple_on_a_tie`.
+
+## `higher_of`/`lower_of` tie-break ignores the octave (2026-09-21)
+
+On an enharmonic tie the docstring says the larger diatonic value wins
+(a diminished fifth over an augmented fourth), and the code compares `d`
+alone. Across an octave boundary that names B-sharp 3 the higher of it and
+C4, though C4 is spelled on the higher letter. Is the intended rule the
+diatonic *position* (`d + 7 * o`)? Pinned, under that reading, by
+`test_higher_of_enharmonic_tie_across_an_octave_goes_to_the_higher_letter`.
+
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)

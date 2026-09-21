@@ -35,6 +35,23 @@ QUALIFIED_VECTORS: list[TonalVector] = [TonalVector(t) for t in TONAL_OCT_TUPLES
 ALL_VECTORS: list[TonalVector] = ABSTRACT_VECTORS + QUALIFIED_VECTORS
 """Every TonalVector in the test domain, abstract first."""
 
+TONAL_CLASSES: frozenset[tuple[int, int]] = frozenset(TONAL_TUPLES)
+"""The 35 pitch classes as a set, for membership tests on derived values."""
+
+
+def in_domain(t: tuple[int, ...]) -> bool:
+    """True when the pitch class of a (d, c[, o]) tuple is one of the 35.
+
+    Arithmetic on two domain values can leave the domain: the difference of
+    D-sharp and F-double-flat is a third with zero half-steps, a spelling
+    beyond any double alteration. Laws about the *size* of such a result
+    (`tonal_int`, `abs`) are only asserted where the result is in domain.
+
+    >>> in_domain((1, 3, 0)), in_domain((2, 0, 0))
+    (True, False)
+    """
+    return (t[0], t[1]) in TONAL_CLASSES
+
 
 def distinct[V](symbols: Mapping[str, V]) -> dict[str, V]:
     """One name per object: the first name bound to each distinct object, by identity.

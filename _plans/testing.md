@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Step 1 done 2026-09-21.** Steps 2-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-2 done 2026-09-21.** Steps 3-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -501,6 +501,17 @@ def test_inversion_is_not_the_inverse_of_transposition_on_qualified_vectors():
 
 Check: new tests pass; the module's six untested functions each appear in at
 least one law.
+
+Execution notes (2026-09-21): two laws in 2.2 were misstated. `abs(a - b) ==
+abs(b - a)` holds for qualified vectors only; for abstract vectors the two
+differences are the ascending intervals each way round the octave (`abs(C -
+D)` is 10, `abs(D - C)` is 2), so the test asserts they cancel mod 12.
+"Inversion adds an octave" excludes unison-class intervals (`i.d == 0`),
+which add to a plain unison. Size laws (`tonal_int`, `abs`, `abs_int_diff`)
+are asserted where the derived interval is in the 35-class domain
+(`tests.domains.in_domain`); the pairs outside it surface four defects,
+each a strict xfail in `test_tonal_arithmetic.py` and an entry in
+`_plans/revisit.md`.
 
 ### Step 3. Duration and time-signature algebra over the symbol domain
 
