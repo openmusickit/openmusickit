@@ -8,9 +8,9 @@ The most important principle is simple:
 
 These projects value thoughtful design, explicit reasoning, readable Python, small changes, and fidelity to the actual requirements over speculative completeness or agentic autonomy.
 
----
+## Technical Details -- How to write, edit, run, and commit code.
 
-# Tooling: always use `uv`
+### Tooling: always use `uv`
 
 This repository's environment is managed by `uv`, not bare `python`/`pip`/`pytest`.
 
@@ -26,7 +26,7 @@ If a command fails because a dependency "isn't installed," check whether you byp
 concluding there is a real problem.
 
 ---
-# Commit messages
+### Commit messages
 
 Commit only when asked. When you do, the subject line is:
 
@@ -56,8 +56,73 @@ page, which the developer does not want; the prefix already provides the audit t
 tool or template inserts a trailer, strip it before committing.
 
 ---
+### Semantic Line Breaks
 
-# Prime directive: stay in scope
+Prose texts (documentation and doc strings) should use semantic linebreaks.
+
+- Text written as plain text or a compatible markup language MAY use semantic line breaks.
+- A semantic line break MUST NOT alter the final rendered output of the document.
+- A semantic line break SHOULD NOT alter the intended meaning of the text.
+- A semantic line break MUST occur after a sentence, as punctuated by a period (.), exclamation mark (!), or question mark (?).
+- A semantic line break SHOULD occur after an independent clause as punctuated by a comma (,), semicolon (;), colon (:), or em dash (—).
+- A semantic line break MAY occur after a dependent clause in order to clarify grammatical structure or satisfy line length constraints.
+- A semantic line break is RECOMMENDED before an enumerated or itemized list.
+- A semantic line break MAY be used after one or more items in a list in order to logically group related items or satisfy line length constraints.
+- A semantic line break MUST NOT occur within a hyphenated word.
+- A semantic line break MAY occur before and after a hyperlink.
+- A semantic line break MAY occur before inline markup.
+- A maximum line length of 80 characters is RECOMMENDED.
+- A line MAY exceed the maximum line length if necessary, such as to accommodate hyperlinks, code elements, or other markup.
+
+
+You should normally not need more information about semantic line breaks than the above guidelines,
+but if you do you can check the canonical reference:
+https://sembr.org/
+
+Note that a lot of text has been written in the repo
+before semantic lines breaks were introduced as a rule.
+You do NOT need to go seek out and fix these.
+However, if you are working in an area that has non-semantic line breaks in the prose
+(for example, the doc string on a method you are refactoring)
+you should go ahead and fix the line breaks in that area as part of your work.
+
+Code does not need to use semantic line breaks, 
+however the principle may be adopted at any point in the code
+where lines over ~90 characters are likely to impede readability.
+
+For example
+
+```python
+
+# very long function signature
+def some_function(this_argument_has_a_long_name: Tuple[List[], List[], int, int, int]), another_argument: SomeCustomTypeWithALongName | None = None, yet_another_argument: AnotherCustomType | None = None) -> CustomOutputTypeWithALongName:
+    ...
+
+# best to do
+def some_function(
+    this_argument_has_a_long_name: Tuple[List[], List[], int, int, int]),
+    another_argument: SomeCustomTypeWithALongName | None = None,
+    yet_another_argument: AnotherCustomType | None = None
+    ) -> CustomOutputTypeWithALongName:
+    ...
+```
+
+### NumPy Style Docstrings
+
+Docstrings use an abbreviated version of NumPy style.
+
+- Params section is omitted if the meaning of the arguments are very obvious from the signature and one-liner.
+- Returns section is omitted if the meaning of the return is very obvious from the signature and one-liner.
+- Examples is important and should rarely be omitted.
+  The best documentation, and the best test, is a clear, short example showing how something
+  is supposed to be used by a human user or app built on OMK.
+- Raises should be present whenever a function/method has an explicit Raise in it,
+  since that is not communicated by the signature.
+
+
+## Philosophy and Approach
+
+### Prime directive: stay in scope
 
 Implement the requested change.
 
@@ -88,9 +153,16 @@ A small, correct diff is usually better than a large, comprehensive one.
 
 If a task requires changing three lines, changing thirty files is probably a warning sign.
 
+The exception to this rule is obvious typos and simple errors.
+If something in the call chain of the thing you are working doesn't work
+because of a typo in the code or a simple error (missing import, for example)
+go ahead and fix it.
+Be sure to report that this happened,
+but you don't need additional permission to fix these errors.
+
 ---
 
-# Do not invent requirements
+### Do not invent requirements
 
 Distinguish between:
 
@@ -117,7 +189,7 @@ You have permission to stop coding and ASK THE DEVELOPER directly. A human will 
 
 ---
 
-# Preserve the design that already exists
+### Preserve the design that already exists (usually)
 
 Before modifying code, read enough surrounding code to understand:
 
@@ -137,9 +209,21 @@ If existing code and the requested change appear to conflict, surface that confl
 
 If naming conventions or implementation conventions seem to conflict, across the code base, raise this as a question and suggest a fix to the developer.
 
+Exception:
+
+This is greenfield development and there are currently no consumers.
+Moreover, the design is being discovered as we work.
+
+Therefore, "we decided on this other approach" is not always the right answer.
+
+During planning sessions, we need to interrogate design decisions
+and make sure we are finding the best, right way to do things.
+(We will only be greenfield and pre-user once,
+this is the time to get it right.)
+
 ---
 
-# OMK architectural values
+## OMK architectural values
 
 OMK is intended to be a general-purpose symbolic music toolkit, not merely the internal data model for one notation application.
 
@@ -158,7 +242,7 @@ and representing conventional concepts in new ways.
 Do not make assumptions about the data model or the way concepts are represented.
 
 
-## Music is not assumed to be a conventional linear score
+### Music is not assumed to be a conventional linear score
 
 Do not build assumptions into the core model that music must be:
 
@@ -176,7 +260,7 @@ OMK should be capable of representing incomplete sketches, disconnected material
 
 Absence of information can be meaningful. Do not invent missing musical information merely to satisfy a conventional representation.
 
-## Keep backend concerns behind adapters
+### Keep backend concerns behind adapters
 
 Backend-specific concepts should not leak unnecessarily into the OMK public model.
 
@@ -200,7 +284,7 @@ RustworkX or another backend
 
 Do not make domain objects aware of RustworkX merely because the default implementation uses RustworkX.
 
-## Prefer semantic APIs
+### Prefer semantic APIs
 
 Public OMK APIs should speak in musical/domain terms where appropriate rather than forcing callers to manually construct backend operations.
 
@@ -208,7 +292,7 @@ For example, a high-level graph may reasonably offer operations such as adding a
 
 At the same time, retain general primitives where they are useful. High-level convenience APIs and low-level graph operations are not mutually exclusive.
 
-## Extensibility matters
+### Extensibility matters
 
 OMK is intended to support musical systems and behaviors not known to the core package.
 
@@ -219,9 +303,9 @@ Favor interfaces that permit extension without requiring unrelated core classes 
 Do not add extension machinery preemptively, however. Extensibility should come from clean boundaries and ordinary Python design before it comes from frameworks.
 
 
----
+## Coding Guidelines
 
-# Prefer simple Python
+### Prefer simple Python
 
 Write Python that a human maintainer can understand without reverse-engineering the cleverness.
 
@@ -242,9 +326,10 @@ A few explicit lines are usually preferable to a dense abstraction.
 
 ---
 
-# Type code carefully
+### Type code carefully
 
-Use type hints for public APIs and wherever they materially improve understanding.
+Use type hints always, unless there is a strong reason not to.
+Absolutely always for public APIs.
 
 Prefer precise types over `Any`.
 
@@ -264,9 +349,14 @@ Model meaningful concepts as meaningful types when doing so improves correctness
 
 Use `Protocol`, ABCs, generics, and similar tools when they express a real contract. Do not introduce them because a design "might need abstraction later."
 
+Note:
+Music domain classes (mostly in /values) *are* the abstraction we need later for extension into non-Western/non-Standard music notation.
+With a few possible exceptions, all musical ideas should have an abstract layer.
+The instruction to avoid YAGNI-type abstraction refers to coding machinery, not the musical domain.
+
 ---
 
-# Treat identity and value semantics deliberately
+### Treat identity and value semantics deliberately
 
 Be explicit about whether an object represents:
 
@@ -285,9 +375,11 @@ These choices are part of the domain model, not incidental implementation detail
 
 ---
 
-# Use dataclasses appropriately
+### Use dataclasses appropriately
 
-Dataclasses are useful for data-oriented Python objects, but they are not mandatory.
+Dataclasses are useful for data-oriented Python objects, 
+and we use a lot of dataclasses in this repo,
+but they are not mandatory.
 
 When using them:
 
@@ -302,7 +394,7 @@ If a class primarily encapsulates behavior or invariants, an ordinary class may 
 
 ---
 
-# Keep APIs unsurprising
+### Keep APIs unsurprising
 
 Public methods should have clear behavior and ownership.
 
@@ -325,7 +417,7 @@ Do not add optional flags that produce several unrelated behaviors when separate
 
 ---
 
-# Handle errors precisely
+### Handle errors precisely
 
 Do not use bare `except:`.
 
@@ -341,14 +433,23 @@ Error messages should explain what failed and, when useful, the relevant value o
 
 Do not implement elaborate defensive handling for states that cannot occur according to the actual contract.
 
+OMK-specific error types should be used (and created)
+when an error is due to music domain problems
+(example: trying to create an invalid time signature
+or comparing the length of a quarter note to the duration of microseconds)
+or involve OMK-specific invariants and other concepts.
+When created, they should subclass from the conceptually-closest built-in error
+(example: an invalid time signature is probably a kind of ValueError,
+while a time system mismatch is probably a kind of TypeError).
+
 ---
 
-# Dependencies are a cost
+### Dependencies are a cost
 
 Do not add a third-party dependency unless the task requires it and the dependency provides substantial value.
 
 Before adding one, consider whether the standard library or an existing dependency already solves the problem adequately,
-and consult the developer before making the decision.
+and always consult the developer before making the decision.
 
 Do not introduce frameworks to solve small local problems.
 
@@ -358,7 +459,7 @@ For OMK, assume the repository's `uv` environment and `pyproject.toml` are autho
 
 ---
 
-# Performance: measure before redesigning
+### Performance: measure before redesigning
 
 Do not sacrifice clarity for hypothetical performance.
 
@@ -381,7 +482,7 @@ If optimization is requested, identify the actual bottleneck before restructurin
 
 ---
 
-# Comments and documentation
+### Comments and documentation
 
 Comments should explain things that are not obvious from the code itself, especially:
 
@@ -394,16 +495,29 @@ Do not narrate ordinary Python line by line.
 
 Prefer good names and clear structure over explanatory comments.
 
+#### Docstrings
+
 Most methods and functions should have a one-line docstring that simply explains what it does and/or returns.
+Many methods should have one or two runnable, testable examples.
+
+Abstract music domain classes should normally have an explanation of what the concept means/does,
+which includes how it is intended to be subclassed into system-specific concepts.
+Often, these should mention how the concept is implemented in WSMN,
+but be careful not to suggest that WSMN is default or normative. 
+
 Do not add large docstrings to every function simply for completeness.
 
-Update documentation when the requested change makes existing documentation incorrect. Do not undertake unrelated documentation work unless requested.
+#### Documentation
+
+Update documentation when the requested change makes existing documentation incorrect.
+Do not undertake unrelated documentation work unless requested.
+
 
 ---
 
-# 15. Tests and validation
+### Tests and validation
 
-**Do not create, rewrite, or expand tests unless the task explicitly asks for test work.**
+**Do not create, rewrite, or expand tests unless the task explicitly requires test work.**
 
 Many structures in OMK are abstract and cannot be directly tested until later work implements concrete versions of them.
 Do not go implement those concretizations unless asked to do so.
@@ -425,13 +539,11 @@ The best test is a short example inside the docstring.
 If a useful, working example can be included in a docstring in less than three lines,
 go ahead and write it.
 
-DO NOT write verification testing to the terminal.
-If you believe a long or complex test needs to be written, tell the developer,
-who will instruct you whether or not that is a priority at the present time.
+
 
 ---
 
-# Refactoring policy
+### Refactoring policy
 
 Refactor when the requested change genuinely requires it.
 
@@ -450,7 +562,7 @@ Preserve behavior outside the requested change.
 
 ---
 
-# Avoid speculative compatibility
+### Avoid speculative compatibility
 
 This is NEW DEVELOPMENT and this project currently has NO USERS.
 
@@ -462,7 +574,7 @@ Compatibility code has long-term cost. Do not invent consumers that have not bee
 
 ---
 
-# Match the project's stage of development
+### Match the project's stage of development
 
 Some APIs are intentionally still being discovered.
 
@@ -474,7 +586,7 @@ At the same time, do not casually change an established public interface when th
 
 ---
 
-# When implementing a requested change
+### When implementing a requested change
 
 A good default process is:
 
@@ -488,13 +600,9 @@ A good default process is:
 
 Do not manufacture additional steps simply to appear thorough.
 
----
 
 
-
----
-
-# Communicating results
+### Communicating results
 
 Be concise and specific.
 
@@ -519,7 +627,7 @@ A useful pattern is:
 
 ---
 
-# Things to actively avoid
+### Things to actively avoid
 
 Be especially wary of these common AI-agent failure modes:
 
@@ -541,7 +649,7 @@ When in doubt, choose the smaller change.
 
 ---
 
-# 22. Definition of good work
+### Definition of good work
 
 Good work in these repositories is not measured by how much code was produced.
 
