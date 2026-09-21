@@ -445,6 +445,12 @@ def abs_int_diff(x: tuple[int, ...], y: tuple[int, ...]) -> int:
 
     >>> abs_int_diff((0,1,0),(6,11,-1))
     2
+
+    The count is a magnitude even when the nearest spelling of the difference
+    is a negative interval (C to B double-sharp is a doubly diminished second):
+
+    >>> abs_int_diff((0, 0), (6, 1))
+    1
     """
     x, y = _qualify_octave_as_needed(x, y)
 
@@ -453,7 +459,7 @@ def abs_int_diff(x: tuple[int, ...], y: tuple[int, ...]) -> int:
         y = tonal_int(y)
         return abs(x - y)
 
-    return tonal_int(tonal_abs_diff(x, y))
+    return abs(tonal_int(tonal_abs_diff(x, y)))
 
 
 def tonal_nearest_instance(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:

@@ -5,18 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `abs_int_diff` returns a negative count (2026-09-21)
-
-`abs_int_diff((0, 0), (6, 1))` (C and B double-sharp) is `-1`. The nearest
-difference between them is a doubly diminished second, an interval of minus
-one half-step, and `abs_int_diff` returns `tonal_int` of that interval
-rather than its magnitude. `abs_interval((6, 1, -1))` has the same shape:
-it returns `(1, 11, 0)`, whose `tonal_int` is `-1`. Pinned by
-`test_abs_int_diff_is_never_negative` in
-`tests/systems/wsmn/tonal/test_tonal_arithmetic.py`. Only pairs whose
-difference is beyond a double alteration are affected; every in-domain pair
-satisfies the "smaller side of the octave" law.
-
 ## `tonal_int` misreads alterations beyond triple (2026-09-21)
 
 `tonal_int` adjusts the chromatic value into a window of three half-steps
@@ -241,3 +229,10 @@ Test-side findings, fixed by the test changes of Steps 1 and 4: the
 `test_chords.py` sweeps all 35 roots (the natural-root restriction was
 stale); alias names are deduplicated by identity with `tests.domains.distinct`
 and every fixture's size is pinned in `tests/test_fixtures.py`.
+
+### `abs_int_diff` returns a negative count (2026-09-21, resolved 2026-09-21)
+
+`abs_int_diff` now returns the magnitude of `tonal_int` of the nearest
+difference, so `abs_int_diff((0, 0), (6, 1))` is 1. `abs_interval` still
+spells that difference as a doubly diminished second `(1, 11, 0)`; only the
+count was wrong. `test_abs_int_diff_is_never_negative` passes.

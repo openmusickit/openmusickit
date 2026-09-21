@@ -253,12 +253,9 @@ def test_negative_tuple(tonal_tuples, tonal_oct_tuples):
 # --- Defects pinned as strict xfails; each is an entry in _plans/revisit.md ---
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: abs_int_diff returns a negative count when the nearest "
-    "difference is a doubly diminished second-class interval, e.g. C and B double-sharp",
-)
 def test_abs_int_diff_is_never_negative(tonal_tuples):
+    """The count of half-steps is a magnitude, even where the nearest spelling
+    of the difference is a negative interval (C to B double-sharp)."""
     for x, y in _pairs(tonal_tuples):
         assert ta.abs_int_diff(x, y) >= 0, (x, y, ta.abs_int_diff(x, y))
 
