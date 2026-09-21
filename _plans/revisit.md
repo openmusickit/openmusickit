@@ -80,6 +80,23 @@ Three, each pinned in `tests/values/time/test_clock_duration.py`:
 - `scale` accepts zero and negative scalars; `Measurable.scale` says to raise
   `ScalingError`. (`test_scaling_by_a_non_positive_scalar_raises_scaling_error`)
 
+## `Chord.inversion` accepts a bass the chord does not contain (2026-09-21)
+
+`maj.inversion(Db)` and `C(maj) / Db` succeed, setting a bass that is not
+one of the chord's tones; the mistake surfaces later as a bare `ValueError`
+from `list.index` inside `arpeggiate`. `_resolve_inversion` could check
+membership when given a TonalVector. Pinned by
+`test_inversion_onto_a_tone_not_in_the_chord_is_rejected` in
+`tests/systems/wsmn/tonal/test_chords.py` (Part 5, item 7 of the testing plan).
+
+## `IntervalQuality.augment` past the table raises a bare `KeyError` (2026-09-21)
+
+`QUALITIES[4.5].augment(1)` indexes `QUALITIES` with 5.5 and lets the
+`KeyError` out; `TonalVector.from_string` catches it and reports the same
+overflow as `ValueError`. The class could do the same. Pinned by
+`test_walking_off_the_table_is_a_value_error` in
+`tests/systems/wsmn/tonal/test_interval_quality.py` (Part 5, item 6).
+
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)

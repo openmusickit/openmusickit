@@ -429,3 +429,191 @@ def test_invalid_strings_raise(s):
 def test_invalid_interval_quality_number_combinations_raise(s):
     with pytest.raises(ValueError):
         TonalVector.from_string(s)
+
+
+# ===========================================================================
+# Generated coverage tables, built from the grammar's own vocabulary
+# (`constants.DIATONES`, `ACCIDENTALS`, the solfege tables, `ORDINALS`) and
+# checked against expectations computed independently of the parser.
+# ===========================================================================
+
+from openmusickit.systems.wsmn.tonal.constants import (  # noqa: E402
+    ACCIDENTALS,
+    DIATONES,
+    EURO_SF,
+    QualityType,
+)
+from openmusickit.utils.number_names import ORDINALS  # noqa: E402
+
+MID_C = 4
+
+
+def _pitch_table() -> list[tuple[str, TonalVector]]:
+    """Every letter, in both cases, with every accidental in each of its
+    spellings (ASCII, Unicode, spelled out with and without the space),
+    joined directly, by a space, or by a hyphen, with and without an octave."""
+    table = []
+    for diatone in DIATONES:
+        for letter in (diatone.letter, diatone.letter.upper()):
+            for offset, accidental in ACCIDENTALS.items():
+                spellings = {
+                    accidental.ascii,
+                    accidental.unicode,
+                    accidental.name,
+                    accidental.name.replace(" ", ""),
+                }
+                c = (diatone.chromatic + offset) % 12
+                for spelling in spellings:
+                    for separator in ("", " ", "-"):
+                        if spelling == "" and separator == "-":
+                            continue
+                        for octave in (None, 4, 0, -1, 9):
+                            text = f"{letter}{separator}{spelling}"
+                            if octave is None:
+                                table.append((text, TonalVector((diatone.degree, c))))
+                            else:
+                                table.append(
+                                    (
+                                        f"{text}{octave}",
+                                        TonalVector((diatone.degree, c, octave - MID_C)),
+                                    )
+                                )
+    return table
+
+
+def test_every_letter_accidental_and_octave_spelling_parses():
+    table = _pitch_table()
+    assert len(table) > 3000
+    for text, expected in table:
+        assert TonalVector.from_string(text) == expected, text
+
+
+def test_every_euro_fixed_solfege_syllable_parses_with_every_accidental():
+    """One syllable per letter (plus the `so`/`ti` alternates), any case,
+    followed by any accidental spelling, joined directly or by a hyphen."""
+    names = {syllable: d for d, syllable in EURO_SF.items()}
+    names.update({"so": 4, "ti": 6})
+    for syllable, d in names.items():
+        for form in (syllable, syllable.capitalize(), syllable.upper()):
+            for offset, accidental in ACCIDENTALS.items():
+                c = (DIATONES[d].chromatic + offset) % 12
+                for spelling in {
+                    accidental.ascii,
+                    accidental.unicode,
+                    accidental.name.replace(" ", ""),
+                }:
+                    for separator in ("", "-"):
+                        if spelling == "" and separator == "-":
+                            continue
+                        text = f"{form}{separator}{spelling}"
+                        assert TonalVector.from_string(text) == TonalVector((d, c)), text
+
+
+def test_every_moveable_do_syllable_parses_to_its_own_alteration():
+    """Each chromatic syllable in the moveable-do table carries its own
+    half-step offset from the natural degree, in any case."""
+    for diatone in DIATONES:
+        for offset, syllable in diatone.solfege.items():
+            expected = TonalVector((diatone.degree, (diatone.chromatic + offset) % 12))
+            for form in (syllable, syllable.capitalize(), syllable.upper()):
+                parsed = TonalVector.from_string(form, solfege_style=SolfegeStyle.OMK_MOVEABLE)
+                assert parsed == expected, form
+
+
+# --- intervals: every quality with every degree it can and cannot take ---
+
+QUALITY_WORDS = {
+    "perfect": ["P", "p", "per", "PER", "perfect", "Perfect"],
+    "major": ["M", "maj", "MAJ", "major", "Major"],
+    "minor": ["m", "min", "MIN", "minor", "Minor"],
+    "augmented": ["aug", "Aug", "AUG", "augmented"],
+    "diminished": ["dim", "Dim", "DIM", "diminished"],
+}
+MULTIPLIER_WORDS = {
+    2: ["dbl", "double", "Dbl"],
+    3: ["trp", "trpl", "triple"],
+    4: ["qua", "quad", "quadruple"],
+}
+NUMBER_WORDS = {diatone.degree + 1: diatone.interval_name for diatone in DIATONES}
+
+
+def _interval_table() -> list[tuple[str, TonalVector | None]]:
+    """Every (multiplier, quality, number) combination the grammar can spell,
+    for degrees 1 to 13, with the number as digits, an ordinal, or a word.
+    The expected vector is computed from the degree's family: perfect-type
+    degrees (unison, fourth, fifth) take perfect, augmented and diminished;
+    the others take major, minor, augmented and diminished; a diminution of a
+    major/minor degree is one half-step further than minor. `None` marks a
+    spelling the grammar must reject."""
+    table = []
+    for number in range(1, 14):
+        d, octave = (number - 1) % 7, (number - 1) // 7
+        diatone = DIATONES[d]
+        perfect_type = diatone.quality_type is QualityType.P
+        number_forms = [str(number), ORDINALS[number]]
+        if number in NUMBER_WORDS:
+            number_forms += [NUMBER_WORDS[number], NUMBER_WORDS[number].capitalize()]
+        for kind, words in QUALITY_WORDS.items():
+            for times, multipliers in [(1, [""]), *MULTIPLIER_WORDS.items()]:
+                if kind == "perfect":
+                    valid, modifier = perfect_type and times == 1, 0
+                elif kind == "major":
+                    valid, modifier = not perfect_type and times == 1, 0
+                elif kind == "minor":
+                    valid, modifier = not perfect_type and times == 1, -1
+                elif kind == "augmented":
+                    valid, modifier = True, times
+                else:
+                    valid, modifier = True, -times if perfect_type else -(times + 1)
+                c = (diatone.chromatic + modifier) % 12
+                expected = TonalVector((d, c, octave)) if number > 7 else TonalVector((d, c))
+                for multiplier in multipliers:
+                    for word in words:
+                        for number_form in number_forms:
+                            for separator in ("", " "):
+                                text = f"{multiplier}{separator}{word}{separator}{number_form}"
+                                table.append((text, expected if valid else None))
+    return table
+
+
+def test_every_interval_spelling_parses_or_is_rejected_by_family():
+    table = _interval_table()
+    accepted = [t for t in table if t[1] is not None]
+    rejected = [t for t in table if t[1] is None]
+    assert len(accepted) > 1500 and len(rejected) > 500
+    for text, expected in accepted:
+        assert TonalVector.from_string(text) == expected, text
+    for text, _ in rejected:
+        with pytest.raises(ValueError):
+            TonalVector.from_string(text)
+
+
+def test_octave_suffix_shifts_and_qualifies_the_interval():
+    """`+n`/`-n` after an interval adds n octaves to it and always yields an
+    octave-qualified vector, compound intervals included."""
+    for number in range(1, 14):
+        for word in ("P", "M", "m", "aug", "dim"):
+            try:
+                base = TonalVector.from_string(f"{word}{number}")
+            except ValueError:
+                continue
+            base_octave = base.o if base.has_octave else 0
+            for shift in (1, -1, 2):
+                text = f"{word}{number}{shift:+d}"
+                assert TonalVector.from_string(text) == base.qualify_octave(base_octave + shift), (
+                    text
+                )
+
+
+@pytest.mark.parametrize(
+    "s",
+    [
+        "M0", "P0", "P14", "M15", "m99",  # numbers outside 1..13
+        "P1th", "M2st", "M3th", "P5st", "m7nd", "M9st",  # mismatched ordinals
+        "dblM3", "double perfect 5", "trpl m3", "quad P4", "dbl major 3",  # multiplier on the wrong quality
+        "MM3", "mm3", "Mm3", "P5+", "M3-",  # doubled or dangling
+    ],
+)  # fmt: skip
+def test_grammar_edge_rejections(s):
+    with pytest.raises(ValueError):
+        TonalVector.from_string(s)

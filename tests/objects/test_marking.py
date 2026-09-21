@@ -8,7 +8,7 @@ from openmusickit.objects.omk_object import OmkObject, Spanner
 from openmusickit.systems.wsmn.scoring import symbols
 from openmusickit.systems.wsmn.scoring.symbols import crescendo, fermata, slur, staccato, tie
 from openmusickit.systems.wsmn.tonal.symbols import C, D
-from openmusickit.values.scoring.mark import AttachmentMode, Mark
+from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
 
 
 def test_marking_and_mark_spanner_are_marked_omk_objects():
@@ -19,18 +19,50 @@ def test_marking_and_mark_spanner_are_marked_omk_objects():
     assert marking.mark is staccato and spanner.mark is slur
 
 
-def test_attachment_mode_is_checked():
-    with pytest.raises(ValueError):
-        Marking(mark=slur)
-    with pytest.raises(ValueError):
-        MarkSpanner(mark=staccato)
-    # EITHER and unspecified go both ways
-    assert crescendo.attachment_mode is AttachmentMode.EITHER
-    Marking(mark=crescendo)
-    MarkSpanner(mark=crescendo)
+def test_attachment_mode_is_checked_for_every_mark(mark_symbols):
+    """A Marking takes any mark that can sit on a single event (SINGLE or
+    EITHER), a MarkSpanner any mark that can span (SPAN or EITHER); the
+    wrong placement is a ValueError, for all 201 marks in the table."""
+    for name, mark in mark_symbols.items():
+        assert mark.attachment_mode in (
+            AttachmentMode.SINGLE,
+            AttachmentMode.SPAN,
+            AttachmentMode.EITHER,
+        ), name
+        if mark.attachment_mode is AttachmentMode.SPAN:
+            with pytest.raises(ValueError):
+                Marking(mark=mark)
+        else:
+            assert Marking(mark=mark).mark is mark, name
+        if mark.attachment_mode is AttachmentMode.SINGLE:
+            with pytest.raises(ValueError):
+                MarkSpanner(mark=mark)
+        else:
+            assert MarkSpanner(mark=mark).mark is mark, name
+
+
+def test_a_mark_with_no_attachment_mode_goes_both_ways():
     plain = Mark(name="plain")
-    Marking(mark=plain)
-    MarkSpanner(mark=plain)
+    assert plain.attachment_mode is None
+    assert Marking(mark=plain).mark is plain
+    assert MarkSpanner(mark=plain).mark is plain
+
+
+def test_mark_table_invariants(mark_symbols):
+    """Every mark has a kind and an attachment mode; names are unique;
+    aliases are unique across the table and never collide with a name;
+    `binds` is only set on marks that can span."""
+    names = [mark.name for mark in mark_symbols.values()]
+    assert len(set(names)) == len(names) == 201
+    aliases = [alias for mark in mark_symbols.values() for alias in mark.aliases]
+    assert len(set(aliases)) == len(aliases)
+    assert not set(aliases) & set(names)
+    for name, mark in mark_symbols.items():
+        assert isinstance(mark.kind, MarkType), name
+        assert isinstance(mark.attachment_mode, AttachmentMode), name
+        assert mark.name.strip() == mark.name and mark.name, name
+        if mark.binds:
+            assert mark.attachment_mode in (AttachmentMode.SPAN, AttachmentMode.EITHER), name
 
 
 def test_equality_ignores_id_and_compares_the_mark():

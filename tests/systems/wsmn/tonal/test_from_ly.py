@@ -149,3 +149,85 @@ def test_ly_relative_octave_ignores_accidentals(s, prev, expected):
 def test_invalid_ly_strings_raise(s):
     with pytest.raises(ValueError):
         TonalVector.from_ly(s)
+
+
+# ===========================================================================
+# Generated coverage: every octave-qualified vector as `prev_note` against
+# every Lilypond note name (up to double sharps and flats, contractions
+# included), with the relative-octave rule computed independently.
+# ===========================================================================
+
+from openmusickit.systems.wsmn.tonal.constants import ACCIDENTALS, DIATONES  # noqa: E402
+from tests.domains import ABSTRACT_VECTORS, QUALIFIED_VECTORS  # noqa: E402
+
+
+def _ly_names() -> list[tuple[str, int, int]]:
+    """(name, d, c) for every Lilypond spelling of the 35 pitch classes:
+    the letter plus `is`/`es` suffixes, and the Dutch contractions `as`,
+    `ases`, `es`, `eses` for the flattened a and e."""
+    names = []
+    for diatone in DIATONES:
+        for offset, accidental in ACCIDENTALS.items():
+            if abs(offset) > 2:
+                continue
+            c = (diatone.chromatic + offset) % 12
+            names.append((diatone.letter + accidental.ly, diatone.degree, c))
+            if diatone.letter in "ae" and offset < 0:
+                names.append((diatone.letter + accidental.ly[1:], diatone.degree, c))
+    return names
+
+
+def _letter_position(d: int, octave: int) -> int:
+    return d + 7 * octave
+
+
+def test_relative_octave_puts_every_note_within_a_fourth_of_every_previous_note():
+    """Lilypond's rule, stated independently: of the three octaves around
+    the previous note, exactly one puts the new letter within three letter
+    names of the previous letter, accidentals ignored; `'` and `,` then
+    shift by whole octaves from there."""
+    names = _ly_names()
+    assert len(names) == 35 + 4
+    for prev in QUALIFIED_VECTORS:
+        for name, d, c in names:
+            candidates = [
+                octave
+                for octave in (prev.o - 1, prev.o, prev.o + 1)
+                if abs(_letter_position(d, octave) - _letter_position(prev.d, prev.o)) <= 3
+            ]
+            assert len(candidates) == 1, (prev, name)
+            for marks, shift in (("", 0), ("'", 1), (",", -1), ("''", 2), (",,", -2)):
+                expected = TonalVector((d, c, candidates[0] + shift))
+                assert TonalVector.from_ly(name + marks, prev_note=prev) == expected, (
+                    name + marks,
+                    prev,
+                )
+
+
+def test_absolute_octave_marks_for_every_name():
+    for name, d, c in _ly_names():
+        for marks, octave in (("", 0), ("'", 1), (",", -1), ("'''", 3), (",,,", -3)):
+            assert TonalVector.from_ly(name + marks) == TonalVector((d, c, octave)), name + marks
+            assert TonalVector.from_ly(f"  {name.upper()}{marks} ") == TonalVector((d, c, octave))
+
+
+def test_prev_note_must_be_octave_qualified():
+    for prev in ABSTRACT_VECTORS:
+        with pytest.raises(ValueError):
+            TonalVector.from_ly("c", prev_note=prev)
+
+
+@pytest.mark.parametrize(
+    "s",
+    [
+        "cisisisisis",  # five sharps: beyond the accidental table
+        "ceseseseses",
+        "cises",  # sharps and flats cannot mix
+        "cis'',",  # up and down marks cannot mix
+        "c#", "c♯", "csharp",  # not Lilypond syntax
+        "h", "s", "",
+    ],
+)  # fmt: skip
+def test_ly_grammar_edge_rejections(s):
+    with pytest.raises(ValueError):
+        TonalVector.from_ly(s)

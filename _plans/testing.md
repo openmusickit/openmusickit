@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-3 done 2026-09-21.** Steps 4-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-4 done 2026-09-21.** Steps 5-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -585,6 +585,15 @@ def test_key_transposition_agrees_with_key_of(chromatic_tonics, mode_pattern_sym
 
 Check: `mode_pattern_symbols`, `key_symbols`, `mark_symbols`,
 `interval_qualities` are all used; `test_chords.py` sweeps 35 roots.
+
+Execution notes (2026-09-21): the key law holds for all 9 modes x 35 tonics
+x 35 intervals (9,314 pairs agree, 1,711 raise on both sides). The parser
+tables are generated in loops inside a few tests rather than parametrized
+(several thousand cases each), with expectations computed from the degree
+family and accidental offset, not from the parser. Part 5 items 6 and 7 are
+strict xfails with `revisit.md` entries. `Marking` and `MarkSpanner` also
+accept a mark with no attachment mode, which the table test pins alongside
+the SINGLE/SPAN/EITHER rule.
 
 ### Step 5. Graph test helpers and do/undo tests
 

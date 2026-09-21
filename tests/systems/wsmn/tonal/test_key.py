@@ -35,8 +35,12 @@ from openmusickit.systems.wsmn.tonal.symbols import (
     Phrygian,
     a1,
 )
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
+from openmusickit.values.tone.modal_context import ModalContext
 from openmusickit.values.tone.tone_collection import ToneCollection
+from tests.domains import ABSTRACT_VECTORS
+
+DOWN = TonalDirection.DOWN
 
 # Order in which sharps (and, reversed, flats) accumulate, as C..B indices.
 SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6]  # F C G D A E B
@@ -411,3 +415,87 @@ def test_key_is_frozen():
     key = Key.of(C, Major)
     with pytest.raises(AttributeError):
         key.tonic = D
+
+
+# --------------------------------------------------------------------------
+# Transposition: Key.transform, KeySignature.transpose, Key.from_signature
+# --------------------------------------------------------------------------
+
+
+def test_key_transposition_agrees_with_key_of(chromatic_tonics, mode_pattern_symbols):
+    """Transposing a key by an interval gives the key on the transposed
+    tonic, or both raise because the signature would need more than
+    triple sharps or flats. Transposing back restores the key."""
+    for mode in mode_pattern_symbols.values():
+        for tonic in chromatic_tonics:
+            for i in ABSTRACT_VECTORS:
+                key = Key.of(tonic, mode)
+                try:
+                    expected = Key.of(tonic + i, mode)
+                except ValueError:
+                    with pytest.raises(ValueError):
+                        key.transform(TonalVector.transpose, i)
+                    continue
+                moved = key.transform(TonalVector.transpose, i)
+                assert moved == expected, (key.name, i)
+                assert moved.transform(TonalVector.transpose, i, DOWN) == key, (key.name, i)
+
+
+def test_every_mode_symbol_is_transposable_to_every_tonic(chromatic_tonics, mode_pattern_symbols):
+    """The fixture covers the nine diatonic modes, and each is a key on all 35 tonics."""
+    assert set(mode_pattern_symbols) == set(MODE_FIFTHS_OFFSET)
+    for mode in mode_pattern_symbols.values():
+        for tonic in chromatic_tonics:
+            assert Key.of(tonic, mode).tonic == tonic, (mode.name, tonic)
+
+
+def test_key_signature_transposes_around_the_circle_of_fifths():
+    """Up a fifth adds a sharp (or removes a flat), up a fourth or down a
+    fifth removes one, for every standard signature up to triple alterations;
+    one step past triples is a ValueError."""
+    for n in range(-21, 22):
+        signature = KeySignature.from_alts(n)
+        if n + 1 <= 21:
+            assert signature.transpose(P5).fifths == n + 1, n
+            assert signature.transpose(P5) == KeySignature.from_alts(n + 1), n
+        else:
+            with pytest.raises(ValueError):
+                signature.transpose(P5)
+        if n - 1 >= -21:
+            assert signature.transpose(P5, DOWN).fifths == n - 1, n
+            assert signature.transpose(TonalVector((3, 5))).fifths == n - 1, n  # up a fourth
+        else:
+            with pytest.raises(ValueError):
+                signature.transpose(P5, DOWN)
+    assert KeySignature().transpose(P1) == KeySignature()
+
+
+def test_a_bare_signature_transposes_like_the_key_it_would_belong_to():
+    for n in range(-21, 21):
+        bare = Key.from_signature(KeySignature.from_alts(n))
+        moved = bare.transform(TonalVector.transpose, P5)
+        assert moved == Key.from_signature(KeySignature.from_alts(n + 1)), n
+        assert moved.tonic is None and len(moved.tones) == 0, n
+        assert moved.transform(TonalVector.transpose, P5, DOWN) == bare, n
+
+
+# --------------------------------------------------------------------------
+# ModalContext: Key satisfies the abstraction; NoKey is fixed under transform
+# --------------------------------------------------------------------------
+
+
+def test_key_is_a_modal_context(key_symbols):
+    assert issubclass(Key, ModalContext)
+    assert isinstance(Key.of(C, Major), ModalContext)
+    assert ModalContext.__abstractmethods__ == {"tonic", "tones", "name", "transform"}
+    with pytest.raises(TypeError):
+        ModalContext()
+    for name, key in key_symbols.items():
+        assert isinstance(key, ModalContext), name
+
+
+def test_no_key_transform_is_the_identity_for_every_interval(key_symbols):
+    for i in ABSTRACT_VECTORS:
+        assert NoKey.transform(TonalVector.transpose, i) is NoKey, i
+        assert NoKey.transform(TonalVector.transpose, i, DOWN) is NoKey, i
+    assert key_symbols == {"NoKey": NoKey}

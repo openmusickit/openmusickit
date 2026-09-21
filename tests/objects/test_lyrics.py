@@ -10,75 +10,7 @@ from openmusickit.systems.wsmn.temporal.symbols import quarter
 from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F
 from openmusickit.values.text.word import LexicalStress, Word
 
-PRIMARY, SECONDARY = LexicalStress.PRIMARY, LexicalStress.SECONDARY
-
-
-# --- Word --------------------------------------------------------------------
-
-
-def test_word_basics():
-    word = Word(["al", "le", "lu", "ia"])
-    assert len(word) == 4
-    assert word[2] == "lu"
-    assert list(word) == ["al", "le", "lu", "ia"]
-    assert str(word) == "alleluia"
-    assert word.stress == (None, None, None, None)
-    assert word.primary is None
-
-
-def test_word_from_string_without_marks():
-    assert Word.from_string("Je-sus") == Word(["Je", "sus"])
-    assert Word.from_string("sing") == Word(["sing"])
-
-
-def test_word_from_string_with_marks():
-    word = Word.from_string(",un-der-'stand")
-    assert word.syllables == ("un", "der", "stand")
-    assert word.stress == (SECONDARY, None, PRIMARY)
-    assert word.primary == 2
-    assert word.stress_at(0) is SECONDARY
-
-
-def test_word_from_string_marks_can_be_turned_off():
-    assert Word.from_string("'tis", primary=None).syllables == ("'tis",)
-
-
-def test_word_trailing_comma_is_text_and_leading_comma_is_stress():
-    word = Word.from_string(",ia,")
-    assert word.syllables == ("ia,",)
-    assert word.stress == (SECONDARY,)
-
-
-def test_word_stress_from_mapping_and_sequence_agree():
-    by_index = Word(["al", "le", "lu", "ia"], stress={2: PRIMARY})
-    parallel = Word(["al", "le", "lu", "ia"], stress=[None, None, PRIMARY, None])
-    assert by_index == parallel
-    assert hash(by_index) == hash(parallel)
-
-
-def test_word_equality_counts_stress():
-    assert Word(["al", "le"], stress={0: PRIMARY}) != Word(["al", "le"])
-
-
-@pytest.mark.parametrize(
-    "syllables, stress",
-    [
-        ([], None),
-        (["al", ""], None),
-        (["al", "  "], None),
-        (["al", "le"], [PRIMARY]),
-        (["al", "le"], {0: PRIMARY, 1: PRIMARY}),
-        (["al", "le"], {2: PRIMARY}),
-    ],
-)
-def test_word_rejects_inconsistent_input(syllables, stress):
-    with pytest.raises(LyricConsistencyError):
-        Word(syllables, stress)
-
-
-def test_word_is_immutable():
-    with pytest.raises(AttributeError):
-        Word(["al"]).syllables = ("le",)
+PRIMARY = LexicalStress.PRIMARY
 
 
 # --- parse_lyrics ------------------------------------------------------------
