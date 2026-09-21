@@ -54,7 +54,14 @@ fewer than two members, so `quarter + TiedDuration([half, eighth])` raises
 associative over the symbol table. Pinned by
 `test_a_symbol_plus_a_tie_is_the_tie_plus_the_symbol` in
 `tests/systems/wsmn/temporal/test_tied_duration.py` and
-`test_addition_is_associative` in `test_duration_algebra.py`.
+`test_addition_is_associative` in `test_duration_algebra.py`. Two more
+faces of it, found by the property tests (2026-09-21): a single symbol plus
+a tie of any lengths (`from_length(1/4) + from_length(5/8)`), pinned by
+`test_any_two_lengths_add_in_either_order`, and `TiedDuration.scale` by a
+scalar that turns a member into a tie (`TiedDuration([half,
+dotted_eighth]).scale(3)`), which re-adds the scaled members and hits the
+same path; pinned by `test_scaling_a_tie_by_any_positive_rational_is_exact`
+in `test_duration_properties.py`.
 
 ## `MetricalDuration + ClockDuration` makes a cross-system tie (2026-09-21)
 
@@ -124,6 +131,18 @@ it removed. Pinned by `test_remove_edge_returns_the_removed_edge` in
 `@dataclass`es with the default `repr=True`, so `repr(Branch())` is the
 generated form with every field. Cosmetic; `@dataclass(repr=False)` on the
 two subclasses would restore the intended form.
+
+## NEXT cycles are valid, and walkers do not stop (2026-09-21)
+
+Testing plan, Part 5 item 1, with the developer's note: cyclic music (a
+gamelan cycle) is a NEXT cycle, `add_line([a, b, c]); add_next(c, a)`
+passes both guards, and that is right. But `walk_line` then goes round
+forever, `walk_span` can loop through a head branched from its own tree,
+and `transform_tones` and `materialize` walk with them. Walkers need a way
+to stop: yield each event once, or stop at the start event, or take a
+bound. Pinned by `test_walk_line_terminates_on_a_cyclic_line` in
+`tests/graph/test_graph_properties.py`; the state machine in
+`test_graph_state_machine.py` never builds a cycle until this is settled.
 
 ## Resolved
 
