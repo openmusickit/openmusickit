@@ -5,24 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `MetricalDuration + TiedDuration` raises (2026-09-21)
-
-`MetricalDuration.__add__` handles a tie on the right with
-`TiedDuration([self]) + other`, and the `TiedDuration` constructor rejects
-fewer than two members, so `quarter + TiedDuration([half, eighth])` raises
-`ValueError` while the reverse order works. Addition is therefore not
-associative over the symbol table. Pinned by
-`test_a_symbol_plus_a_tie_is_the_tie_plus_the_symbol` in
-`tests/systems/wsmn/temporal/test_tied_duration.py` and
-`test_addition_is_associative` in `test_duration_algebra.py`. Two more
-faces of it, found by the property tests (2026-09-21): a single symbol plus
-a tie of any lengths (`from_length(1/4) + from_length(5/8)`), pinned by
-`test_any_two_lengths_add_in_either_order`, and `TiedDuration.scale` by a
-scalar that turns a member into a tie (`TiedDuration([half,
-dotted_eighth]).scale(3)`), which re-adds the scaled members and hits the
-same path; pinned by `test_scaling_a_tie_by_any_positive_rational_is_exact`
-in `test_duration_properties.py`.
-
 ## `MetricalDuration + ClockDuration` makes a cross-system tie (2026-09-21)
 
 `MetricalDuration.__add__` accepts any `Duration`; `_merge` declines a
@@ -233,3 +215,13 @@ Yes, the rule is the diatonic position: `tonal_higher_of` and
 for abstract tuples, via `_diatonic_position`), so C4 is the higher of it
 and B-sharp 3. Pinned by
 `test_higher_of_enharmonic_tie_across_an_octave_goes_to_the_higher_letter`.
+
+### `MetricalDuration + TiedDuration` raises (2026-09-21, resolved 2026-09-21)
+
+`MetricalDuration.__add__` now folds a tie on the right in member by
+member, the mirror of what `TiedDuration.__add__` does with a symbol on
+the right, so `quarter + (half + eighth)` is a double-dotted half and
+addition is associative over the symbol table. `TiedDuration.scale` and
+`from_length(x) + from_length(y)` for any two lengths follow. The four
+tests named above pass, and `test_lengths_add_and_subtract` no longer
+excludes symbol-and-tie pairs.

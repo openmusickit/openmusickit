@@ -79,12 +79,8 @@ def test_sum_of_the_whole_table(duration_symbols):
     assert MetricalDuration.from_length(total.rational_length) == total
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: MetricalDuration + TiedDuration raises ValueError "
-    "(it builds a one-member TiedDuration), so addition is not associative",
-)
 def test_addition_is_associative(duration_symbols):
+    """Grouping does not matter, whatever ties the partial sums take."""
     for (na, a), (nb, b), (nc, c) in itertools.product(
         distinct(duration_symbols).items(), repeat=3
     ):

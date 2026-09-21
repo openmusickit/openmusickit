@@ -140,11 +140,7 @@ def test_comparison_is_by_length():
     assert half_tied_to_eighth != dotted_half
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: MetricalDuration + TiedDuration raises ValueError "
-    "(it builds a one-member TiedDuration)",
-)
 def test_a_symbol_plus_a_tie_is_the_tie_plus_the_symbol():
+    """A tie adds on either side of a symbol, to the same length."""
     assert quarter + half_tied_to_eighth == half_tied_to_eighth + quarter
     assert eighth + half_tied_to_eighth == dotted_half

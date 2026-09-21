@@ -8,7 +8,7 @@ property; `uv run pytest -m slow` adds the large-denominator run.
 from fractions import Fraction
 
 import pytest
-from hypothesis import assume, example, given, settings
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from openmusickit.errors import ScalingError
@@ -53,11 +53,9 @@ def test_a_symbol_round_trips_through_its_length(d):
 @given(positive_fractions(), positive_fractions())
 def test_lengths_add_and_subtract(x, y):
     """Sums and differences of any two lengths are exact, addition commutes,
-    subtraction undoes it, and a length cancels itself. Pairs of a single
-    symbol and a tie are left out: a symbol on the left of a tie raises
-    today (the xfail at the end of this module)."""
+    subtraction undoes it, and a length cancels itself, whether the operands
+    are single symbols or ties."""
     a, b = MetricalDuration.from_length(x), MetricalDuration.from_length(y)
-    assume(type(a) is type(b))
     total = a + b
     assert total.rational_length == x + y
     assert total == b + a
@@ -132,24 +130,15 @@ def test_scaling_a_time_signature_by_any_positive_rational_is_exact(signature, k
     assert scaled.scale(1 / k) == signature
 
 
-# --- a defect pinned as a strict xfail; see _plans/revisit.md ---------------------
+# --- ties under scaling and addition ----------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: TiedDuration.scale re-adds the scaled members, and a member that "
-    "scales to a tie hits MetricalDuration + TiedDuration, which raises",
-)
 def test_scaling_a_tie_by_any_positive_rational_is_exact():
+    """Scaling a tie scales its length, even when a member itself scales to a tie."""
     tied = TiedDuration([half, dotted_eighth])  # 11/16, a genuine tie
     assert tied.scale(3).rational_length == tied.rational_length * 3
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: MetricalDuration + TiedDuration raises ValueError "
-    "(it builds a one-member TiedDuration)",
-)
 @example(Fraction(1, 4), Fraction(5, 8))
 @given(positive_fractions(), positive_fractions())
 def test_any_two_lengths_add_in_either_order(x, y):

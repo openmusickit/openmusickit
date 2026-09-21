@@ -453,13 +453,22 @@ class MetricalDuration(Duration, Measurable):
         2
         >>> half + (-eighth), quarter + (-quarter)
         (MetricalDuration(1, 4, dots=1), ZeroDuration())
+
+        A tie on the right is folded in member by member, so the sum is the
+        same whichever side the tie is on:
+
+        >>> quarter + (half + eighth), (half + eighth) + quarter
+        (MetricalDuration(1, 2, dots=2), MetricalDuration(1, 2, dots=2))
         """
         if isinstance(other, ZeroDuration):
             return self
         if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
             return _from_signed_length(self.rational_length + other.rational_length)
         if isinstance(other, TiedDuration):
-            return TiedDuration([self]) + other
+            result: Duration = self
+            for member in other:
+                result = result + member
+            return result
         if isinstance(other, Duration):
             merged = _merge(self, other)
             return merged if merged is not None else TiedDuration([self, other])
