@@ -269,12 +269,9 @@ def test_tonal_int_is_additive_beyond_the_domain(tonal_oct_tuples):
             assert ta.tonal_int(d) == ta.tonal_int(x) - ta.tonal_int(y), (x, y, d)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: tonal_lower_of returns an un-normalized tuple, (6, 12) or (0, -1, 1), "
-    "on an enharmonic tie",
-)
 def test_lower_of_returns_a_normalized_tuple_on_a_tie(tonal_tuples, tonal_oct_tuples):
+    """On an enharmonic tie `lower_of` hands back one of its arguments as given,
+    never a re-spelling of it."""
     for domain in (tonal_tuples, tonal_oct_tuples):
         for x, y in _pairs(domain):
             if _is_tie(x, y):

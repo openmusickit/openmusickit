@@ -5,13 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `tonal_lower_of` returns an un-normalized tuple on a tie (2026-09-21)
-
-`tonal_lower_of` unmodulos both arguments and, when they are the same size,
-returns one of them without re-normalizing: `tonal_lower_of((6, 0), (6, 0))`
-is `(6, 12)` and `tonal_lower_of((6, 11, 0), (0, 11, 1))` is `(0, -1, 1)`.
-Pinned by `test_lower_of_returns_a_normalized_tuple_on_a_tie`.
-
 ## `higher_of`/`lower_of` tie-break ignores the octave (2026-09-21)
 
 On an enharmonic tie the docstring says the larger diatonic value wins
@@ -235,3 +228,9 @@ half-steps of alteration either way (`c` is chromatic mod 12, so C
 octuple-sharp and C quadruple-flat are the same tuple); anything more
 extreme needs a wider representation, not a wider window. Pinned by
 `test_tonal_int_is_additive_beyond_the_domain`.
+
+### `tonal_lower_of` returns an un-normalized tuple on a tie (2026-09-21, resolved 2026-09-21)
+
+`tonal_lower_of` no longer unmodulos its arguments (`tonal_int` already
+reads the wrapped chromatic value), so it returns one of them as given on
+every path. Pinned by `test_lower_of_returns_a_normalized_tuple_on_a_tie`.

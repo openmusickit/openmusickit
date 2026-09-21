@@ -279,19 +279,21 @@ def tonal_lower_of(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
 
     >>> tonal_lower_of((0,1,0),(0,10,0))
     (0, 10, 0)
-    """
-    x = _tonal_unmodulo(x)
-    y = _tonal_unmodulo(y)
 
+    The result is always one of the arguments, as given:
+
+    >>> tonal_lower_of((6, 0), (6, 0))
+    (6, 0)
+    """
     if tonal_int(x) == tonal_int(y):
         if x[0] < y[0]:
             return x
         else:
             return y
     if tonal_int(x) < tonal_int(y):
-        return _tonal_modulo(x)
+        return x
     else:
-        return _tonal_modulo(y)
+        return y
 
 
 def tonal_larger_of(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
