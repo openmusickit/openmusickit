@@ -28,20 +28,11 @@ from openmusickit.systems.wsmn.tonal.key import Key, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.scoring.mark import Mark
 from openmusickit.values.time.duration import GraceDuration
-from tests.domains import TONAL_OCT_TUPLES, TONAL_TUPLES
+from tests.domains import TONAL_OCT_TUPLES, TONAL_TUPLES, symbols_of
 
 settings.register_profile("default", max_examples=100, deadline=None)
 settings.register_profile("thorough", max_examples=2000, deadline=None)
 settings.load_profile("default")
-
-
-def _symbols_of(module, kind) -> dict:
-    """Every public module attribute of exactly type `kind`, by name."""
-    return {
-        name: value
-        for name, value in vars(module).items()
-        if not name.startswith("_") and type(value) is kind
-    }
 
 
 # --- tonal arithmetic tuples -------------------------------------------------
@@ -69,25 +60,25 @@ def pitch_symbols():
     """All the TonalVectors defined in `tonal.symbols`, by name. Pitch names
     (`C`, `Eb`, `Fx`, ...) and interval names (`P5`, `m3`, ...) are aliases of
     the same objects, so both spellings are present."""
-    return _symbols_of(tonal_symbols, TonalVector)
+    return symbols_of(tonal_symbols, TonalVector)
 
 
 @pytest.fixture
 def chord_type_symbols():
     """All the ChordType symbols (`maj`, `min7`, `dom7_flat9`, ...) in `tonal.symbols`, by name."""
-    return _symbols_of(tonal_symbols, ChordType)
+    return symbols_of(tonal_symbols, ChordType)
 
 
 @pytest.fixture
 def mode_pattern_symbols():
     """All the ModePattern symbols (`Major`, `Dorian`, ...) in `tonal.symbols`, by name."""
-    return _symbols_of(tonal_symbols, ModePattern)
+    return symbols_of(tonal_symbols, ModePattern)
 
 
 @pytest.fixture
 def key_symbols():
     """All the Key symbols (`NoKey`, ...) in `tonal.symbols`, by name."""
-    return _symbols_of(tonal_symbols, Key)
+    return symbols_of(tonal_symbols, Key)
 
 
 @pytest.fixture
@@ -104,14 +95,14 @@ def duration_symbols():
     """All the MetricalDuration symbols (`quarter`, `dotted_half`, `eighth_in_triplet`, ...)
     in `temporal.symbols`, by name. GraceDurations are a different type and
     live in `grace_duration_symbols`."""
-    return _symbols_of(temporal_symbols, MetricalDuration)
+    return symbols_of(temporal_symbols, MetricalDuration)
 
 
 @pytest.fixture
 def grace_duration_symbols():
     """All the GraceDuration symbols (`grace_eighth`, `appoggiatura_quarter`, ...)
     in `temporal.symbols`, by name."""
-    return _symbols_of(temporal_symbols, GraceDuration)
+    return symbols_of(temporal_symbols, GraceDuration)
 
 
 @pytest.fixture
@@ -146,7 +137,7 @@ def tuplet_ratio_symbols(tuplet_ratio_factories):
 def time_signature_symbols():
     """All the TimeSignature symbols (`four_four`, `six_eight`, `seven_eight_2_2_3`, ...)
     in `temporal.symbols`, by name."""
-    return _symbols_of(temporal_symbols, TimeSignature)
+    return symbols_of(temporal_symbols, TimeSignature)
 
 
 # --- scoring symbols ---------------------------------------------------------
@@ -155,4 +146,4 @@ def time_signature_symbols():
 @pytest.fixture
 def mark_symbols():
     """All the Mark symbols (`staccato`, `slur`, `piano`, ...) in `scoring.symbols`, by name."""
-    return _symbols_of(scoring_symbols, Mark)
+    return symbols_of(scoring_symbols, Mark)

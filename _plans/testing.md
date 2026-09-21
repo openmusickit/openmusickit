@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-6 done 2026-09-21.** Steps 7-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-7 done 2026-09-21.** Steps 8-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -703,6 +703,15 @@ with random case and whitespace; `interval_spellings()` likewise;
 Check: `uv run python -c "from tests.strategies import *"` imports; each
 strategy has a one-line docstring and a `.example()` smoke test in
 `tests/test_strategies.py`.
+
+Execution notes (2026-09-21): the smoke tests use `@given` with ten
+examples rather than `.example()`, which Hypothesis warns against outside
+an interactive session. `pitch_spellings` and `interval_spellings` yield
+`(text, expected)` pairs, since a spelling is only useful with what it must
+parse to; `lyric_texts` yields valid texts (one primary mark per word), and
+raw `st.text()` covers invalid input in Step 8. `symbols_of` moved from
+`conftest.py` to `tests/domains.py` so the strategies can sample the
+duration table without importing conftest.
 
 ### Step 8. Property tests for durations, parsers, and the graph
 

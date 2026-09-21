@@ -11,6 +11,7 @@ is checked once per value rather than once per spelling.
 """
 
 from collections.abc import Mapping
+from types import ModuleType
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
@@ -51,6 +52,21 @@ def in_domain(t: tuple[int, ...]) -> bool:
     (True, False)
     """
     return (t[0], t[1]) in TONAL_CLASSES
+
+
+def symbols_of[V](module: ModuleType, kind: type[V]) -> dict[str, V]:
+    """Every public attribute of `module` whose type is exactly `kind`, by name.
+
+    >>> from openmusickit.systems.wsmn.tonal import symbols
+    >>> from openmusickit.systems.wsmn.tonal.key import Key
+    >>> list(symbols_of(symbols, Key))
+    ['NoKey']
+    """
+    return {
+        name: value
+        for name, value in vars(module).items()
+        if not name.startswith("_") and type(value) is kind
+    }
 
 
 def distinct[V](symbols: Mapping[str, V]) -> dict[str, V]:
