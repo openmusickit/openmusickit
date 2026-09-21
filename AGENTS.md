@@ -21,6 +21,7 @@ interpreter has the right dependencies. Always go through `uv`, for example:
 * `uv run pytest` instead of `pytest`
 * `uv add <package>` instead of `pip install <package>` (and only after checking with the developer, per the Dependencies section below)
 * `uv sync` to install/update the environment from `pyproject.toml` / `uv.lock`
+* `uv run pytest -q -o addopts="" tests --cov=openmusickit --cov-report=term-missing` to see line coverage from `tests/` alone (doctests excluded); the number is a diagnostic, not a target
 
 If a command fails because a dependency "isn't installed," check whether you bypassed `uv` before
 concluding there is a real problem.

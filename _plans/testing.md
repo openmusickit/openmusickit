@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-8 done 2026-09-21.** Steps 9-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-9 done 2026-09-21.** Steps 10-12 unexecuted; update this line as each lands. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -778,6 +778,12 @@ Add `pytest-cov` and document
 tests` as the way to see what only doctests cover. No coverage threshold in
 CI; the number is a diagnostic. Record the before/after in the plan's
 Status line.
+
+Execution notes (2026-09-21): what `tests/` alone still misses in
+`graph.py` is the six serialization stubs, the `walk_line` "end not
+reached" error, the stint-at-a-branched-head guard in `add_branch`, and
+the unchecked-pin branch of `check_alignment`; `context_event.py`'s
+`transform_tones` and `chord_event.py`'s are covered only by doctests.
 
 ### Step 10. Docstring examples: `values/`
 
