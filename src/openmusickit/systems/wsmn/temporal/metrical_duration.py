@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from fractions import Fraction as F
 from numbers import Rational
 
-from openmusickit.errors import ScalingError
+from openmusickit.errors import ScalingError, TemporalCompatibilityError
 from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
 from openmusickit.values.time.duration import (
     Duration,
@@ -459,9 +459,22 @@ class MetricalDuration(Duration, Measurable):
 
         >>> quarter + (half + eighth), (half + eighth) + quarter
         (MetricalDuration(1, 2, dots=2), MetricalDuration(1, 2, dots=2))
+
+        Raises
+        ------
+        TemporalCompatibilityError
+            if ``other`` is a Duration of another temporal system (clock time).
+
+        >>> from openmusickit.values.time.clock_time import ClockDuration
+        >>> quarter + ClockDuration(5)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.TemporalCompatibilityError: Cannot add a ClockDuration to a MetricalDuration: Clock time is not Western Standard Music Notation.
         """
         if isinstance(other, ZeroDuration):
             return self
+        if isinstance(other, Duration):
+            _require_compatible(self, other)
         if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
             return _from_signed_length(self.rational_length + other.rational_length)
         if isinstance(other, TiedDuration):
@@ -585,9 +598,14 @@ class TiedDuration(Duration, Measurable):
         TiedDuration([MetricalDuration(1, 2), MetricalDuration(1, 8, dots=1)])
         >>> TiedDuration([half, eighth]) + quarter
         MetricalDuration(1, 2, dots=2)
+
+        Raises ``TemporalCompatibilityError`` for a Duration of another system,
+        as ``MetricalDuration.__add__`` does.
         """
         if isinstance(other, ZeroDuration):
             return self
+        if isinstance(other, Duration):
+            _require_compatible(self, other)
         if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
             return _from_signed_length(self.rational_length + other.rational_length)
         if isinstance(other, TiedDuration):
@@ -630,6 +648,22 @@ class TiedDuration(Duration, Measurable):
 
 def _is_negative(d: Duration) -> bool:
     return d.rational_length < 0
+
+
+def _require_compatible(a: Duration, b: Duration) -> None:
+    """Raises TemporalCompatibilityError unless a and b may be added.
+
+    >>> from openmusickit.values.time.clock_time import ClockDuration
+    >>> _require_compatible(MetricalDuration(1, 4), ClockDuration(5))
+    Traceback (most recent call last):
+    ...
+    openmusickit.errors.TemporalCompatibilityError: Cannot add a ClockDuration to a MetricalDuration: Clock time is not Western Standard Music Notation.
+    """
+    if not a.temporal_system.compatible_with(b.temporal_system):
+        raise TemporalCompatibilityError(
+            f"Cannot add a {type(b).__name__} to a {type(a).__name__}: "
+            f"{b.temporal_system.name} is not {a.temporal_system.name}."
+        )
 
 
 def _from_signed_length(length: F, *, ratio: TemporalRatio | None = None) -> Duration:

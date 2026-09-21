@@ -11,7 +11,7 @@ from fractions import Fraction as F
 import pytest
 
 from openmusickit.errors import ScalingError, TemporalCompatibilityError
-from openmusickit.systems.wsmn.temporal.symbols import quarter, triplet
+from openmusickit.systems.wsmn.temporal.symbols import eighth, half, quarter, triplet
 from openmusickit.values.time.clock_time import CLOCK_TIME, ONE_MINUTE, ClockDuration, Tempo
 from openmusickit.values.time.duration import ZeroDuration
 from tests.domains import distinct
@@ -137,14 +137,15 @@ def test_from_duration_needs_a_clock_time_ratio(duration_symbols):
 # --- Defects pinned as strict xfails; each is an entry in _plans/revisit.md ---
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: MetricalDuration + ClockDuration builds a cross-system TiedDuration "
-    "instead of raising",
-)
 def test_metrical_time_plus_clock_time_is_refused():
-    with pytest.raises((TypeError, TemporalCompatibilityError)):
+    """Metrical time and clock time never add; the metrical side names the
+    incompatibility, the clock side declines the operation."""
+    with pytest.raises(TemporalCompatibilityError):
         quarter + ClockDuration(250_000)
+    with pytest.raises(TemporalCompatibilityError):
+        (half + eighth) + ClockDuration(250_000)
+    with pytest.raises(TypeError):
+        ClockDuration(250_000) + quarter
 
 
 @pytest.mark.xfail(

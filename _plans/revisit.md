@@ -5,16 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `MetricalDuration + ClockDuration` makes a cross-system tie (2026-09-21)
-
-`MetricalDuration.__add__` accepts any `Duration`; `_merge` declines a
-`ClockDuration`, so `quarter + ClockDuration(5)` is
-`TiedDuration([quarter, ClockDuration(5)])`, whose `rational_length` adds a
-quarter of a whole note to five microseconds. The reverse order raises
-`TypeError`. `TemporalCompatibilityError` exists for this. Pinned by
-`test_metrical_time_plus_clock_time_is_refused` in
-`tests/values/time/test_clock_duration.py`.
-
 ## `ClockDuration` small contract gaps (2026-09-21)
 
 Three, each pinned in `tests/values/time/test_clock_duration.py`:
@@ -225,3 +215,13 @@ addition is associative over the symbol table. `TiedDuration.scale` and
 `from_length(x) + from_length(y)` for any two lengths follow. The four
 tests named above pass, and `test_lengths_add_and_subtract` no longer
 excludes symbol-and-tie pairs.
+
+### `MetricalDuration + ClockDuration` makes a cross-system tie (2026-09-21, resolved 2026-09-21)
+
+`MetricalDuration.__add__` and `TiedDuration.__add__` now check
+`temporal_system.compatible_with` before anything else and raise
+`TemporalCompatibilityError` for a Duration of another system, so
+`quarter + ClockDuration(5)` names the incompatibility. The reverse order
+still declines with `TypeError` (`ClockDuration.__add__` returns
+`NotImplemented`), which a grace on the right relies on. Pinned by
+`test_metrical_time_plus_clock_time_is_refused`.
