@@ -362,20 +362,20 @@ def test_articulation_is_a_plain_edge_and_can_be_undone_with_add_edge_primitives
     assert snapshot(graph) == before
 
 
-# --- a defect pinned as a strict xfail; see _plans/revisit.md ------------------------
+# --- remove_edge hands back what it removed -------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: OmkGraph.remove_edge is annotated -> OmkEdge but returns None, "
-    "so an undo cannot re-add what it removed from the return value",
-)
 def test_remove_edge_returns_the_removed_edge():
+    """The removed edge comes back from `remove_edge`, so an undo can re-add it."""
     graph = fresh()
     c, d = notes(C, D)
     graph.add_line([c, d])
+    before = snapshot(graph)
     edge = graph.get_edge(c, d, NEXT)
     assert graph.remove_edge(edge) is edge
+    assert graph.get_next(c) is None
+    graph._graph.add_edge(c, d, edge)  # the same edge object goes back through the adapter
+    assert snapshot(graph) == before
 
 
 # --- the pieces used above are themselves on the graph as expected -------------------

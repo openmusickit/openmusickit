@@ -5,13 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `OmkGraph.remove_edge` returns None (2026-09-21)
-
-Testing plan, Part 5 item 3. The method is annotated `-> OmkEdge` and
-returns the adapter's `None`. An undo has to keep its own reference to what
-it removed. Pinned by `test_remove_edge_returns_the_removed_edge` in
-`tests/graph/test_graph_inverses.py`.
-
 ## `Branch` and `Simultaneous` regenerate `__repr__` (2026-09-21, noticed in passing)
 
 `TimedEdge` defines a compact `__repr__`, but its subclasses are plain
@@ -214,3 +207,11 @@ treats `rustworkx.NoEdgeBetweenNodes` as no edge of any type, so every
 adapter method now honours the boundary rule, which the `GraphAdapter`
 class docstring states. The two contract tests run unmarked against both
 adapters.
+
+### `OmkGraph.remove_edge` returns None (2026-09-21, resolved 2026-09-21)
+
+`OmkGraph.remove_edge` now returns the edge it removed, so an undo has
+its type, displacement and metadata to hand. The adapter's `remove_edge`
+still returns `None`. Pinned by `test_remove_edge_returns_the_removed_edge`,
+which puts the same edge object back through the adapter and checks the
+snapshot.

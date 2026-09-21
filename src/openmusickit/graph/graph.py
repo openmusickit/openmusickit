@@ -220,18 +220,21 @@ class OmkGraph:
         self._graph.add_edge(from_obj, to_obj, edge)
 
     def remove_edge(self, edge: OmkEdge) -> OmkEdge:
-        """Removes an edge, found with `get_edge` or by iterating `edges`.
+        """Removes an edge, found with `get_edge` or by iterating `edges`,
+        and returns it, so an undo has what it removed (its type,
+        displacement and metadata) to hand.
 
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
         >>> graph = OmkGraph(GraphMeta())
         >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
         >>> graph.add_line([c, d])
-        >>> graph.remove_edge(graph.get_edge(c, d, EdgeType.NEXT))
-        >>> graph.get_next(c) is None, graph.get_previous(d) is None
-        (True, True)
+        >>> removed = graph.remove_edge(graph.get_edge(c, d, EdgeType.NEXT))
+        >>> removed, graph.get_next(c) is None, graph.get_previous(d) is None
+        (Next(next, origin=asserted), True, True)
         """
-        return self._graph.remove_edge(edge)
+        self._graph.remove_edge(edge)
+        return edge
 
     # Sequential Data
 
