@@ -52,8 +52,22 @@ class IntervalQuality:
         IntervalQuality("augmented-from_perfect", 1)
         >>> QUALITIES[0.5].augment(2)
         IntervalQuality("dbl_augmented-from_maj_min", 2.5)
+
+        Raises ValueError past the ends of the table (quadruply augmented or
+        diminished), as `TonalVector.from_string` does for the same overflow:
+
+        >>> QUALITIES[4.5].augment()
+        Traceback (most recent call last):
+        ...
+        ValueError: 5.5 is beyond the supported range of interval qualities (-4.5 to 4.5).
         """
-        return QUALITIES[self.rel_number + halfsteps]
+        try:
+            return QUALITIES[self.rel_number + halfsteps]
+        except KeyError:
+            raise ValueError(
+                f"{self.rel_number + halfsteps} is beyond the supported range of "
+                f"interval qualities ({min(QUALITIES)} to {max(QUALITIES)})."
+            ) from None
 
     def diminish(self, halfsteps: int = 1) -> IntervalQuality:
         """The quality `halfsteps` half-steps narrower, in the same family.

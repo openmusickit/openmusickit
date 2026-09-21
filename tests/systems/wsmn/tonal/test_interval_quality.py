@@ -111,12 +111,9 @@ def test_lookup_by_tuple_agrees_with_the_pitch_alteration():
         _get_quality("major")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: IntervalQuality.augment past the table raises a bare KeyError, "
-    "where TonalVector.from_string reports the same overflow as ValueError",
-)
 def test_walking_off_the_table_is_a_value_error():
+    """Past quadruple augmentation or diminution there is no quality, and the
+    class says so the way the string parser does."""
     with pytest.raises(ValueError):
         QUALITIES[4.5].augment(1)
     with pytest.raises(ValueError):

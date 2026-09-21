@@ -5,14 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `IntervalQuality.augment` past the table raises a bare `KeyError` (2026-09-21)
-
-`QUALITIES[4.5].augment(1)` indexes `QUALITIES` with 5.5 and lets the
-`KeyError` out; `TonalVector.from_string` catches it and reports the same
-overflow as `ValueError`. The class could do the same. Pinned by
-`test_walking_off_the_table_is_a_value_error` in
-`tests/systems/wsmn/tonal/test_interval_quality.py` (Part 5, item 6).
-
 ## Backend exceptions leak through the adapter (2026-09-21)
 
 Testing plan, Part 5 item 2. `RustworkxAdapter._rxid` raises a raw
@@ -221,3 +213,9 @@ fail at once. This is a placeholder: the developer notes that C major over
 B-flat is a real object, a C7 in third inversion, and naming it needs a
 chord lookup system that does not exist yet; a TODO in the method says so.
 Pinned by `test_inversion_onto_a_tone_not_in_the_chord_is_rejected`.
+
+### `IntervalQuality.augment` past the table raises a bare `KeyError` (2026-09-21, resolved 2026-09-21)
+
+`IntervalQuality.augment` (and so `diminish`, `+`, `-`) now raises
+`ValueError` naming the overflow and the table's range. Pinned by
+`test_walking_off_the_table_is_a_value_error`.
