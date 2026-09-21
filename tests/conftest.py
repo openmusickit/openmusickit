@@ -2,23 +2,31 @@
 
 The `*_symbols` fixtures collect every ready-made object of one kind from the
 relevant `symbols` module, by name, so a test can iterate over the whole set
-(all pitch classes, all chord types, all modes, all note values, ...).
+(all pitch classes, all chord types, all modes, all note values, ...). A
+module often binds several names to one object (`quarter is crotchet`);
+`tests.domains.distinct` keeps one name per object when a law should be
+checked once per value. `tests/test_fixtures.py` pins the size of every
+fixture so an empty one fails loudly.
 """
 
 import pytest
 
+from openmusickit.systems.wsmn.scoring import symbols as scoring_symbols
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
 from openmusickit.systems.wsmn.tonal import symbols as tonal_symbols
 from openmusickit.systems.wsmn.tonal.chords import ChordType
+from openmusickit.systems.wsmn.tonal.interval_quality import QUALITIES
 from openmusickit.systems.wsmn.tonal.key import Key, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
-from openmusickit.values.time.duration import TemporalRatio
+from openmusickit.values.scoring.mark import Mark
+from openmusickit.values.time.duration import GraceDuration
+from tests.domains import TONAL_OCT_TUPLES, TONAL_TUPLES
 
 
 def _symbols_of(module, kind) -> dict:
-    """Every public module attribute of type `kind`, by name."""
+    """Every public module attribute of exactly type `kind`, by name."""
     return {
         name: value
         for name, value in vars(module).items()
@@ -33,15 +41,14 @@ def _symbols_of(module, kind) -> dict:
 def tonal_tuples():
     """List of (d,c) tuples comprising
     naturals, sharps, flats, double sharps, and double flats."""
-    major_scale = [(0, 0), (1, 2), (2, 4), (3, 5), (4, 7), (5, 9), (6, 11)]
-    return [(x[0], (x[1] + m) % 12) for m in [0, 1, 2, -1, -2] for x in major_scale]
+    return list(TONAL_TUPLES)
 
 
 @pytest.fixture
-def tonal_oct_tuples(tonal_tuples):
+def tonal_oct_tuples():
     """List of octave-qualified tonal tuples,
     at Middle C and up & down two octaves."""
-    return [(x[0], x[1], y) for y in [0, 1, 2, -1, -2] for x in tonal_tuples]
+    return list(TONAL_OCT_TUPLES)
 
 
 # --- tonal symbols -----------------------------------------------------------
@@ -73,20 +80,56 @@ def key_symbols():
     return _symbols_of(tonal_symbols, Key)
 
 
+@pytest.fixture
+def interval_qualities():
+    """The nineteen IntervalQuality values, from `QUALITIES`, in relative-number order."""
+    return list(QUALITIES.values())
+
+
 # --- temporal symbols --------------------------------------------------------
 
 
 @pytest.fixture
 def duration_symbols():
     """All the MetricalDuration symbols (`quarter`, `dotted_half`, `eighth_in_triplet`, ...)
-    in `temporal.symbols`, by name."""
+    in `temporal.symbols`, by name. GraceDurations are a different type and
+    live in `grace_duration_symbols`."""
     return _symbols_of(temporal_symbols, MetricalDuration)
 
 
 @pytest.fixture
-def tuplet_ratio_symbols():
-    """All the TemporalRatio symbols in `temporal.symbols`, by name."""
-    return _symbols_of(temporal_symbols, TemporalRatio)
+def grace_duration_symbols():
+    """All the GraceDuration symbols (`grace_eighth`, `appoggiatura_quarter`, ...)
+    in `temporal.symbols`, by name."""
+    return _symbols_of(temporal_symbols, GraceDuration)
+
+
+@pytest.fixture
+def tuplet_ratio_factories():
+    """The six TemporalRatio factory functions in `temporal.symbols`, by name:
+    the general `tuplet(nominal, contextual, base)` and the five named
+    `triplet(base)` .. `septuplet(base)`."""
+    return {
+        name: getattr(temporal_symbols, name)
+        for name in ["tuplet", "triplet", "duplet", "quintuplet", "sextuplet", "septuplet"]
+    }
+
+
+@pytest.fixture
+def tuplet_ratio_symbols(tuplet_ratio_factories):
+    """Six TemporalRatios built on the quarter: one from each factory.
+
+    `temporal.symbols` defines no TemporalRatio constants, only the factory
+    functions (a ratio needs a base value), so this fixture builds the ratios
+    rather than collecting them. The general `tuplet` contributes the
+    7-in-the-time-of-6 septuplet, which no named factory makes."""
+    ratios = {
+        name: factory(temporal_symbols.quarter)
+        for name, factory in tuplet_ratio_factories.items()
+        if name != "tuplet"
+    }
+    ratios["tuplet_7_6"] = tuplet_ratio_factories["tuplet"](7, 6, temporal_symbols.quarter)
+    return ratios
 
 
 @pytest.fixture
@@ -94,3 +137,12 @@ def time_signature_symbols():
     """All the TimeSignature symbols (`four_four`, `six_eight`, `seven_eight_2_2_3`, ...)
     in `temporal.symbols`, by name."""
     return _symbols_of(temporal_symbols, TimeSignature)
+
+
+# --- scoring symbols ---------------------------------------------------------
+
+
+@pytest.fixture
+def mark_symbols():
+    """All the Mark symbols (`staccato`, `slur`, `piano`, ...) in `scoring.symbols`, by name."""
+    return _symbols_of(scoring_symbols, Mark)

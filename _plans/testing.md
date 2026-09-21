@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21, not started.** Steps 1-12 below are unexecuted; update this line as each lands (e.g. "Steps 1-3 done 2026-09-22").
+Status: **approved 2026-09-21; Step 1 done 2026-09-21.** Steps 2-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -404,6 +404,9 @@ fix is the developer's call (see Open questions).
    out, a has no NEXT in). `walk_span` can loop the same way through mutual
    branches. Any Hypothesis graph test must exclude cycles in the generator
    or cap steps, or it hangs instead of failing.
+   - NOTE FROM DEV: NEXT cycles are valid (Gamelan and other cyclic music)
+     so walkers will need way to stop when appropriate.
+     We should add this to revisit.md
 2. **`KeyError` leaks through the adapter for a missing node.** *(verified)*
    `get_node` docstring says it returns `None`; `remove_node` docstring says
    "raises an exception"; both raise a raw `KeyError` from `_rxid`, against
@@ -462,6 +465,13 @@ edit `tests/systems/wsmn/tonal/test_string_roundtrip.py`.
 
 Check: `uv run pytest -q` still 2,468 + the guard tests; no test file
 defines its own copy of the 35 tuples.
+
+Execution notes (2026-09-21): `distinct()` lives in `tests/domains.py`, not
+`conftest.py`, because pytest discourages importing from conftest and tests
+need to import it. Making `tests.domains` importable took two config lines
+in `pyproject.toml`: `pythonpath = ["."]` under pytest and `"tests"` in
+ruff's `known-first-party`. `tuplet_ratio_symbols` is the five named
+factories on `quarter` plus `tuplet(7, 6, quarter)`, six ratios.
 
 ### Step 2. Tonal algebra at the class level
 

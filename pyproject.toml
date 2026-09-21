@@ -39,6 +39,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = ["--doctest-modules"]
+pythonpath = ["."]  # so tests can import shared helpers as `tests.domains`, `tests.graph.helpers`
 testpaths = ["tests", "src"]
 python_files = ["test_*.py", "*_test.py"]
 
@@ -54,7 +55,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["openmusickit"]
+known-first-party = ["openmusickit", "tests"]
 force-single-line = false
 
 [tool.ruff.lint.flake8-tidy-imports]

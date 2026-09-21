@@ -16,24 +16,7 @@ rather than silently ignored.
 import pytest
 
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
-
-
-def _abstract_tuples():
-    """All 35 abstract (d, c) pitch classes: naturals, single/double
-    sharps and flats."""
-    MS = [(0, 0), (1, 2), (2, 4), (3, 5), (4, 7), (5, 9), (6, 11)]
-    return [(d, (c + m) % 12) for m in [0, 1, 2, -1, -2] for d, c in MS]
-
-
-def _octave_qualified_tuples():
-    """All abstract tuples, qualified at several octaves."""
-    return [(d, c, o) for o in [0, 1, -1, 2, -2] for d, c in _abstract_tuples()]
-
-
-ABSTRACT_VECTORS = [TonalVector(t) for t in _abstract_tuples()]
-QUALIFIED_VECTORS = [TonalVector(t) for t in _octave_qualified_tuples()]
-ALL_VECTORS = ABSTRACT_VECTORS + QUALIFIED_VECTORS
-
+from tests.domains import ABSTRACT_VECTORS, ALL_VECTORS, QUALIFIED_VECTORS
 
 # --- pitch.unicode / pitch.ascii / pitch.verbose round-trip through from_string ---
 # The display properties and from_string both default to middle C == C4;
