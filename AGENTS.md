@@ -8,7 +8,7 @@ The most important principle is simple:
 
 These projects value thoughtful design, explicit reasoning, readable Python, small changes, and fidelity to the actual requirements over speculative completeness or agentic autonomy.
 
-## Technical Details -- How to write, edit, run, and commit code.
+## Technical Details -- How to write, edit, run, test, and commit code.
 
 ### Tooling: always use `uv`
 
@@ -113,12 +113,44 @@ def some_function(
 Docstrings use an abbreviated version of NumPy style.
 
 - Params section is omitted if the meaning of the arguments are very obvious from the signature and one-liner.
+  - Params don't need type declaration in the docstring, as all method/function signatures should be typed.
 - Returns section is omitted if the meaning of the return is very obvious from the signature and one-liner.
 - Examples is important and should rarely be omitted.
   The best documentation, and the best test, is a clear, short example showing how something
   is supposed to be used by a human user or app built on OMK.
 - Raises should be present whenever a function/method has an explicit Raise in it,
   since that is not communicated by the signature.
+
+### Testing Approach
+
+The best first test is a clear, short example in a docstring,
+showing how the method or function is to be used.
+
+And all features should have complete tests in /tests/,
+and we try to maintain high test coverage (>95%).
+
+Arithmetic/algebraic methods on values with finite domains
+should have rigorous, exhaustive property based testing.
+See tests for test_tonal_arithmetic for a gold standard example.
+
+Features (such as the graph or string parsing) with a potentially infinite domain
+should use Hypothesis for testing.
+
+Goals for testing:
+
+- We built what we think we built and it works like we think it works.
+- Nothing we've built or changed has broken anything we previously built.
+- Invariants and contracts are enforced.
+- Edge cases (including ones we cannot predict) are handled appropriately.
+
+Do not simply add a bunch of random weird tests.
+Look at tests of similar features,
+understand how our testing apparatus works,
+plan a reasonable and complete set of tests,
+and then include them in proposed plans of work.
+
+When discussing how a feature should be built with the developer,
+how the new code should be tests is part of the discussion.
 
 
 ## Philosophy and Approach
@@ -241,6 +273,17 @@ OMK is introducing a number of novel concepts in symbolic music representation,
 and representing conventional concepts in new ways.
 
 Do not make assumptions about the data model or the way concepts are represented.
+
+### This is, among other things, a foundational math library
+
+A major goal of this project is for Open Music Kit to be adopted by the academic music community
+(musicologists, music theorists, algorithmic composers, educators, etc.)
+as the gold standard in symbolic music representation.
+
+This is no place for slop code or short-term decisions.
+
+This project should have the rigour and thoughtfulness
+of a foundational math library.
 
 
 ### Music is not assumed to be a conventional linear score
