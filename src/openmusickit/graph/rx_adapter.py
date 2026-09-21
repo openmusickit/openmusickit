@@ -41,12 +41,16 @@ class RustworkxAdapter(GraphAdapter):
     def _unregister_node_rxid(self, rxid: int) -> None:
         del self._node_index.inverse[rxid]
 
-    def _rxid(self, node: OmkObject | OmkEdge | UUID | str) -> int:
-        """Returns the Rustworks integer id of the OmkObject or OmkEdge."""
-        try:  # it's a node
-            return self._node_index[str(node.id if hasattr(node, "_id") else node)]
-        except KeyError:  # it's an edge
-            return self._edge_index[str(node.id if hasattr(node, "_id") else node)]
+    def _rxid(self, item: OmkObject | OmkEdge | UUID | str) -> int:
+        """Returns the Rustworkx integer id of the OmkObject or OmkEdge.
+
+        Raises GraphError if the item is not on the graph; no KeyError leaves here."""
+        key = str(item.id if hasattr(item, "_id") else item)
+        if key in self._node_index:
+            return self._node_index[key]
+        if key in self._edge_index:
+            return self._edge_index[key]
+        raise GraphError(f"{item!r} is not on the graph.")
 
     def _omkid_node(self, rxid: int) -> str:
         return self._node_index.inverse[rxid]
@@ -114,13 +118,19 @@ class RustworkxAdapter(GraphAdapter):
 
     # Retrieval operations
 
-    def get_node(self, node_id: UUID | str) -> OmkObject:
-        """Return the node with the given id."""
+    def get_node(self, node_id: UUID | str) -> OmkObject | None:
+        """Return the node with the given id, or None if there is no such node."""
+        if str(node_id) not in self._node_index:
+            return None
         return self.graph.get_node_data(self._rxid(node_id))
 
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:
-        """Return the edge of the given type from source to target."""
-        for edge in self.graph.get_all_edge_data(self._rxid(source), self._rxid(target)):
+        """Return the edge of the given type from source to target; raises GraphError if there is none."""
+        try:
+            edges = self.graph.get_all_edge_data(self._rxid(source), self._rxid(target))
+        except rx.NoEdgeBetweenNodes:
+            edges = []
+        for edge in edges:
             if edge.type == edge_type:
                 return edge
         raise GraphError(f"No edge of type {edge_type!r} between {source!r} and {target!r}.")

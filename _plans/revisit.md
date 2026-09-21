@@ -5,20 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## Backend exceptions leak through the adapter (2026-09-21)
-
-Testing plan, Part 5 item 2. `RustworkxAdapter._rxid` raises a raw
-`KeyError` for any node or edge it does not know, so `get_node` of an
-unknown id (documented on `OmkGraph.get_node` as returning `None`),
-`remove_node`, `add_edge`, `get_edge`, `has_edge`, `edges_between`,
-`successors`, `predecessors`, `get_next`, `degree`, `remove_edge` and
-`get_edge_endpoints` all let it out, against the `GraphError` docstring
-("backend exceptions never pass through the adapter boundary"). Separately,
-`get_edge` between two nodes with no edge at all lets
-`rustworkx.NoEdgeBetweenNodes` escape, where the same call with an edge of
-another type present raises `GraphError`. Pinned by the two strict xfails
-at the end of `tests/graph/test_adapter_contract.py`.
-
 ## `OmkGraph.remove_edge` returns None (2026-09-21)
 
 Testing plan, Part 5 item 3. The method is annotated `-> OmkEdge` and
@@ -219,3 +205,12 @@ Pinned by `test_inversion_onto_a_tone_not_in_the_chord_is_rejected`.
 `IntervalQuality.augment` (and so `diminish`, `+`, `-`) now raises
 `ValueError` naming the overflow and the table's range. Pinned by
 `test_walking_off_the_table_is_a_value_error`.
+
+### Backend exceptions leak through the adapter (2026-09-21, resolved 2026-09-21)
+
+`RustworkxAdapter._rxid` raises `GraphError` for anything not on the
+graph, `get_node` answers `None` for an unknown id, and `get_edge`
+treats `rustworkx.NoEdgeBetweenNodes` as no edge of any type, so every
+adapter method now honours the boundary rule, which the `GraphAdapter`
+class docstring states. The two contract tests run unmarked against both
+adapters.

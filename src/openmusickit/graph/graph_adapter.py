@@ -7,7 +7,11 @@ from openmusickit.objects.omk_object import OmkObject
 
 
 class GraphAdapter(ABC):
-    """Abstract base class providing a unified API to any graph engine."""
+    """Abstract base class providing a unified API to any graph engine.
+
+    A node or edge that is not on the graph is a `GraphError` from every
+    method that takes one, except `get_node`, which answers `None` for an
+    unknown id. Backend exceptions never pass through the adapter boundary."""
 
     @abstractmethod
     def add_node(self, node: OmkObject) -> None:
@@ -29,8 +33,8 @@ class GraphAdapter(ABC):
         """Remove an edge from the graph."""
 
     @abstractmethod
-    def get_node(self, node_id: UUID | str) -> OmkObject:
-        """Return the node with the given id."""
+    def get_node(self, node_id: UUID | str) -> OmkObject | None:
+        """Return the node with the given id, or None if there is no such node."""
 
     @abstractmethod
     def get_edge(self, source: OmkObject, target: OmkObject, edge_type: EdgeType) -> OmkEdge:
