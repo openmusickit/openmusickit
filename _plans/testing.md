@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-10 done 2026-09-21.** Steps 11-12 unexecuted; update this line as each lands. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
+Status: **approved 2026-09-21; Steps 1-11 done 2026-09-21.** Step 12 unexecuted; update this line as each lands. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -830,6 +830,15 @@ the three pseudo-code blocks in `__call__`/`__truediv__` to real doctests;
 
 Check: `uv run pytest src` passes; `systems/wsmn` goes from 75 to at least
 110 of 135.
+
+Execution notes (2026-09-21): by the same count as Step 10, `systems/wsmn`
+has 124 callables, 53 with an example before this step and 92 after. Left
+without one, by the plan's own rules: the seven `KeySignature` letter
+accessors and the `temporal_system`/`d`/`c` accessors (trivial), the
+`TiedDuration` container dunders (on the class), and the four enums and
+dataclasses in `tonal/constants.py`, which the file list does not name.
+The `TimeSignature.__init__` example sits on the class docstring, which
+already showed construction.
 
 ### Step 12. Docstring examples: graph and objects
 

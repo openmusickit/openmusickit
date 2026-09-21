@@ -8,7 +8,12 @@ from openmusickit.values.tone.tone_collection import ToneCollection, apply_tone_
 
 
 class ChordQuality(StrEnum):
-    """The broad family a chord type belongs to."""
+    """The broad family a chord type belongs to.
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import maj, hdim7
+    >>> maj.quality, hdim7.quality is ChordQuality.HDM
+    (<ChordQuality.MAJ: 'maj'>, True)
+    """
 
     MAJ = auto()
     MIN = auto()
@@ -89,12 +94,22 @@ class _ChordBase(ToneCollection):
 
 @dataclass(frozen=True, slots=True, repr=False)
 class ChordType(_ChordBase):
-    """Chord definition, as an ordered collection of TonalVectors representing
-    intervals from the root (0,0).
+    """Chord definition, as an ordered collection of TonalVectors
+    representing intervals from the root (0,0).
 
-    Tone order is significant: it distinguishes chords that share the same
-    pitch classes but are conventionally named/voiced differently
-    (for example, an added 2nd vs. an added 9th)."""
+    Tone order is significant:
+    it distinguishes chords that share the same pitch classes
+    but are conventionally named/voiced differently
+    (for example, an added 2nd vs. an added 9th).
+
+    A ChordType is realized at a root by calling it (or the root) to get a `Chord`:
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, Bb, dom7
+    >>> list(dom7) == [C, E, G, Bb], dom7.root, str(dom7)
+    (True, TonalVector((0, 0)), '7')
+    >>> str(G(dom7))
+    'G7'
+    """
 
     quality: ChordQuality | None = field(default=None, kw_only=True, compare=False)
 
@@ -118,7 +133,15 @@ class ChordType(_ChordBase):
         object.__setattr__(self, "suffix", suffix)
 
     def inversion(self, inv: int | TonalVector, name: str | None = None) -> "ChordType":
-        """Returns a ChordType with the same tones, but a different bass tone."""
+        """Returns a ChordType with the same tones, but a different bass tone:
+        the `inv`-th tone, or the tone given.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, G
+        >>> maj.inversion(1).bass, str(maj.inversion(1))
+        (TonalVector((2, 4)), 'major 1st inv.')
+        >>> maj.inversion(G) == maj.inversion(2)
+        True
+        """
         bass, name = self._resolve_inversion(inv, name)
         return ChordType(self, name, bass, self.quality, self.suffix)
 
@@ -177,17 +200,14 @@ class ChordType(_ChordBase):
     def __call__(self, tv: TonalVector) -> "Chord":
         """Returns a Chord: this ChordType realized with its root at `tv`.
 
-        Intended to be used with TonalVector's *reverse* __call__ method:
+        Intended to be used with TonalVector's *reverse* `__call__`,
+        so that a chord reads root first, as on a lead sheet:
 
-            tv = TonalVector(..)
-            chord_type = ChordType(...)
-            chord = tv(chord_type)  # chord is a Chord with root at tv
-
-            particularly useful with symbols:
-
-            from openmusickit.systems.wsmn.tonal.symbols import *
-
-            C_major_chord = C(maj)
+        >>> from openmusickit.systems.wsmn.tonal.symbols import E, maj
+        >>> [format(t) for t in maj(E)]
+        ['E', 'G♯', 'B']
+        >>> E(maj) == maj(E), str(E(maj))
+        (True, 'E')
         """
         tones = [t + tv for t in self]
         root = tv
@@ -198,9 +218,11 @@ class ChordType(_ChordBase):
     def __truediv__(self, tv: TonalVector) -> "ChordType":
         """Returns a ChordType with the same tones, but a different bass tone.
 
-        This is an overload for the `/` operator, so you can write slash chords like this:
+        This is an overload for the `/` operator, so a slash chord reads as written:
 
-            C_major_over_E = C(maj) / E
+        >>> from openmusickit.systems.wsmn.tonal.symbols import maj, G
+        >>> (maj / G).bass, str(maj / G)
+        (TonalVector((4, 7)), 'major 2nd inv.')
         """
         return self.inversion(tv)
 
@@ -209,9 +231,15 @@ class ChordType(_ChordBase):
 class Chord(_ChordBase):
     """A concrete realization of a ChordType at a specific root pitch.
 
-    Unlike ChordType, a Chord's root is not necessarily `TonalVector(0,0)` --
-    it is wherever the ChordType was realized (e.g. `E(maj)` produces a Chord
-    rooted at E)."""
+    Unlike ChordType, a Chord's root is not necessarily `TonalVector(0,0)`;
+    it is wherever the ChordType was realized
+    (e.g. `E(maj)` produces a Chord rooted at E).
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import E, maj
+    >>> chord = E(maj)
+    >>> chord.root, chord.bass, str(chord)
+    (TonalVector((2, 4)), TonalVector((2, 4)), 'E')
+    """
 
     def __init__(
         self,
@@ -227,7 +255,13 @@ class Chord(_ChordBase):
         object.__setattr__(self, "suffix", suffix)
 
     def inversion(self, inv: int | TonalVector, name: str | None = None) -> "Chord":
-        """Returns a Chord with the same tones and root, but a different bass tone."""
+        """Returns a Chord with the same tones and root, but a different bass tone.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, maj
+        >>> second = C(maj).inversion(2)
+        >>> str(second), second.root
+        ('C/G', TonalVector((0, 0)))
+        """
         bass, name = self._resolve_inversion(inv, name)
         return Chord(self.root, self, bass, name, self.suffix)
 
@@ -348,8 +382,10 @@ class Chord(_ChordBase):
     def __truediv__(self, tv: TonalVector) -> "Chord":
         """Returns a Chord with the same tones and root, but a different bass tone.
 
-        This is an overload for the `/` operator, so you can write slash chords like this:
+        This is an overload for the `/` operator, so a slash chord reads as written:
 
-            C_major_over_E = C(maj) / E
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, maj
+        >>> str(C(maj) / E)
+        'C/E'
         """
         return self.inversion(tv)

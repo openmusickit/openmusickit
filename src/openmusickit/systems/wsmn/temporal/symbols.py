@@ -89,27 +89,49 @@ def tuplet(nominal_count: int, contextual_count: int, base: MetricalDuration) ->
 
 
 def triplet(base: MetricalDuration) -> TemporalRatio:
-    """3 in the time of 2."""
+    """3 in the time of 2.
+
+    >>> triplet(quarter).multiplier
+    Fraction(2, 3)
+    >>> MetricalDuration(1, 8, ratio=triplet(eighth)).rational_length
+    Fraction(1, 12)
+    """
     return tuplet(3, 2, base)
 
 
 def duplet(base: MetricalDuration) -> TemporalRatio:
-    """2 in the time of 3 (for compound meters)."""
+    """2 in the time of 3 (for compound meters).
+
+    >>> duplet(eighth).multiplier
+    Fraction(3, 2)
+    """
     return tuplet(2, 3, base)
 
 
 def quintuplet(base: MetricalDuration) -> TemporalRatio:
-    """5 in the time of 4."""
+    """5 in the time of 4.
+
+    >>> quintuplet(sixteenth).multiplier
+    Fraction(4, 5)
+    """
     return tuplet(5, 4, base)
 
 
 def sextuplet(base: MetricalDuration) -> TemporalRatio:
-    """6 in the time of 4."""
+    """6 in the time of 4 (the same ratio as a triplet).
+
+    >>> sextuplet(sixteenth).multiplier
+    Fraction(2, 3)
+    """
     return tuplet(6, 4, base)
 
 
 def septuplet(base: MetricalDuration) -> TemporalRatio:
-    """7 in the time of 4 (the common simple-meter septuplet; use tuplet(7, 6, ...) for the other)."""
+    """7 in the time of 4 (the common simple-meter septuplet; use tuplet(7, 6, ...) for the other).
+
+    >>> septuplet(eighth).multiplier
+    Fraction(4, 7)
+    """
     return tuplet(7, 4, base)
 
 

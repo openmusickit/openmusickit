@@ -43,6 +43,13 @@ class KeySignature(tuple):
     >>> ks = KeySignature(f=1, b=-1) # non-standard key signatures
     >>> ks.f, ks.b
     (1, -1)
+
+    Beyond a triple sharp or flat there is no signature:
+
+    >>> KeySignature(f=4)
+    Traceback (most recent call last):
+    ...
+    ValueError: Key signature alterations must be between -3 and 3
     """
 
     def __new__(
@@ -287,7 +294,14 @@ class KeySignature(tuple):
 
 @dataclass(slots=True, kw_only=True, frozen=True)
 class ModePattern:
-    """A pattern of intervals from TonalVector((0, 0)), which defines a mode."""
+    """A pattern of intervals from TonalVector((0, 0)), which defines a mode.
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import Dorian
+    >>> Dorian.name, len(Dorian.tones), Dorian.tones[0]
+    ('Dorian', 7, TonalVector((0, 0)))
+    >>> [format(t) for t in Dorian.tones]
+    ['C', 'D', 'E♭', 'F', 'G', 'A', 'B♭']
+    """
 
     name: str
     tones: ToneCollection
@@ -308,6 +322,15 @@ class Key(ModalContext):
     signature such as "three flats" that is not saying E-flat major or
     C minor (see `from_signature`). The two differ under transposition: a
     bare signature moves with the music; no key stays no key.
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import D, Major, NoKey
+    >>> d = Key.of(D, Major)
+    >>> d.name, d.signature
+    ('D Major', KeySignature(c=1, f=1))
+    >>> [format(t) for t in d.tones]
+    ['D', 'E', 'F♯', 'G', 'A', 'B', 'C♯']
+    >>> NoKey.tonic is None, NoKey.name
+    (True, 'No Key')
     """
 
     tonic: TonalVector | None

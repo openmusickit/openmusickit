@@ -46,24 +46,56 @@ class IntervalQuality:
     # Arithmetic operations
 
     def augment(self, halfsteps: int = 1) -> IntervalQuality:
+        """The quality `halfsteps` half-steps wider, in the same family.
+
+        >>> QUALITIES[0].augment()
+        IntervalQuality("augmented-from_perfect", 1)
+        >>> QUALITIES[0.5].augment(2)
+        IntervalQuality("dbl_augmented-from_maj_min", 2.5)
+        """
         return QUALITIES[self.rel_number + halfsteps]
 
     def diminish(self, halfsteps: int = 1) -> IntervalQuality:
+        """The quality `halfsteps` half-steps narrower, in the same family.
+
+        >>> QUALITIES[0.5].diminish(), QUALITIES[0].diminish()
+        (IntervalQuality("minor", -0.5), IntervalQuality("diminished-from_perfect", -1))
+        """
         return self.augment(-halfsteps)
 
     def __add__(self, halfsteps: int) -> IntervalQuality:
+        """`augment`, as an operator.
+
+        >>> QUALITIES[-0.5] + 1
+        IntervalQuality("major", 0.5)
+        """
         return self.augment(halfsteps)
 
     def __sub__(self, halfsteps: int) -> IntervalQuality:
+        """`diminish`, as an operator.
+
+        >>> QUALITIES[0.5] - 2
+        IntervalQuality("diminished-from_maj_min", -1.5)
+        """
         return self.augment(-halfsteps)
 
     # String representations
 
     @property
     def abbr(self) -> str:
+        """The first three letters of each word of the name, as `TonalVector.from_string` accepts them.
+
+        >>> QUALITIES[0].abbr, QUALITIES[2.5].abbr
+        ('per', 'dbl aug')
+        """
         return " ".join([wrd[:3] for wrd in str(self).split()])
 
     def __str__(self) -> str:
+        """The name in words, without the family suffix.
+
+        >>> str(QUALITIES[-3])
+        'trpl diminished'
+        """
         return " ".join(self.name.split("-")[0].split("_"))
 
     def __repr__(self) -> str:

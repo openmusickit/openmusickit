@@ -30,7 +30,11 @@ from openmusickit.values.tone.tone import PitchRepresentation, TonalSystem, Tone
 
 
 class TonalDirection(StrEnum):
-    """Direction for transposition or inversion of a TonalVector."""
+    """Direction for transposition or inversion of a TonalVector.
+
+    >>> TonalVector((0, 0)).transpose(TonalVector((1, 2)), TonalDirection.DOWN)
+    TonalVector((6, 10))
+    """
 
     UP = auto()
     DOWN = auto()
@@ -354,6 +358,15 @@ class TonalVector(tuple, Tone, Interval):
 
     @property
     def o(self) -> int:
+        """The octave designation, for a qualified vector (middle C is octave 0).
+
+        >>> TonalVector((0, 0, 1)).o
+        1
+        >>> TonalVector((0, 0)).o
+        Traceback (most recent call last):
+        ...
+        AttributeError: This TonalVector does not have an octave designation.
+        """
         try:
             return self[2]
         except IndexError:
@@ -763,9 +776,25 @@ class TonalVector(tuple, Tone, Interval):
         return NotImplemented
 
     def __hash__(self) -> int:
+        """Hashes as its tuple, so a TonalVector is a set member and a dict key by value.
+
+        >>> hash(TonalVector((0, 0))) == hash((0, 0))
+        True
+        >>> len({TonalVector((0, 0)), TonalVector(0, 0)})
+        1
+        """
         return hash(tuple(self))
 
     def __call__(self, other):
+        """Adds another TonalVector, or applies `other` to this one:
+        `C(maj)` realizes a chord type at C, so a chord reads root first.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, M3, maj
+        >>> C(M3)
+        TonalVector((2, 4))
+        >>> str(C(maj))
+        'C'
+        """
         if isinstance(other, TonalVector):
             return self + other
         try:
@@ -796,7 +825,13 @@ class TonalVector(tuple, Tone, Interval):
 
     def conditional_qualify_octave(self, octave: int = 0) -> TonalVector:
         """Returns a TonalVector with an octave designation set to `octave`,
-        but does not change an existing octave designation if present."""
+        but does not change an existing octave designation if present.
+
+        >>> TonalVector((1, 2)).conditional_qualify_octave(1)
+        TonalVector((1, 2, 1))
+        >>> TonalVector((1, 2, 0)).conditional_qualify_octave(1)
+        TonalVector((1, 2, 0))
+        """
         if self.has_octave:
             return self
         return TonalVector((self.d, self.c, octave))

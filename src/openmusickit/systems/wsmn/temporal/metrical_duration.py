@@ -185,7 +185,18 @@ class MetricalDuration(Duration, Measurable):
     ) -> MetricalDuration:
         """Create a MetricalDuration from its full nominal value (e.g. 3/8 -> dotted quarter).
 
-        Raises ValueError if the value is not a single notatable symbol."""
+        >>> MetricalDuration.from_fraction(F(3, 8))
+        MetricalDuration(1, 4, dots=1)
+        >>> MetricalDuration.from_fraction(F(5, 8))
+        Traceback (most recent call last):
+        ...
+        ValueError: 5/8 is not a single notatable duration. ...
+
+        Raises
+        ------
+        ValueError
+            if the value is not a single notatable symbol (use `from_length` for any length).
+        """
         value = F(value)
         return cls(value.numerator, value.denominator, ratio=ratio)
 
@@ -357,11 +368,22 @@ class MetricalDuration(Duration, Measurable):
 
     @property
     def nominal_length(self) -> F:
-        """The notated value, including dots but ignoring any tuplet ratio."""
+        """The notated value, including dots but ignoring any tuplet ratio.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter_in_triplet
+        >>> quarter_in_triplet.nominal_length, quarter_in_triplet.rational_length
+        (Fraction(1, 4), Fraction(1, 6))
+        """
         return F(self.numerator * (2 ** (self.dots + 1) - 1), self.denominator * (2**self.dots))
 
     @property
     def rational_length(self) -> F:
+        """The real length: the notated value times the tuplet ratio, if any.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import dotted_quarter, eighth_in_triplet
+        >>> dotted_quarter.rational_length, eighth_in_triplet.rational_length
+        (Fraction(3, 8), Fraction(1, 12))
+        """
         if self.ratio is None:
             return self.nominal_length
         return self.nominal_length * self.ratio.multiplier
@@ -374,6 +396,16 @@ class MetricalDuration(Duration, Measurable):
         so the result may be a different single symbol (quarter * 3 = dotted half),
         a tuplet member (quarter * 2/3 = triplet quarter), or a ``TiedDuration``
         (quarter * 5 = whole tied to quarter). An existing tuplet ratio is kept.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, dotted_eighth, quarter_in_triplet
+        >>> quarter.scale(2), dotted_eighth.scale(2)
+        (MetricalDuration(1, 2), MetricalDuration(1, 4, dots=1))
+        >>> quarter.scale(3)
+        MetricalDuration(1, 2, dots=1)
+        >>> quarter.scale(F(2, 3)) == quarter_in_triplet
+        True
+        >>> quarter.scale(5)
+        TiedDuration([MetricalDuration(1, 1), MetricalDuration(1, 4)])
 
         Raises
         ------
@@ -394,6 +426,12 @@ class MetricalDuration(Duration, Measurable):
         return _from_signed_length(self.nominal_length * scalar, ratio=self.ratio)
 
     def __neg__(self) -> MetricalDuration:
+        """The same notated value in the opposite direction.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+        >>> -quarter, (-quarter).rational_length
+        (MetricalDuration(-1, 4), Fraction(-1, 4))
+        """
         return MetricalDuration(-self.numerator, self.denominator, self.dots, self.ratio)
 
     def __add__(self, other):
@@ -404,7 +442,18 @@ class MetricalDuration(Duration, Measurable):
         Durations in different tuplets always produce a TiedDuration.
         Durations of opposite sign are resolved by length, so the result is
         the canonical spelling of the difference (``from_length``), or
-        ZeroDuration when they cancel."""
+        ZeroDuration when they cancel.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth, half, quarter_in_triplet
+        >>> quarter + eighth
+        MetricalDuration(1, 4, dots=1)
+        >>> half + eighth
+        TiedDuration([MetricalDuration(1, 2), MetricalDuration(1, 8)])
+        >>> len(quarter_in_triplet + quarter)  # different tuplets never merge
+        2
+        >>> half + (-eighth), quarter + (-quarter)
+        (MetricalDuration(1, 4, dots=1), ZeroDuration())
+        """
         if isinstance(other, ZeroDuration):
             return self
         if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
@@ -417,7 +466,12 @@ class MetricalDuration(Duration, Measurable):
         return NotImplemented
 
     def __radd__(self, other):
-        # lets `sum(durations)` work with the default start value of 0
+        """Lets `sum(durations)` work from its default start value of 0.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+        >>> sum([quarter, eighth, eighth])
+        MetricalDuration(1, 2)
+        """
         if other == 0:
             return self
         return NotImplemented
@@ -443,6 +497,17 @@ class TiedDuration(Duration, Measurable):
     Produced by adding MetricalDurations whose sum is not a single notatable value.
     Adding to a TiedDuration merges neighbouring members wherever possible,
     and collapses back to a plain MetricalDuration when the total becomes notatable.
+
+    A tie is a sequence of its members and a Measurable of their sum:
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import half, eighth
+    >>> tied = TiedDuration([half, eighth])
+    >>> tied.rational_length, len(tied), tied[0]
+    (Fraction(5, 8), 2, MetricalDuration(1, 2))
+    >>> list(tied) == [half, eighth]
+    True
+    >>> tied == MetricalDuration.from_length(F(5, 8))
+    True
     """
 
     members: tuple[Duration, ...]
@@ -470,19 +535,48 @@ class TiedDuration(Duration, Measurable):
 
     @property
     def rational_length(self) -> F:
+        """The sum of the members' real lengths.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import whole, half, eighth
+        >>> TiedDuration([whole, half, eighth]).rational_length
+        Fraction(13, 8)
+        """
         return sum((m.rational_length for m in self.members), F(0))
 
     def scale(self, scalar) -> Duration:
-        """Scale every member; the result is re-merged, so it may collapse to a single symbol."""
+        """Scale every member; the result is re-merged, so it may collapse to a single symbol.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import half, eighth
+        >>> TiedDuration([half, eighth]).scale(2)
+        TiedDuration([MetricalDuration(1, 1), MetricalDuration(1, 4)])
+        >>> TiedDuration([half, eighth]).scale(3)
+        MetricalDuration(1, 1, dots=3)
+        """
         result = self.members[0].scale(scalar)
         for m in self.members[1:]:
             result = result + m.scale(scalar)
         return result
 
     def __neg__(self) -> TiedDuration:
+        """Every member in the opposite direction.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import half, eighth
+        >>> -TiedDuration([half, eighth])
+        TiedDuration([MetricalDuration(-1, 2), MetricalDuration(-1, 8)])
+        """
         return TiedDuration(-m for m in self.members)
 
     def __add__(self, other):
+        """Adds to the tail, merging back through the members as far as it can.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import half, eighth, sixteenth, quarter
+        >>> TiedDuration([half, eighth]) + eighth
+        MetricalDuration(1, 2, dots=1)
+        >>> TiedDuration([half, eighth]) + sixteenth
+        TiedDuration([MetricalDuration(1, 2), MetricalDuration(1, 8, dots=1)])
+        >>> TiedDuration([half, eighth]) + quarter
+        MetricalDuration(1, 2, dots=2)
+        """
         if isinstance(other, ZeroDuration):
             return self
         if isinstance(other, Duration) and _is_negative(self) != _is_negative(other):
@@ -511,6 +605,12 @@ class TiedDuration(Duration, Measurable):
         return TiedDuration(members)
 
     def __radd__(self, other):
+        """Lets `sum` start from 0, and `sum(tied)` rebuild the tie from its members.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import half, eighth
+        >>> sum(TiedDuration([half, eighth]))
+        TiedDuration([MetricalDuration(1, 2), MetricalDuration(1, 8)])
+        """
         if other == 0:
             return self
         return NotImplemented

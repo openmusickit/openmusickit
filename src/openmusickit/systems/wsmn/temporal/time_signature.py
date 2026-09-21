@@ -52,6 +52,15 @@ class TimeSignature(CompoundTemporalUnit):
         The presentation is scaled the same way when it is numeric and the
         result can be written as plain numbers; otherwise it is dropped.
 
+        >>> from openmusickit.systems.wsmn.temporal.symbols import four_four, three_eight
+        >>> four_four.scale(2)
+        TimeSignature([TemporalUnit(8, MetricalDuration(1, 4))], ('8', '4'))
+        >>> three_eight.scale(Fraction(1, 2))
+        TimeSignature([TemporalUnit(3, MetricalDuration(1, 16))], ('3', '16'))
+        >>> third = four_four.scale(Fraction(1, 3))
+        >>> third.rational_length, third.presentation
+        (Fraction(1, 3), None)
+
         Raises
         ------
         ScalingError
@@ -83,7 +92,15 @@ class TimeSignature(CompoundTemporalUnit):
 
 
 def _scale_presentation(presentation: tuple[str, str] | None, scalar) -> tuple[str, str] | None:
-    """Scale a numeric presentation like ("2+2+3", "8") by the same rule as TemporalUnit.scale."""
+    """Scale a numeric presentation like ("2+2+3", "8") by the same rule as TemporalUnit.scale.
+
+    >>> _scale_presentation(("2+2+3", "8"), 2), _scale_presentation(("3", "8"), Fraction(1, 2))
+    (('4+4+6', '8'), ('3', '16'))
+    >>> _scale_presentation(("4", "4"), Fraction(1, 3)) is None  # a tupleted denominator has no plain numbers
+    True
+    >>> _scale_presentation(("C", ""), 2) is None  # not numeric
+    True
+    """
     if presentation is None:
         return None
     try:
