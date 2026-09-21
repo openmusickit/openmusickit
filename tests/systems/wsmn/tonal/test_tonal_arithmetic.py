@@ -260,12 +260,9 @@ def test_abs_int_diff_is_never_negative(tonal_tuples):
         assert ta.abs_int_diff(x, y) >= 0, (x, y, ta.abs_int_diff(x, y))
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: tonal_int assumes at most a triple alteration; the difference of "
-    "two doubly altered pitches (D-sharp and F-double-flat) can exceed that and is misread",
-)
 def test_tonal_int_is_additive_beyond_the_domain(tonal_oct_tuples):
+    """The size of a difference is the difference of the sizes, even where the
+    difference is more than doubly altered (D-sharp and F-double-flat)."""
     for x, y in _pairs(tonal_oct_tuples):
         if not _difference_in_domain(x, y):
             d = ta.tonal_diff(x, y)

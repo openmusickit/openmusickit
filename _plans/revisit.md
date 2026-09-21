@@ -5,18 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `tonal_int` misreads alterations beyond triple (2026-09-21)
-
-`tonal_int` adjusts the chromatic value into a window of three half-steps
-either side of the letter's natural, so a quadruple alteration wraps: the
-difference of D-sharp and F-double-flat is `(2, 0, 0)`, a third of zero
-half-steps, and `tonal_int` of it is 12. Such tuples arise only as
-differences of two doubly altered pitches, so `int(a - b)` is wrong for
-those pairs while `(a - b) + b == a` still holds. Either the domain (at
-most triple alterations) should be documented on `tonal_int` and `__int__`,
-or the window widened to six like `_tonal_unmodulo`. Pinned by
-`test_tonal_int_is_additive_beyond_the_domain`.
-
 ## `tonal_lower_of` returns an un-normalized tuple on a tie (2026-09-21)
 
 `tonal_lower_of` unmodulos both arguments and, when they are the same size,
@@ -236,3 +224,14 @@ and every fixture's size is pinned in `tests/test_fixtures.py`.
 difference, so `abs_int_diff((0, 0), (6, 1))` is 1. `abs_interval` still
 spells that difference as a doubly diminished second `(1, 11, 0)`; only the
 count was wrong. `test_abs_int_diff_is_never_negative` passes.
+
+### `tonal_int` misreads alterations beyond triple (2026-09-21, resolved 2026-09-21)
+
+`tonal_int` now reads every tuple through `_tonal_unmodulo`, the window of
+six half-steps the 2-tuple path already used, so the two paths agree and
+`int(a - b)` is additive for differences of doubly altered pitches. Nothing
+within triple alterations changes. The tuple form itself carries at most six
+half-steps of alteration either way (`c` is chromatic mod 12, so C
+octuple-sharp and C quadruple-flat are the same tuple); anything more
+extreme needs a wider representation, not a wider window. Pinned by
+`test_tonal_int_is_additive_beyond_the_domain`.

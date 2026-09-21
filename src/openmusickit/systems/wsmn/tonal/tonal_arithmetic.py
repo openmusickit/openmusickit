@@ -225,26 +225,20 @@ def tonal_int(x: tuple[int, ...]) -> int:
     >>> tonal_int((2, 0))
     0
 
+    The chromatic value is read as the alteration nearest the letter's natural,
+    so a tuple can carry up to six half-steps of alteration either way
+    (the difference of D-sharp and F-double-flat is a quadruply diminished third):
+
+    >>> tonal_int((2, 0, 0))
+    0
+    >>> tonal_int((0, 8, 0)), tonal_int((0, 6, 0))
+    (-4, 6)
     """
 
+    x = _tonal_unmodulo(x)
     if len(x) == 2:
-        x = _tonal_unmodulo(x)
         return x[1]
-
-    d = x[0]
-    c = x[1]
-    base_c = DIATONES[d].chromatic
-
-    # Example: Cb --- base=0 c=11  c-base=11   11 - 12 = -1
-
-    if c - base_c > 3:
-        c = c - C_LEN
-
-    # Example: B# --- base=11 c=0 c-base=-11        c+C_LEN =12
-    if c - base_c < -3:
-        c = c + C_LEN
-
-    return c + x[2] * (C_LEN)
+    return x[1] + x[2] * C_LEN
 
 
 def tonal_higher_of(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
