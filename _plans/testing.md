@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-9 done 2026-09-21.** Steps 10-12 unexecuted; update this line as each lands. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
+Status: **approved 2026-09-21; Steps 1-10 done 2026-09-21.** Steps 11-12 unexecuted; update this line as each lands. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -807,6 +807,14 @@ arithmetic dunders and `from_*`/accessor pairs; `word.py` `stress_at`,
 Check: `uv run pytest src` passes; the callable count with examples in
 `values/` goes from 8 to at least 60 of 99 (count with a one-off script
 using `inspect.getdoc`, not committed).
+
+Execution notes (2026-09-21): the one-off count (classes, functions,
+methods and properties defined in the source, dunders included, generated
+dataclass members excluded) finds 119 callables in `values/`, not 99, with
+18 examples before this step and 68 after. What remains without one is
+abstract members and container dunders (examples sit on the class, per the
+rule), trivial accessors (`temporal_system`, `ZeroDuration.rational_length`),
+and `values/scoring/mark.py`, which the step's file list does not name.
 
 ### Step 11. Docstring examples: `systems/wsmn`
 

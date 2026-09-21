@@ -35,6 +35,13 @@ class TonalSystem:
     so you are free to implement only what you need,
     as well as mix-and-match (for example, combining a TonalSystem
     from one musical culture with the TemporalSystem from another).
+
+    >>> lute = TonalSystem("Lute tablature", "Courses and frets")
+    >>> lute.name, lute.universal
+    ('Lute tablature', False)
+    >>> from openmusickit.systems.wsmn.tonal.wsmn import WSMN
+    >>> WSMN.name
+    'Western Standard Music Notation'
     """
 
     name: str
@@ -84,6 +91,8 @@ class Tone(ABC):
     True
     >>> isinstance(SilentTone(), Tone)
     True
+    >>> TonalVector((0, 0)).tonal_system.name
+    'Western Standard Music Notation'
 
     Tone and Interval should be subclassed to represent
     the members and relationships of any other pitch or sonic system.
@@ -103,7 +112,16 @@ class Tone(ABC):
     def from_string(cls, s: str) -> Tone:
         """Parses a string and returns a Tone.
 
-        An optional hook: systems with a string form override it; the base raises."""
+        An optional hook: systems with a string form override it; the base raises.
+
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+        >>> TonalVector.from_string("G#")
+        TonalVector((4, 8))
+        >>> Tone.from_string("G#")
+        Traceback (most recent call last):
+        ...
+        NotImplementedError
+        """
         raise NotImplementedError
 
     @property
@@ -111,6 +129,13 @@ class Tone(ABC):
         """The PitchRepresentation of this Tone, defined within a specific
         musical system, which handles various string output methods
         (ex. `x.pitch.unicode`) and interpreters (ex. `TonalVector.pitch('g sharp')`).
+
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+        >>> from openmusickit.values.tone.silent_tone import SilentTone
+        >>> TonalVector((0, 1)).pitch.unicode
+        'C♯'
+        >>> SilentTone().pitch is None
+        True
 
         Unpitched tones (silence, percussion) have no pitch, so the default
         returns None. Pitched subclasses override this, typically like:
@@ -178,7 +203,12 @@ class PitchRepresentation(ABC):
     and each system will likely want to expose a specific API
     for various forms of notation and text output.
 
-    For an example implementation, see TonalVector._PitchRepresentation.
+    For an example implementation, see TonalVector._PitchRepresentation:
+
+    >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+    >>> pitch = TonalVector((2, 3)).pitch
+    >>> isinstance(pitch, PitchRepresentation), pitch.unicode, pitch.ascii
+    (True, 'E♭', 'Eb')
     """
 
     @property

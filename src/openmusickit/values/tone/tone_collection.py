@@ -49,6 +49,16 @@ class ToneCollection:
     so two ToneCollections built from the same tones and root compare equal
     even if they were given different names -- but they remain distinct
     objects (`is` is unaffected).
+
+    A collection is a sequence of its tones (length, indexing, membership,
+    iteration) with a root and a name:
+
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G
+    >>> triad = ToneCollection([C, E, G], root=C, name="{root} major")
+    >>> len(triad), triad[1], E in triad, triad.name
+    (3, TonalVector((2, 4)), True, 'C major')
+    >>> triad == ToneCollection([C, E, G], root=C, name="anything")
+    True
     """
 
     tones: tuple[Tone, ...]
@@ -100,11 +110,21 @@ class ToneCollection:
         return f"{type(self).__name__}({list(self.tones)!r}, root={self.root!r})"
 
     def combinations(self, k: int) -> list[ToneCollection]:
-        """Returns a list of all ToneCollection subsets of k members."""
+        """Returns a list of all ToneCollection subsets of k members, in the collection's order.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G
+        >>> [[format(t) for t in dyad] for dyad in ToneCollection([C, E, G]).combinations(2)]
+        [['C', 'E'], ['C', 'G'], ['E', 'G']]
+        """
         return [ToneCollection(c) for c in combinations(self.tones, k)]
 
     def all_combinations(self) -> list[ToneCollection]:
-        """Returns a list of all ToneCollection subsets of length `2` through `len(self)-1`."""
+        """Returns a list of all ToneCollection subsets of length `2` through `len(self)-1`.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, E, G, B
+        >>> len(ToneCollection([C, E, G, B]).all_combinations())  # 6 dyads and 4 triads
+        10
+        """
         combos = []
         for k in range(2, len(self)):
             for c in combinations(self.tones, k):

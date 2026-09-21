@@ -20,10 +20,16 @@ class ModalContext(ABC):
     Anything that is notation rather than musical content (WSMN's printed
     key signature, for instance) belongs to the implementing system, not here.
 
-    >>> from openmusickit.systems.wsmn.tonal.symbols import C, Major
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, M2, Major
     >>> from openmusickit.systems.wsmn.tonal.key import Key
-    >>> isinstance(Key.of(C, Major), ModalContext)
+    >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+    >>> key = Key.of(C, Major)
+    >>> isinstance(key, ModalContext)
     True
+    >>> key.tonic, key.name, len(key.tones)
+    (TonalVector((0, 0)), 'C Major', 7)
+    >>> key.transform(TonalVector.transpose, M2).name
+    'D Major'
     """
 
     __slots__ = ()

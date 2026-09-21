@@ -13,10 +13,16 @@ from openmusickit.errors import ScalingError
 class TemporalSystem:
     """A named system of musical time (see `TonalSystem` for the tonal counterpart).
 
-    Every Duration reports its system through `temporal_system`, so that code
-    combining durations can refuse to mix systems. A `universal` system is one
-    whose elements belong to no system in particular (a ZeroDuration) and may
-    be combined with anything.
+    Every Duration reports its system through `temporal_system`,
+    so that code combining durations can refuse to mix systems.
+    A `universal` system is one whose elements belong to no system in particular
+    (a ZeroDuration) and may be combined with anything.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> quarter.temporal_system.name
+    'Western Standard Music Notation'
+    >>> ANY_TEMPORAL_SYSTEM.universal
+    True
     """
 
     name: str
@@ -38,17 +44,25 @@ class TemporalSystem:
 
 
 class TemporalElement(ABC):
-    """Any class that represents a structured period of time. For example:
-    note durations, measures, beat cycles, gong cycles, and other units of time.
+    """Any class that represents a structured period of time.
+    For example: note durations, measures, beat cycles, gong cycles,
+    and other units of time.
 
     Any internally-consistent rhythmic/temporal system should be constructable
     using subclasses of TemporalElement and Duration.
 
-    The base contract is only that an element belongs to a TemporalSystem. How
-    elements compare is the system's business: systems whose elements reduce
-    to a single number use `Measurable`, which supplies comparison, hashing
-    and scaling from that number; systems whose elements do not (a chant
-    notation, say) define their own comparison, or none.
+    The base contract is only that an element belongs to a TemporalSystem.
+    How elements compare is the system's business:
+    systems whose elements reduce to a single number use `Measurable`,
+    which supplies comparison, hashing and scaling from that number;
+    systems whose elements do not (a chant notation, say)
+    define their own comparison, or none.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, four_four
+    >>> isinstance(quarter, TemporalElement), isinstance(four_four, TemporalElement)
+    (True, True)
+    >>> quarter.temporal_system is four_four.temporal_system
+    True
     """
 
     __slots__ = ()
@@ -89,12 +103,20 @@ class Measurable(TemporalElement):
     and can be compared against an iterable of Measurables,
     which is measured as the sum of its members.
 
-    Comparison is only defined within a temporal system (or with a universal
-    element such as ZeroDuration); elements of incompatible systems are never
-    equal, and ordering them raises TypeError. To relate them, convert
-    first with a TemporalRatio.
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth, dotted_quarter
+    >>> dotted_quarter.rational_length
+    Fraction(3, 8)
+    >>> dotted_quarter == [eighth, eighth, eighth] == TemporalUnit(3, eighth)
+    True
+    >>> quarter < dotted_quarter, quarter.scale(3)
+    (True, MetricalDuration(1, 2, dots=1))
 
-    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    Comparison is only defined within a temporal system
+    (or with a universal element such as ZeroDuration);
+    elements of incompatible systems are never equal,
+    and ordering them raises TypeError.
+    To relate them, convert first with a TemporalRatio.
+
     >>> from openmusickit.values.time.clock_time import ClockDuration
     >>> quarter == ClockDuration(250_000)
     False
@@ -140,6 +162,12 @@ class Measurable(TemporalElement):
         return self.rational_length == length
 
     def __lt__(self, other) -> bool:
+        """Shorter than `other`, by rational length, within compatible systems.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, dotted_quarter
+        >>> quarter < dotted_quarter, dotted_quarter < quarter
+        (True, False)
+        """
         measured = _measure(other)
         if measured is None:
             return NotImplemented
@@ -161,6 +189,15 @@ class Duration(TemporalElement):
 
     WSMN only requires a single note duration type to cover standard note durations.
     Some temporal systems may need many different Duration types.
+
+    A Duration is a signed quantity: it can be negated and subtracted,
+    so that a displacement between two events is a plain Duration.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+    >>> -quarter
+    MetricalDuration(-1, 4)
+    >>> quarter - eighth, eighth - quarter
+    (MetricalDuration(1, 8), MetricalDuration(-1, 8))
     """
 
     __slots__ = ()
@@ -175,6 +212,12 @@ class Duration(TemporalElement):
         """
 
     def __sub__(self, other):
+        """`self + (-other)`: the difference of two durations, in whatever notation it takes.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import half, quarter
+        >>> half - quarter, quarter - half
+        (MetricalDuration(1, 4), MetricalDuration(-1, 4))
+        """
         if not isinstance(other, Duration):
             return NotImplemented
         return self + (-other)
@@ -188,7 +231,19 @@ ANY_TEMPORAL_SYSTEM = TemporalSystem(
 
 
 class ZeroDuration(Duration, Measurable):
-    """A Duration of zero length (instantaneous), belonging to every system."""
+    """A Duration of zero length (instantaneous), belonging to every system.
+
+    It is the additive identity: adding it to any Duration gives that Duration back,
+    and it is its own negation.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> ZeroDuration() + quarter
+    MetricalDuration(1, 4)
+    >>> quarter - quarter
+    ZeroDuration()
+    >>> ZeroDuration().rational_length, -ZeroDuration()
+    (Fraction(0, 1), ZeroDuration())
+    """
 
     __slots__ = ()
 
@@ -201,9 +256,20 @@ class ZeroDuration(Duration, Measurable):
         return Fraction(0, 1)
 
     def scale(self, scalar: int | Fraction) -> ZeroDuration:
+        """Nothing scaled is still nothing.
+
+        >>> ZeroDuration().scale(3)
+        ZeroDuration()
+        """
         return self
 
     def __add__(self, other: Duration):
+        """Zero plus any Duration is that Duration, of any system.
+
+        >>> from openmusickit.values.time.clock_time import ClockDuration
+        >>> ZeroDuration() + ClockDuration(5)
+        ClockDuration(microseconds=5)
+        """
         if not isinstance(other, Duration):
             raise TypeError(f"Cannot add {type(other)} to a Duration.")
         return other
@@ -255,10 +321,23 @@ class GraceDuration(ZeroDuration):
         return self.nominal.temporal_system
 
     def scale(self, scalar: int | Fraction) -> GraceDuration:
-        """Scales the notated symbol; the width stays zero."""
+        """Scales the notated symbol; the width stays zero.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import grace_eighth
+        >>> grace_eighth.scale(2)
+        GraceDuration(MetricalDuration(1, 4))
+        >>> grace_eighth.scale(2).rational_length
+        Fraction(0, 1)
+        """
         return GraceDuration(self.nominal.scale(scalar), self.on_beat)
 
     def __radd__(self, other):
+        """A grace is absorbed by whatever is on its left, `sum`'s starting 0 included.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import grace_eighth, quarter
+        >>> sum([grace_eighth, quarter, grace_eighth])
+        MetricalDuration(1, 4)
+        """
         # a Duration that does not know about graces (`ClockDuration + grace`)
         # absorbs one, and `sum(durations)` may start from 0
         if isinstance(other, Duration):
@@ -334,6 +413,12 @@ class TemporalUnit(Measurable):
 
     @property
     def rational_length(self) -> Fraction:
+        """The count times the base: three eighths are three eighths of a whole note.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import eighth
+        >>> TemporalUnit(3, eighth).rational_length
+        Fraction(3, 8)
+        """
         return self.count * self.base.rational_length
 
     def scale(self, scalar: int | Fraction) -> TemporalUnit:
@@ -344,6 +429,14 @@ class TemporalUnit(Measurable):
         Otherwise the remaining factor is pushed into the base duration
         (3 eighths / 2 = 3 sixteenths; 1 quarter * 3/2 = 3 eighths;
         4 quarters / 3 = 4 triplet eighths, if the base supports tuplets).
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+        >>> TemporalUnit(4, quarter).scale(2)
+        TemporalUnit(8, MetricalDuration(1, 4))
+        >>> TemporalUnit(3, eighth).scale(Fraction(1, 2))
+        TemporalUnit(3, MetricalDuration(1, 16))
+        >>> TemporalUnit(4, quarter).scale(Fraction(1, 3)).base.rational_length
+        Fraction(1, 12)
 
         Raises
         ------
@@ -376,7 +469,18 @@ class TemporalUnit(Measurable):
 
 @dataclass(frozen=True, slots=True, eq=False)
 class CompoundTemporalUnit(Measurable):
-    """An ordered series of Measurables, measured as their total length."""
+    """An ordered series of Measurables, measured as their total length.
+
+    It is a sequence of its members (length, indexing, membership, iteration),
+    and a Measurable of their sum.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+    >>> bar = CompoundTemporalUnit([TemporalUnit(2, quarter), TemporalUnit(3, eighth)])
+    >>> bar.rational_length, len(bar), TemporalUnit(2, quarter) in bar
+    (Fraction(7, 8), 2, True)
+    >>> bar[1]
+    TemporalUnit(3, MetricalDuration(1, 8))
+    """
 
     units: tuple[Measurable, ...]
 
@@ -401,9 +505,21 @@ class CompoundTemporalUnit(Measurable):
         return item in self.units
 
     def index(self, item: Measurable) -> int:
+        """The position of the first member equal to `item`.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+        >>> CompoundTemporalUnit([TemporalUnit(2, quarter), TemporalUnit(3, eighth)]).index(TemporalUnit(3, eighth))
+        1
+        """
         return self.units.index(item)
 
     def count(self, item: Measurable) -> int:
+        """How many members equal `item`.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+        >>> CompoundTemporalUnit([TemporalUnit(2, quarter), TemporalUnit(2, quarter)]).count(TemporalUnit(2, quarter))
+        2
+        """
         return self.units.count(item)
 
     def __repr__(self):
@@ -415,13 +531,27 @@ class CompoundTemporalUnit(Measurable):
 
     def remainder(self, series: Iterable[Measurable]) -> Fraction:
         """Returns the length of self minus the total length of `series`.
-        Negative if `series` overflows self."""
+        Negative if `series` overflows self.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import three_four, quarter, half
+        >>> three_four.remainder([quarter, quarter])
+        Fraction(1, 4)
+        >>> three_four.remainder([half, half])
+        Fraction(-1, 4)
+        """
         return self.rational_length - sum((s.rational_length for s in series), Fraction(0))
 
     def first_out_of_bounds(self, series: Iterable[Measurable]) -> int | None:
-        """Returns the index of the first items in `series`
+        """Returns the index of the first item in `series`
         that exceeds the length of self.
-        Returns None if the total length of series is <= length of self."""
+        Returns None if the total length of series is <= length of self.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import three_four, quarter
+        >>> three_four.first_out_of_bounds([quarter] * 4)
+        3
+        >>> three_four.first_out_of_bounds([quarter] * 3) is None
+        True
+        """
 
         srl = self.rational_length
         for i, item in enumerate(series):
@@ -431,6 +561,17 @@ class CompoundTemporalUnit(Measurable):
         return None
 
     def scale(self, scalar: int | Fraction) -> CompoundTemporalUnit:
+        """Scales every member.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, eighth
+        >>> CompoundTemporalUnit([TemporalUnit(2, quarter), TemporalUnit(3, eighth)]).scale(2)
+        CompoundTemporalUnit([TemporalUnit(4, MetricalDuration(1, 4)), TemporalUnit(6, MetricalDuration(1, 8))])
+
+        Raises
+        ------
+        ScalingError
+            if any member cannot be scaled by `scalar`.
+        """
         try:
             new_units = [tu.scale(scalar) for tu in self.units]
         except ScalingError as e:
@@ -482,7 +623,15 @@ class TemporalRatio:
         contextual_length / nominal_length.
 
         For a quarter-note triplet this is 2/3;
-        for a tempo of quarter = 60 it is microseconds-per-whole-note (4_000_000)."""
+        for a tempo of quarter = 60 it is microseconds-per-whole-note (4_000_000).
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import triplet, quarter
+        >>> triplet(quarter).multiplier
+        Fraction(2, 3)
+        >>> from openmusickit.values.time.clock_time import Tempo
+        >>> Tempo(60, quarter).multiplier
+        Fraction(4000000, 1)
+        """
         return Fraction(self.contextual.rational_length) / Fraction(self.nominal.rational_length)
 
     def __eq__(self, other):

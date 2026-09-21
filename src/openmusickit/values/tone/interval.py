@@ -19,6 +19,8 @@ class Interval(ABC):
     >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
     >>> isinstance(TonalVector((0, 0)), Interval)
     True
+    >>> TonalVector((2, 4)).tonal_system.name
+    'Western Standard Music Notation'
     """
 
     __slots__ = ()
@@ -32,7 +34,16 @@ class Interval(ABC):
     def from_string(cls, s: str) -> Interval:
         """Parses a string and returns an Interval.
 
-        An optional hook: systems with a string form override it; the base raises."""
+        An optional hook: systems with a string form override it; the base raises.
+
+        >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+        >>> TonalVector.from_string("M3")
+        TonalVector((2, 4))
+        >>> Interval.from_string("M3")
+        Traceback (most recent call last):
+        ...
+        NotImplementedError
+        """
         raise NotImplementedError
 
 
@@ -44,7 +55,12 @@ class IntervalRepresentation(ABC):
     and each system will likely want to expose a specific API
     for various forms of notation and text output.
 
-    For an example implementation, see TonalVector._IntervalRepresentation.
+    For an example implementation, see TonalVector._IntervalRepresentation:
+
+    >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+    >>> interval = TonalVector((2, 4)).interval
+    >>> isinstance(interval, IntervalRepresentation), interval.unicode, interval.abbr
+    (True, 'major 3', 'maj3')
     """
 
     @property

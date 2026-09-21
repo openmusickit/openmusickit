@@ -8,6 +8,14 @@ from openmusickit.errors import LyricConsistencyError
 
 
 class LexicalStress(StrEnum):
+    """The stress a syllable carries in speech: primary, secondary, or none marked.
+
+    >>> LexicalStress.PRIMARY
+    <LexicalStress.PRIMARY: 'primary'>
+    >>> str(LexicalStress.SECONDARY)
+    'secondary'
+    """
+
     UNSTRESSED = auto()
     SECONDARY = auto()
     PRIMARY = auto()
@@ -137,11 +145,23 @@ class Word:
         return cls(syllables, stress)
 
     def stress_at(self, index: int) -> LexicalStress | None:
+        """The stress of the syllable at `index`, or None if none is marked.
+
+        >>> word = Word.from_string("al-le-'lu-ia")
+        >>> word.stress_at(2), word.stress_at(0)
+        (<LexicalStress.PRIMARY: 'primary'>, None)
+        """
         return self.stress[index]
 
     @property
     def primary(self) -> int | None:
-        """The index of the PRIMARY syllable, if one is marked."""
+        """The index of the PRIMARY syllable, if one is marked.
+
+        >>> Word.from_string("al-le-'lu-ia").primary
+        2
+        >>> Word(["sing"]).primary is None
+        True
+        """
         try:
             return self.stress.index(LexicalStress.PRIMARY)
         except ValueError:
