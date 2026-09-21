@@ -45,6 +45,41 @@ C4, though C4 is spelled on the higher letter. Is the intended rule the
 diatonic *position* (`d + 7 * o`)? Pinned, under that reading, by
 `test_higher_of_enharmonic_tie_across_an_octave_goes_to_the_higher_letter`.
 
+## `MetricalDuration + TiedDuration` raises (2026-09-21)
+
+`MetricalDuration.__add__` handles a tie on the right with
+`TiedDuration([self]) + other`, and the `TiedDuration` constructor rejects
+fewer than two members, so `quarter + TiedDuration([half, eighth])` raises
+`ValueError` while the reverse order works. Addition is therefore not
+associative over the symbol table. Pinned by
+`test_a_symbol_plus_a_tie_is_the_tie_plus_the_symbol` in
+`tests/systems/wsmn/temporal/test_tied_duration.py` and
+`test_addition_is_associative` in `test_duration_algebra.py`.
+
+## `MetricalDuration + ClockDuration` makes a cross-system tie (2026-09-21)
+
+`MetricalDuration.__add__` accepts any `Duration`; `_merge` declines a
+`ClockDuration`, so `quarter + ClockDuration(5)` is
+`TiedDuration([quarter, ClockDuration(5)])`, whose `rational_length` adds a
+quarter of a whole note to five microseconds. The reverse order raises
+`TypeError`. `TemporalCompatibilityError` exists for this. Pinned by
+`test_metrical_time_plus_clock_time_is_refused` in
+`tests/values/time/test_clock_duration.py`.
+
+## `ClockDuration` small contract gaps (2026-09-21)
+
+Three, each pinned in `tests/values/time/test_clock_duration.py`:
+
+- `ClockDuration(5) + ZeroDuration()` raises `TypeError`, though
+  `ZeroDuration() + ClockDuration(5)` and `ClockDuration(5) + grace` work.
+  `ZeroDuration` has no `__radd__`; `GraceDuration` does.
+  (`test_zero_is_the_additive_identity_on_either_side`)
+- `__truediv__` computes `microseconds / scalar`, which for two ints is a
+  float, so `ClockDuration(7) / 3` is inexact while `scale(Fraction(1, 3))`
+  is exact. (`test_division_by_an_int_is_exact`)
+- `scale` accepts zero and negative scalars; `Measurable.scale` says to raise
+  `ScalingError`. (`test_scaling_by_a_non_positive_scalar_raises_scaling_error`)
+
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)

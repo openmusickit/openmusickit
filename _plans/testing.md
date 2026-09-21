@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-2 done 2026-09-21.** Steps 3-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-3 done 2026-09-21.** Steps 4-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -539,6 +539,15 @@ def test_addition_is_commutative_and_subtraction_undoes_it(duration_symbols):
 
 Check: the laws in 1e all appear; `scale` by `{2, 3, 1/2, 2/3, 3/2}` either
 round-trips or raises `ScalingError` only.
+
+Execution notes (2026-09-21): `MetricalDuration.scale` never raises for a
+positive rational, so the test asserts the length law outright and
+`ScalingError` for non-positive scalars. `from_length` reproduces every
+symbol's exact spelling (repr-equal), which is asserted. Five defects
+surfaced, each a strict xfail and a `revisit.md` entry: a tie on the right
+of `+` raises (so associativity is an xfail), a clock duration on the right
+of `+` makes a cross-system tie, and three small `ClockDuration` contract
+gaps (`+ ZeroDuration`, int division through float, non-positive scale).
 
 ### Step 4. Keys, chords, qualities, collections, marks, parsers
 
