@@ -352,12 +352,9 @@ def test_transposing_a_realized_chord_up_then_down_restores_it(chord_type_symbol
                 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: inversion onto a tone the chord does not contain is accepted, "
-    "and the bad bass only surfaces later as a ValueError from list.index in arpeggiate",
-)
 def test_inversion_onto_a_tone_not_in_the_chord_is_rejected():
+    """A bass the chord does not contain is refused at once (see the TODO in
+    `_resolve_inversion`: one day it will name a different chord instead)."""
     from openmusickit.systems.wsmn.tonal.symbols import Db
 
     with pytest.raises(ValueError):

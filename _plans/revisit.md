@@ -5,15 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `Chord.inversion` accepts a bass the chord does not contain (2026-09-21)
-
-`maj.inversion(Db)` and `C(maj) / Db` succeed, setting a bass that is not
-one of the chord's tones; the mistake surfaces later as a bare `ValueError`
-from `list.index` inside `arpeggiate`. `_resolve_inversion` could check
-membership when given a TonalVector. Pinned by
-`test_inversion_onto_a_tone_not_in_the_chord_is_rejected` in
-`tests/systems/wsmn/tonal/test_chords.py` (Part 5, item 7 of the testing plan).
-
 ## `IntervalQuality.augment` past the table raises a bare `KeyError` (2026-09-21)
 
 `QUALITIES[4.5].augment(1)` indexes `QUALITIES` with 5.5 and lets the
@@ -221,3 +212,12 @@ ZeroDuration()` works. `ClockDuration.__truediv__` divides through
 raises `ScalingError` for anything but a positive rational, as
 `Measurable.scale` requires. The three tests in
 `tests/values/time/test_clock_duration.py` pass.
+
+### `Chord.inversion` accepts a bass the chord does not contain (2026-09-21, resolved 2026-09-21)
+
+`_resolve_inversion` now raises `ValueError` for a TonalVector that is
+not one of the chord's tones, so `maj.inversion(Db)` and `C(maj) / Db`
+fail at once. This is a placeholder: the developer notes that C major over
+B-flat is a real object, a C7 in third inversion, and naming it needs a
+chord lookup system that does not exist yet; a TODO in the method says so.
+Pinned by `test_inversion_onto_a_tone_not_in_the_chord_is_rejected`.

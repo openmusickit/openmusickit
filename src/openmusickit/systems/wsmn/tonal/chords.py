@@ -74,9 +74,26 @@ class _ChordBase(ToneCollection):
         keeps the existing name unless `name` was supplied (inversions are
         reflected in `__str__`, not in the name).
         Used by both ChordType and Chord, since inverting a Chord follows
-        the same rule as inverting a ChordType, just producing a Chord."""
+        the same rule as inverting a ChordType, just producing a Chord.
+
+        Raises ValueError for a TonalVector the chord does not contain,
+        and IndexError for an int past the last tone.
+
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, Db, maj
+        >>> C(maj) / Db
+        Traceback (most recent call last):
+        ...
+        ValueError: TonalVector((1, 1)) is not a tone of Chord(...); cannot be its bass.
+        """
 
         if isinstance(inv, TonalVector):
+            # TODO: a bass the chord does not contain is a real musical object
+            # (C major over B-flat is a C7 in third inversion), but naming it
+            # takes a chord lookup system, which does not exist yet. Until it
+            # does, refuse rather than carry a bass that `arpeggiate` cannot
+            # place.
+            if inv not in list(self):
+                raise ValueError(f"{inv!r} is not a tone of {self!r}; cannot be its bass.")
             bass = inv
         elif isinstance(inv, int):
             try:
