@@ -5,18 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## NEXT cycles are valid, and walkers do not stop (2026-09-21)
-
-Testing plan, Part 5 item 1, with the developer's note: cyclic music (a
-gamelan cycle) is a NEXT cycle, `add_line([a, b, c]); add_next(c, a)`
-passes both guards, and that is right. But `walk_line` then goes round
-forever, `walk_span` can loop through a head branched from its own tree,
-and `transform_tones` and `materialize` walk with them. Walkers need a way
-to stop: yield each event once, or stop at the start event, or take a
-bound. Pinned by `test_walk_line_terminates_on_a_cyclic_line` in
-`tests/graph/test_graph_properties.py`; the state machine in
-`test_graph_state_machine.py` never builds a cycle until this is settled.
-
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)
@@ -216,3 +204,20 @@ they inherit the compact `__repr__` of `OmkEdge` and `TimedEdge`
 (`Branch(anchor=onset, displacement=None)`); `Next` had the same
 generated form against `OmkEdge.__repr__`. Each class docstring shows its
 repr.
+
+### NEXT cycles are valid, and walkers do not stop (2026-09-21, resolved 2026-09-21)
+
+Walkers yield each event once. `walk_line` stops when the next event is
+one it already yielded, so a cycle comes out as one pass from wherever the
+walk starts, and an `end` that is never reached is a `ValueError` rather
+than a hang; `walk_span` shares one set of seen events down its
+recursion, so a head branched from its own tree is entered once;
+`transform_tones`, `walk_stint` and `materialize` inherit both. The raw
+follower is factored out as `OmkGraph._follow_next`, which never stops on
+a cycle, so a future realization walker that means to go round
+continuously, or a counted number of times, bounds it its own way (the
+developer's note, 2026-09-21). Pinned by
+`test_walk_line_terminates_on_a_cyclic_line` and
+`test_walk_span_terminates_when_lines_branch_into_each_other`. The state
+machine in `test_graph_state_machine.py` still builds no cycles, because
+its model tracks lines by head and tail; teaching it cycles is a follow-up.

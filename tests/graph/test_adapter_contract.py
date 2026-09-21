@@ -118,8 +118,8 @@ def test_next_is_one_out_and_one_in(adapter):
         adapter.add_edge(c, e, Next())  # c already has a NEXT out
     with pytest.raises(GraphError):
         adapter.add_edge(e, d, Next())  # d already has a NEXT in
-    # a NEXT back from d to c would make a two-event cycle, which the
-    # one-in/one-out rule does not forbid (testing plan, Part 5 item 1)
+    # a NEXT back from d to c would make a two-event cycle, which is valid
+    # (cyclic music) and which the one-in/one-out rule does not forbid
     assert adapter.num_edges() == 1
     adapter.add_edge(d, e, Next())
     assert adapter.get_next(c) is d and adapter.get_next(d) is e and adapter.get_next(e) is None

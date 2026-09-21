@@ -359,7 +359,9 @@ class OmkGraph:
         self, start: SequentialEvent, end: SequentialEvent | None = None
     ) -> Iterator[SequentialEvent]:
         """Yields the events from `start` to `end` (inclusive) along NEXT edges;
-        `end=None` runs to the end of the line. Never leaves the line.
+        `end=None` runs to the end of the line. Never leaves the line, and
+        yields each event once: a cyclic line (a gamelan cycle, whose last
+        event is followed by its first) comes out as one pass from `start`.
 
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
@@ -374,19 +376,37 @@ class OmkGraph:
         Traceback (most recent call last):
         ...
         ValueError: NoteEvent(...) was not reached: the line starting at NoteEvent(...) ended first.
+        >>> graph.add_next(e, c)  # close the cycle
+        >>> [format(next(iter(n.tones))) for n in graph.walk_line(d)]
+        ['D', 'E', 'C']
 
-        Raises ValueError if the line ends before `end` is reached.
+        Raises ValueError if the line ends, or comes back round to an event
+        already yielded, before `end` is reached.
         """
-        obj: SequentialEvent | None = start
-        while obj is not None:
+        seen: set[UUID] = set()
+        for obj in self._follow_next(start):
+            if obj.id in seen:
+                break
+            seen.add(obj.id)
             yield obj
             if obj is end:
                 return
-            obj = self.get_next(obj)
         if end is not None:
             raise ValueError(
                 f"{end!r} was not reached: the line starting at {start!r} ended first."
             )
+
+    def _follow_next(self, start: SequentialEvent) -> Iterator[SequentialEvent]:
+        """Yields `start` and then each NEXT successor for as long as there is
+        one. On a cyclic line this never stops: `walk_line` bounds it to one
+        pass over the events, and a walker that means to go round (a
+        realization playing a cycle continuously, or a counted number of
+        times) bounds it its own way.
+        """
+        obj: SequentialEvent | None = start
+        while obj is not None:
+            yield obj
+            obj = self.get_next(obj)
 
     def walk_span(
         self, start: SequentialEvent, end: SequentialEvent | None = None
@@ -394,7 +414,8 @@ class OmkGraph:
         """Yields the events from `start` to `end` (inclusive) along NEXT edges,
         and, after each, the whole of every line branched from it: everything
         the performer of this line does over that stretch. Pinned lines
-        (`add_simultaneous`) are never entered.
+        (`add_simultaneous`) are never entered. Each event is yielded once,
+        however the lines cycle or branch back into each other.
 
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, A, B
@@ -408,10 +429,20 @@ class OmkGraph:
         >>> [format(next(iter(n.tones))) for n in graph.walk_line(c)]
         ['C', 'D', 'E']
         """
+        yield from self._walk_span(start, end, set())
+
+    def _walk_span(
+        self, start: SequentialEvent, end: SequentialEvent | None, seen: set[UUID]
+    ) -> Iterator[SequentialEvent]:
+        """`walk_span` with the events already yielded, shared down the
+        recursion, so a head branched from its own tree is entered once."""
         for event in self.walk_line(start, end):
+            if event.id in seen:
+                return
+            seen.add(event.id)
             yield event
             for head in self.branches_from(event):
-                yield from self.walk_span(head)
+                yield from self._walk_span(head, None, seen)
 
     def transform_tones(
         self,

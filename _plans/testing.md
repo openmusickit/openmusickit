@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-12 done 2026-09-21.** All steps executed; see the execution notes under each step and the open entries in `_plans/revisit.md`. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
+Status: **approved 2026-09-21; Steps 1-12 done 2026-09-21; the thirteen `revisit.md` entries the steps opened were fixed the same day, one commit each, and every strict xfail is now a passing test.** See the execution notes under each step and the Resolved section of `_plans/revisit.md`. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.

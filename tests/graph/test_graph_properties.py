@@ -21,10 +21,10 @@ from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.part import Part, Stint
 from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter
-from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+from openmusickit.systems.wsmn.tonal.symbols import M2, A, C, D, E, F
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.time.duration import ZeroDuration
-from tests.graph.helpers import notes, snapshot
+from tests.graph.helpers import names, notes, snapshot
 from tests.strategies import lines, note_events, tonal_vectors
 
 
@@ -147,15 +147,13 @@ def test_materialize_copies_the_span_exactly_and_leaves_the_original(line, data)
     assert list(graph._graph.successors(stint, edge_type=EdgeType.STARTS_AT)) == [head]
 
 
-# --- Part 5, item 1: a NEXT cycle is accepted and walkers do not stop ---------------
+# --- cyclic lines: valid music, and walkers go round once ---------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: NEXT cycles are valid music (a gamelan cycle), and walk_line "
-    "goes round one forever; walkers need a way to stop",
-)
 def test_walk_line_terminates_on_a_cyclic_line():
+    """A NEXT cycle (a gamelan cycle) is accepted, and `walk_line` yields
+    each event once, from wherever it starts; an `end` past the cycle is a
+    ValueError, not a hang."""
     graph = OmkGraph(GraphMeta())
     cycle = notes(C, D, E)
     graph.add_line(cycle)
@@ -163,6 +161,28 @@ def test_walk_line_terminates_on_a_cyclic_line():
     assert graph.get_next(cycle[-1]) is cycle[0]
     events = list(itertools.islice(graph.walk_line(cycle[0]), len(cycle) + 1))
     assert events == cycle
+    assert list(graph.walk_line(cycle[1])) == cycle[1:] + cycle[:1]
+    assert list(graph.walk_line(cycle[1], cycle[0])) == cycle[1:] + cycle[:1]
+    stranger = notes(A)[0]
+    graph.add_node(stranger)
+    with pytest.raises(ValueError):
+        list(graph.walk_line(cycle[0], stranger))
+
+
+def test_walk_span_terminates_when_lines_branch_into_each_other():
+    """Two heads each branched from the other's line are walked once each;
+    `transform_tones` over the span touches every event exactly once."""
+    graph = OmkGraph(GraphMeta())
+    first, second = notes(C, D), notes(E, F)
+    graph.add_line(first)
+    graph.add_line(second)
+    graph.add_branch(first[0], second[0])
+    graph.add_branch(second[0], first[0])
+    events = list(itertools.islice(graph.walk_span(first[0]), 5))
+    assert sorted(names(events)) == sorted(names(first + second))
+    assert len(events) == 4
+    graph.transform_tones(first[0], None, TonalVector.transpose, M2)
+    assert names(first + second) == ["D", "E", "F#", "G"]
 
 
 def test_a_nudged_branch_keeps_onsets_consistent():

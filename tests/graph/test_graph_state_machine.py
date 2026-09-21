@@ -9,8 +9,10 @@ itself; consecutive onsets follow durations; every walk terminates within
 the node count; `check_alignment` runs.
 
 The generator never makes a NEXT cycle (it only appends to a tail) and
-never branches a head from its own tree, since walkers do not yet stop on
-cycles (Part 5, item 1); pins may go anywhere.
+never branches a head from its own tree: the model tracks lines by head
+and tail, which a cycle has neither of. Walkers do stop on cycles (see
+`test_graph_properties.py`); teaching the model cycles is a follow-up.
+Pins may go anywhere.
 
 Run with `uv run pytest --hypothesis-profile=thorough` for 2,000 runs.
 """
