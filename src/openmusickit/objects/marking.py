@@ -7,7 +7,13 @@ from openmusickit.values.scoring.mark import AttachmentMode, Mark
 
 class Marked(ABC):
     """Mixin for objects that carry a `Mark`: the `isinstance` target for
-    "is this a mark in the score", whatever it is attached to."""
+    "is this a mark in the score", whatever it is attached to.
+
+    >>> from openmusickit.systems.wsmn.scoring.symbols import staccato, slur
+    >>> dot, arc = Marking(mark=staccato), MarkSpanner(mark=slur)
+    >>> isinstance(dot, Marked), isinstance(arc, Marked), dot.mark is staccato
+    (True, True, True)
+    """
 
     __slots__ = ()
 

@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-11 done 2026-09-21.** Step 12 unexecuted; update this line as each lands. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
+Status: **approved 2026-09-21; Steps 1-12 done 2026-09-21.** All steps executed; see the execution notes under each step and the open entries in `_plans/revisit.md`. Line coverage before/after Steps 1-9: 94% -> 98% all, 91% -> 97% from `tests/` alone.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -857,6 +857,13 @@ class docstrings; `ChordEvent` a construction example. Edge: `Branch`,
 
 Check: `uv run pytest src` passes; `OmkGraph` goes from 11 to at least 30 of
 37 (the stubs excluded).
+
+Execution notes (2026-09-21): `OmkGraph` has 36 methods beside the six
+stubs, 11 with an example before and 35 after (`GraphMeta`, an empty
+class, is the one left). `objects/` went from 17 to 21 of 50; the
+`NoteEvent` tone editors (`remove_tone`, `clear_tones`, `make_rest`,
+`swap_tone`), `SyllablePlacement`, and the `LyricSyllable` accessors were
+outside the step's list and remain without one.
 
 ## Verification
 

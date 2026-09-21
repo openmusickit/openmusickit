@@ -36,7 +36,21 @@ class GraphMeta:
 
 
 class OmkGraph:
-    """A graph representation of music."""
+    """A graph representation of music: objects (see `objects`) as nodes,
+    related by typed edges (see `graph.edge`). See the `graph` package
+    docstring for lines, branches, pins, parts and stints.
+
+    >>> from openmusickit.objects.note_event import NoteEvent
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+    >>> graph = OmkGraph(GraphMeta())
+    >>> c, d, e = (NoteEvent(tones={t}, duration=quarter) for t in (C, D, E))
+    >>> graph.add_line([c, d, e])
+    >>> [format(next(iter(n.tones))) for n in graph.walk_line(c)]
+    ['C', 'D', 'E']
+    >>> graph.relative_onset(c, e)
+    MetricalDuration(1, 2)
+    """
 
     def __init__(self, meta: GraphMeta, graph_engine: GraphAdapter | None = None):
         self._meta = meta
@@ -70,11 +84,30 @@ class OmkGraph:
     # Basic Add, Connect, Remove
 
     def get_node(self, node_id: UUID | str) -> OmkObject | None:
-        """Returns an OmkObj based on id. Returns None if no such object exists."""
+        """Returns an OmkObj based on id. Returns None if no such object exists.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C
+        >>> graph = OmkGraph(GraphMeta())
+        >>> note = NoteEvent(tones={C})
+        >>> graph.add_node(note)
+        >>> graph.get_node(note.id) is note, graph.get_node(str(note.id)) is note
+        (True, True)
+        """
         return self._graph.get_node(str(node_id))
 
     def add_node(self, obj: OmkObject) -> None:
-        """Adds node to the graph. If the node is already on the graph, does nothing."""
+        """Adds node to the graph. If the node is already on the graph, does nothing.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C
+        >>> graph = OmkGraph(GraphMeta())
+        >>> note = NoteEvent(tones={C})
+        >>> graph.add_node(note)
+        >>> graph.add_node(note)  # a second add is a no-op
+        >>> graph.get_node(note.id) is note
+        True
+        """
         self._graph.add_node(obj)
 
     def remove_node(self, obj: OmkObject) -> None:
@@ -84,27 +117,120 @@ class OmkGraph:
         if you retain a reference to the object and edges, they remain accessible
         until they are garbage collected.
 
+        Removing an event from the middle of a line takes its NEXT edges with it:
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> graph.remove_node(d)
+        >>> graph.get_next(c) is None, list(graph.edges())
+        (True, [])
+
         Raises an exception if the node does not exist."""
         self._graph.remove_node(obj)
 
     def get_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> OmkEdge:
+        """Returns the edge of `edge_type` from `from_obj` to `to_obj`.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d])
+        >>> graph.get_edge(c, d, EdgeType.NEXT).type
+        <EdgeType.NEXT: 'next'>
+        >>> graph.get_edge(c, d, EdgeType.MARKS)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: No edge of type <EdgeType.MARKS: 'marks'> between ...
+
+        Raises
+        ------
+        GraphError
+            if there is no such edge.
+        """
         return self._graph.get_edge(from_obj, to_obj, edge_type)
 
     def edges_between(
         self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType | None = None
     ) -> Iterator[OmkEdge]:
-        """Iterates over the edges from from_obj to to_obj, optionally filtered by edge_type."""
+        """Iterates over the edges from from_obj to to_obj, optionally filtered by edge_type.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d])
+        >>> [edge.type for edge in graph.edges_between(c, d)]
+        [<EdgeType.NEXT: 'next'>]
+        >>> list(graph.edges_between(d, c))  # edges are directed
+        []
+        """
         return self._graph.edges_between(from_obj, to_obj, edge_type)
 
     def edges(self, edge_type: EdgeType | None = None) -> Iterator[OmkEdge]:
-        """Iterates over all edges, optionally filtered by edge_type."""
+        """Iterates over all edges, optionally filtered by edge_type.
+
+        >>> from openmusickit.objects.marking import Marking
+        >>> from openmusickit.systems.wsmn.scoring.symbols import staccato
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> graph.add_articulation(Marking(mark=staccato), c)
+        >>> sorted(edge.type.name for edge in graph.edges())
+        ['MARKS', 'NEXT', 'NEXT']
+        >>> [edge.type.name for edge in graph.edges(EdgeType.MARKS)]
+        ['MARKS']
+        """
         return self._graph.edges(edge_type)
 
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
+        """Adds a plain edge of `edge_type`; the semantic methods (`add_next`,
+        `add_branch`, `add_articulation`, ...) build on this and are usually
+        what a caller wants.
+
+        >>> from openmusickit.objects.marking import Marking
+        >>> from openmusickit.systems.wsmn.scoring.symbols import staccato
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> dot = Marking(mark=staccato)
+        >>> graph.add_line([c, d])
+        >>> graph.add_node(dot)
+        >>> graph.add_edge(dot, c, EdgeType.MARKS)
+        >>> graph.get_edge(dot, c, EdgeType.MARKS).type
+        <EdgeType.MARKS: 'marks'>
+        >>> graph.add_edge(dot, c, EdgeType.MARKS)  # one edge of a type between two nodes
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: An edge of type <EdgeType.MARKS: 'marks'> already exists ...
+
+        Raises
+        ------
+        GraphError
+            if an edge of that type already exists between the two nodes,
+            or if a NEXT edge would give a node a second NEXT in or out.
+        """
         edge = OmkEdge(type=edge_type)
         self._graph.add_edge(from_obj, to_obj, edge)
 
     def remove_edge(self, edge: OmkEdge) -> OmkEdge:
+        """Removes an edge, found with `get_edge` or by iterating `edges`.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d])
+        >>> graph.remove_edge(graph.get_edge(c, d, EdgeType.NEXT))
+        >>> graph.get_next(c) is None, graph.get_previous(d) is None
+        (True, True)
+        """
         return self._graph.remove_edge(edge)
 
     # Sequential Data
@@ -137,9 +263,29 @@ class OmkGraph:
         self._graph.add_edge(current, following, Next())
 
     def get_next(self, current: SequentialEvent) -> SequentialEvent | None:
+        """The event that follows `current` in its line, or None at the end of the line.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> graph.get_next(c) is d, graph.get_next(e) is None
+        (True, True)
+        """
         return self._graph.get_next(current)
 
     def get_previous(self, current: SequentialEvent) -> SequentialEvent | None:
+        """The event before `current` in its line, or None at the head of the line.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> graph.get_previous(d) is c, graph.get_previous(c) is None
+        (True, True)
+        """
         return self._graph.get_previous(current)
 
     def insert_event(
@@ -147,14 +293,35 @@ class OmkGraph:
     ) -> None:
         """Insert a SequentialEvent between two SequentialEvents.
 
-        It makes no difference if the inserted object was already part of the graph."""
+        It makes no difference if the inserted object was already part of the graph.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, e])
+        >>> graph.insert_event(d, c, e)
+        >>> [format(next(iter(n.tones))) for n in graph.walk_line(c)]
+        ['C', 'D', 'E']
+        """
         edge = self.get_edge(prev, following, EdgeType.NEXT)
         self.remove_edge(edge)
         self.add_next(prev, event)
         self.add_next(event, following)
 
     def add_line(self, line: list[SequentialEvent]) -> None:
-        """Create a new linear subgraph from a list of objects."""
+        """Create a new linear subgraph from a list of objects.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> [format(next(iter(n.tones))) for n in graph.walk_line(c)]
+        ['C', 'D', 'E']
+        >>> graph.get_previous(c) is None, graph.get_next(e) is None
+        (True, True)
+        """
         prev = None
         for obj in line:
             if prev is not None:
@@ -166,7 +333,17 @@ class OmkGraph:
     def insert_line_from_list(
         self, line: list[SequentialEvent], prev: SequentialEvent, following: SequentialEvent
     ) -> None:
-        """Create a new linear subgraph from a list of objects and insert it between prev and next."""
+        """Create a new linear subgraph from a list of objects and insert it between prev and next.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e, f = (NoteEvent(tones={t}) for t in (C, D, E, F))
+        >>> graph.add_line([c, f])
+        >>> graph.insert_line_from_list([d, e], c, f)
+        >>> [format(next(iter(n.tones))) for n in graph.walk_line(c)]
+        ['C', 'D', 'E', 'F']
+        """
         self.remove_edge(self.get_edge(prev, following, EdgeType.NEXT))
         if not line:
             self.add_next(prev, following)
@@ -180,6 +357,20 @@ class OmkGraph:
     ) -> Iterator[SequentialEvent]:
         """Yields the events from `start` to `end` (inclusive) along NEXT edges;
         `end=None` runs to the end of the line. Never leaves the line.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> [format(next(iter(n.tones))) for n in graph.walk_line(d)]
+        ['D', 'E']
+        >>> [format(next(iter(n.tones))) for n in graph.walk_line(c, d)]
+        ['C', 'D']
+        >>> list(graph.walk_line(e, c))
+        Traceback (most recent call last):
+        ...
+        ValueError: NoteEvent(...) was not reached: the line starting at NoteEvent(...) ended first.
 
         Raises ValueError if the line ends before `end` is reached.
         """
@@ -307,7 +498,17 @@ class OmkGraph:
         self._graph.add_edge(parent, head, Branch(anchor=anchor, displacement=displacement))
 
     def branches_from(self, event: SequentialEvent) -> Iterator[SequentialEvent]:
-        """The heads of the lines branched from `event`."""
+        """The heads of the lines branched from `event`.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, A
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, a = (NoteEvent(tones={t}) for t in (C, D, A))
+        >>> graph.add_line([c, d])
+        >>> graph.add_branch(d, a)
+        >>> list(graph.branches_from(d)) == [a], list(graph.branches_from(c))
+        (True, [])
+        """
         return self._graph.successors(event, SequentialEvent, EdgeType.BRANCHES)
 
     def add_simultaneous(
@@ -507,13 +708,35 @@ class OmkGraph:
             self.add_edge(stint, end, EdgeType.ENDS_AT)
 
     def stints(self, part: Part) -> Iterator[Stint]:
-        """The stints `part` performs, in no particular order."""
+        """The stints `part` performs, in no particular order.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> flute, stint = Part(name="Flute"), Stint()
+        >>> graph.add_stint(flute, stint, c)
+        >>> list(graph.stints(flute)) == [stint]
+        True
+        """
         return self._graph.successors(part, Stint, EdgeType.PERFORMS)
 
     def walk_stint(self, stint: Stint) -> Iterator[SequentialEvent]:
         """The events `stint` covers (`walk_span` from its start to its end).
         The events are yielded as they are; `stint.transposition` is the
-        consumer's to apply."""
+        consumer's to apply.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> stint = Stint()
+        >>> graph.add_stint(Part(name="Oboe"), stint, c, d)
+        >>> [format(next(iter(n.tones))) for n in graph.walk_stint(stint)]
+        ['C', 'D']
+        """
         start, end = self._stint_bounds(stint)
         return self.walk_span(start, end)
 
@@ -623,16 +846,58 @@ class OmkGraph:
     # Annotations (articulations, memos, analysis)
 
     def add_articulation(self, articulation: Marking, obj: OmkObject) -> None:
+        """Places a mark on one event, with a MARKS edge from the mark to the event.
+
+        >>> from openmusickit.objects.marking import Marking
+        >>> from openmusickit.systems.wsmn.scoring.symbols import staccato
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d])
+        >>> dot = Marking(mark=staccato)
+        >>> graph.add_articulation(dot, c)
+        >>> graph.get_edge(dot, c, EdgeType.MARKS).type
+        <EdgeType.MARKS: 'marks'>
+        """
         self.add_node(articulation)
         self.add_edge(articulation, obj, EdgeType.MARKS)
 
     def add_annotation(self, annotation: OmkObject, obj: OmkObject) -> None:
+        """Attaches any object to another as an annotation (a memo, an
+        analysis figure), with an ANNOTATES edge from the annotation to the object.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d])
+        >>> memo = OmkObject()
+        >>> graph.add_annotation(memo, c)
+        >>> graph.get_edge(memo, c, EdgeType.ANNOTATES).type
+        <EdgeType.ANNOTATES: 'annotates'>
+        """
         self.add_node(annotation)
         self.add_edge(annotation, obj, EdgeType.ANNOTATES)
 
     # Spanners (slurs, crescendos, phrasing)
 
     def add_spanner(self, spanner: Spanner, start: SequentialEvent, end: SequentialEvent) -> None:
+        """Places a spanner over the events from `start` to `end`, with
+        STARTS_AT and ENDS_AT edges from the spanner to them.
+
+        >>> from openmusickit.objects.marking import MarkSpanner
+        >>> from openmusickit.systems.wsmn.scoring.symbols import slur
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> arc = MarkSpanner(mark=slur)
+        >>> graph.add_spanner(arc, c, d)
+        >>> graph.get_edge(arc, c, EdgeType.STARTS_AT).type, graph.get_edge(arc, d, EdgeType.ENDS_AT).type
+        (<EdgeType.STARTS_AT: 'starts_at'>, <EdgeType.ENDS_AT: 'ends_at'>)
+        """
         self.add_node(spanner)
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
         self.add_edge(spanner, end, EdgeType.ENDS_AT)
@@ -693,7 +958,18 @@ class OmkGraph:
         """Records that `obj` *begins* `lyric_syllable`: a LYRIC edge marks a
         syllable's onset. The notes that go on sustaining it (a melisma) get
         no edge of their own; a sung note without one continues the previous
-        syllable, and a rest ends it."""
+        syllable, and a rest ends it.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> a, men = graph.add_lyrics("A-men")
+        >>> graph.connect_lyric_to_object(men, d)
+        >>> graph.get_edge(d, men, EdgeType.LYRIC).type
+        <EdgeType.LYRIC: 'lyric'>
+        """
         self.add_node(lyric_syllable)
         self.add_edge(obj, lyric_syllable, EdgeType.LYRIC)
 
@@ -770,13 +1046,45 @@ class OmkGraph:
         return None
 
     def unlink_lyric_from_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:
+        """The inverse of `connect_lyric_to_object`: removes the LYRIC edge from `obj` to the syllable.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> a, men = graph.add_lyrics("A-men")
+        >>> graph.connect_lyric_to_object(men, d)
+        >>> graph.unlink_lyric_from_object(men, d)
+        >>> list(graph.edges_between(d, men))
+        []
+        """
         self.remove_edge(self.get_edge(obj, lyric_syllable, EdgeType.LYRIC))
 
     def unlink_lyric_sequence(
         self, start_syllable: LyricSyllable, stop_syllable: LyricSyllable | None = None
     ) -> None:
-        """Unlink a sequence of lyric syllables from their associated musical objects, stopping at the specified stop syllable if provided.
-        If no stop syllable is provided, the sequence will be unlinked until the end."""
+        """Unlink a sequence of lyric syllables from their associated musical objects,
+        stopping at the specified stop syllable if provided.
+        If no stop syllable is provided, the sequence will be unlinked until the end.
+        The syllables stay on the graph, in their NEXT line.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> a, men = graph.add_lyrics("A-men")
+        >>> graph.zip_lyrics_to_objects(a, c)
+        >>> len(list(graph.edges(EdgeType.LYRIC)))
+        2
+        >>> graph.unlink_lyric_sequence(a, stop_syllable=men)  # only "A" is unlinked
+        >>> len(list(graph.edges(EdgeType.LYRIC)))
+        1
+        >>> graph.unlink_lyric_sequence(a)
+        >>> list(graph.edges(EdgeType.LYRIC)), graph.get_next(a) is men
+        ([], True)
+        """
         syllable = start_syllable
         while syllable is not None:
             if syllable is stop_syllable:

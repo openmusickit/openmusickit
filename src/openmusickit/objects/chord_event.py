@@ -13,7 +13,14 @@ class ChordEvent(SequentialEvent, TonalObject):
     with the specific voicing or realization of the chord left to the performer or arranger.
 
     In most WSMN contexts, a ChordEvent will use a systems.wsmn.tonal.Chord as its ToneCollection,
-    but other systems may use different ToneCollection types."""
+    but other systems may use different ToneCollection types.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import whole
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, maj
+    >>> event = ChordEvent(chord=C(maj), duration=whole)
+    >>> str(event.chord), event.duration
+    ('C', MetricalDuration(1, 1))
+    """
 
     chord: ToneCollection
 

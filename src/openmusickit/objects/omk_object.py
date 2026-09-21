@@ -67,7 +67,21 @@ class SequentialEvent(OmkObject):
 
 class TonalObject(ABC):
     """Mixin for objects with tonal content that a Tone -> Tone operation
-    can be pushed through (notes, chord symbols, key signatures, ...)."""
+    can be pushed through (notes, chord symbols, key signatures, ...).
+
+    `OmkGraph.transform_tones` applies one operation to every TonalObject on
+    a span; each object decides what its tonal content is.
+
+    >>> from openmusickit.objects.note_event import NoteEvent
+    >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, M2
+    >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+    >>> note = NoteEvent(tones={C})
+    >>> isinstance(note, TonalObject)
+    True
+    >>> note.transform_tones(TonalVector.transpose, M2)
+    >>> note.tones == {D}
+    True
+    """
 
     __slots__ = ()
 
@@ -84,6 +98,13 @@ class Spanner(OmkObject):
 
     Articulations (such as slurs and crescendos) and other objects
     which normally attach to a single OmkObject can attach to a Spanner
-    to indicate that they apply to the entire sequence of objects."""
+    to indicate that they apply to the entire sequence of objects.
+
+    >>> from openmusickit.objects.marking import MarkSpanner
+    >>> from openmusickit.objects.part import Stint
+    >>> from openmusickit.systems.wsmn.scoring.symbols import slur
+    >>> isinstance(MarkSpanner(mark=slur), Spanner), isinstance(Stint(), Spanner)
+    (True, True)
+    """
 
     pass

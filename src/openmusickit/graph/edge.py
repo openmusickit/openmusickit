@@ -125,6 +125,13 @@ class Branch(TimedEdge):
 
     A branch asserts ownership: span walks over the parent include the child.
     A head has at most one incoming Branch and no incoming NEXT.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> late = Branch(anchor=TimingAnchor.OFFSET, displacement=quarter)
+    >>> late.type, late.anchor, late.displacement
+    (<EdgeType.BRANCHES: 'branches'>, <TimingAnchor.OFFSET: 'offset'>, MetricalDuration(1, 4))
+    >>> Branch().anchor, Branch().displacement is None
+    (<TimingAnchor.ONSET: 'onset'>, True)
     """
 
     type: EdgeType = field(default=EdgeType.BRANCHES, init=False)
@@ -137,6 +144,11 @@ class Simultaneous(TimedEdge):
 
     A pin asserts nothing about who performs either line; span walks never
     cross one.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> early = Simultaneous(displacement=-quarter)
+    >>> early.type, early.anchor, early.displacement
+    (<EdgeType.SIMULTANEOUS: 'simultaneous'>, <TimingAnchor.ONSET: 'onset'>, MetricalDuration(-1, 4))
     """
 
     type: EdgeType = field(default=EdgeType.SIMULTANEOUS, init=False)
