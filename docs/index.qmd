@@ -1,0 +1,36 @@
+---
+title: "Open Music Kit"
+---
+
+Open Music Kit (OMK) is a symbolic music representation library.
+It encodes scores and notation as a graph of musical objects,
+and represents musical values such as pitches and durations
+as vectors whose algebra matches the musical concepts they stand for.
+
+OMK is designed to represent any kind of music from any musical culture,
+at any level of completeness:
+a full orchestral score, a lead sheet, a melody with no rhythm,
+a cyclic drum pattern, or a sketch.
+The core package provides the abstract layer
+and a built-in implementation of Western Standard Music Notation (WSMN).
+
+## Where to start
+
+- [Examples](examples.qmd) walks through tones, intervals, durations, notes, chords, lyrics,
+  and building a small score graph.
+- [Overview](overview.md) describes the design of the data model and the planned ecosystem.
+- [Goals](goals.md) explains the values that drive the design.
+- [API Reference](reference/index.qmd) documents every public module.
+
+## Installation
+
+OMK is not yet published on PyPI.
+Clone the repository and install it with [uv](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/openmusickit/openmusickit
+cd openmusickit
+uv sync
+```
+
+OMK requires Python 3.12 or later.

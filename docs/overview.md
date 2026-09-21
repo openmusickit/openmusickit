@@ -1,9 +1,6 @@
-Open Music Kit 
-===============
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+---
+title: Overview
+---
 
 Open Music Kit (OMK) is a symbolic music representation library
 that provides tools for encoding symbolic music information (scores, notation).
@@ -18,11 +15,9 @@ Operations such as transposition and metrical elongation are then algebraically 
 When there is not a single, mathematically meaningful way to represent musical concepts as vectors,
 OMK provides tools for diverse approaches to vectorization.
 
+## Universal Music Encoding
 
-Universal Music Encoding
-------------------------
-
-One of the goals of OMK is to support 
+One of the goals of OMK is to support
 any type of music from any musical culture.
 While true universality is probably impossible in an absolute sense,
 the data model is designed to be as abstract and foundational as possible,
@@ -54,21 +49,19 @@ to support as many specific tonal and rhythmic systems as possible.
 The core OMK library (this repo/package) provides the foundational abstract layer,
 and a few built-in implementations of specific musical systems.
 
-Foundational Abstract Layer 
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Foundational Abstract Layer
+\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~~
 
 The foundational data model includes:
 
-- `Tone`, a musical sound
-- `Interval`, the distance between two tones
-- `TemporalElement`, a measurable period of musical time 
-- `TemporalRatio`, a relationship between two equal but differently-subdivided `TemporalElement`s
-- `Note`, a `Tone` with a `Duration`
-- `Score`, the graph-based datamodel for musical structure
+- <span class="title-ref">Tone</span>, a musical sound
+- <span class="title-ref">Interval</span>, the distance between two tones
+- <span class="title-ref">TemporalElement</span>, a measurable period of musical time
+- <span class="title-ref">TemporalRatio</span>, a relationship between two equal but differently-subdivided \`TemporalElement\`s
+- <span class="title-ref">Note</span>, a <span class="title-ref">Tone</span> with a <span class="title-ref">Duration</span>
+- <span class="title-ref">Score</span>, the graph-based datamodel for musical structure
 
-
-Western Standard Music Notation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Western Standard Music Notation
 
 The Western Standard Music Notation (WSMN) implementation includes:
 
@@ -84,8 +77,7 @@ The Western Standard Music Notation (WSMN) implementation includes:
 - Output to MusicXML and Lilypond for rendering and printing scores, charts, and leadsheets.
 - Output to MIDI for use in a DAW.
 
-MIDI
-~~~~
+### MIDI
 
 While MIDI is based around WSMN,
 it includes information not normally found in a conventional score
@@ -97,15 +89,13 @@ from any specific Musical System into sound synthesis and playback.
 
 Therefore, MIDI is implemented as its own musical system.
 
-Clock Time
-~~~~~~~~~~
+### Clock Time
 
 OMK implements Clock Time as an independent Temporal System.
 This is useful for time-based scores as well as
 metronome markings and MIDI tempo/timing data.
 
-OMK Ecosystem
--------------
+## OMK Ecosystem
 
 The goal of this project is to create a complete ecosystem for
 music composition, analysis, generation, and research.

@@ -33,9 +33,12 @@ where = ["src"]
 
 [dependency-groups]
 dev = [
+    "griffe<2",  # quartodoc 0.11 still calls a parser keyword that griffe 2 removed
     "hypothesis>=6.168.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "quarto-cli>=1.10.18",
+    "quartodoc>=0.11.1",
     "ruff>=0.16.8",
 ]
 

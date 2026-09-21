@@ -1,0 +1,231 @@
+---
+title: "Examples"
+---
+
+This page is executable:
+every code block below is run when the documentation is built,
+and the output shown is the real output.
+
+There is no top-level convenience namespace yet,
+so everything is imported from its full module path.
+
+## Tones
+
+In Western Standard Music Notation (WSMN),
+a tone is a `TonalVector`:
+a tuple of (diatonic letter index, chromatic pitch class, octave).
+Middle C is octave 0 internally,
+but strings and display default to the usual middle C = C4 convention.
+
+```{python}
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
+
+c4 = TonalVector.from_string("C4")
+fs5 = TonalVector.from_string("F#5")
+bb3 = TonalVector.from_string("Bb3")
+
+print(repr(c4))
+print(repr(fs5))
+print(f"{c4}  {fs5}  {bb3}")
+print(f"{fs5:ascii}")
+```
+
+Pitch-class symbols with no octave are ready-made in the `symbols` module.
+An `x` is a sharp and a `b` is a flat.
+
+```{python}
+from openmusickit.systems.wsmn.tonal.symbols import C, Cx, Eb, G
+
+print(f"{C}  {Cx}  {Eb}  {G}")
+print(f"{C.qualify_octave(0)}")
+```
+
+## Intervals and transposition
+
+A `TonalVector` is also an interval,
+and the same class represents both.
+Transpose a tone by adding an interval to it,
+or by calling `transpose` with a direction.
+
+```{python}
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection
+from openmusickit.systems.wsmn.tonal.symbols import M3, P5, m7
+
+print(f"{c4 + M3}")
+print(f"{c4 + P5}")
+print(f"{c4.transpose(M3, TonalDirection.DOWN)}")
+print(f"{c4 - m7}")
+```
+
+The interval between two tones is their `distance`.
+
+```{python}
+e4 = c4 + M3
+gap = c4.distance(e4)
+print(gap.interval.unicode, "=", abs(gap), "half steps")
+```
+
+## Durations
+
+A `MetricalDuration` is a fraction of a whole note, with optional dots.
+The `symbols` module provides the common ones by name.
+
+```{python}
+from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
+from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter, dotted_half
+
+print(repr(MetricalDuration(1, 4)))
+print(repr(MetricalDuration(3, 4)))
+print(dotted_half.rational_length)
+print(repr(quarter + eighth))
+```
+
+## Notes and rests
+
+A `NoteEvent` holds a set of tones (one for a single note, several for a chord in one voice)
+and a duration.
+A `Rest` is a `NoteEvent` holding a silent tone.
+
+```{python}
+from openmusickit.objects.note_event import NoteEvent, Rest
+
+note = NoteEvent(tones={c4}, duration=quarter)
+rest = Rest(quarter)
+
+print(note)
+print(rest)
+print(rest.is_rest)
+```
+
+Transposing a note transforms its tones in place.
+
+```{python}
+note.transform_tones(TonalVector.transpose, P5)
+print(f"{next(iter(note.tones))}")
+```
+
+## Chords and keys
+
+A chord is a chord type realized at a root.
+Calling a root with a chord type, or a chord type with a root, does the same thing.
+
+```{python}
+from openmusickit.systems.wsmn.tonal.symbols import D, E, F, dom7, maj, min_
+
+print(C(maj), G(dom7), D(min_))
+print(C(maj) / E)
+print([f"{t}" for t in C(maj)])
+```
+
+A key is a tonic and a mode.
+
+```{python}
+from openmusickit.systems.wsmn.tonal.key import Key
+from openmusickit.systems.wsmn.tonal.symbols import Major
+
+d_major = Key.of(D, Major)
+print(d_major.name)
+print(d_major.signature)
+print([f"{t}" for t in d_major.tones])
+```
+
+## Lyrics
+
+`parse_lyrics` splits text into syllables.
+Hyphens split a word into syllables and whitespace separates words.
+
+```{python}
+from openmusickit.objects.lyrics import parse_lyrics
+
+for syllable in parse_lyrics("Twin-kle, twin-kle, lit-tle star"):
+    print(f"{str(syllable):10}  {syllable.placement.value:8}  {syllable.word}")
+```
+
+## A small score graph
+
+Musical objects become nodes in an `OmkGraph`.
+A *line* is a chain of events joined by NEXT edges.
+Independent lines are related in time by pinning one event to another
+with a SIMULTANEOUS edge.
+Lyrics are a line of syllables,
+each attached to the note where it begins with a LYRIC edge.
+
+Here is the first phrase of *Twinkle, Twinkle, Little Star*:
+a melody, its lyrics, and a chord line above it.
+
+```{python}
+from openmusickit.graph.graph import GraphMeta, OmkGraph
+from openmusickit.objects.chord_event import ChordEvent
+from openmusickit.objects.lyrics import LyricSection
+from openmusickit.systems.wsmn.temporal.symbols import half, whole
+
+graph = OmkGraph(GraphMeta())
+
+# The melody: one line of NoteEvents.
+pitches = "C4 C4 G4 G4 A4 A4 G4  F4 F4 E4 E4 D4 D4 C4".split()
+rhythm = [quarter] * 6 + [half] + [quarter] * 6 + [half]
+melody = [
+    NoteEvent(tones={TonalVector.from_string(p)}, duration=d)
+    for p, d in zip(pitches, rhythm, strict=True)
+]
+graph.add_line(melody)
+
+# The harmony: its own line, pinned to the first note of the melody.
+chords = [
+    ChordEvent(chord=C(maj), duration=whole),
+    ChordEvent(chord=F(maj), duration=half),
+    ChordEvent(chord=C(maj), duration=half),
+    ChordEvent(chord=F(maj), duration=half),
+    ChordEvent(chord=C(maj), duration=half),
+    ChordEvent(chord=G(dom7), duration=half),
+    ChordEvent(chord=C(maj), duration=half),
+]
+graph.add_line(chords)
+graph.add_simultaneous(melody[0], chords[0])
+
+# The lyrics: a line of syllables, zipped onto the notes one syllable per onset.
+verse = LyricSection(section_type="verse", section_number=1)
+syllables = graph.add_lyrics(
+    "Twin-kle, twin-kle, lit-tle star, how I won-der what you are",
+    section=verse,
+)
+graph.zip_lyrics_to_objects(syllables[0], melody[0])
+```
+
+Walking a line yields its events in order.
+Every position is relative to some reference event;
+here the reference is the first note,
+and onsets are shown as fractions of a whole note.
+
+```{python}
+from openmusickit.graph.edge import EdgeType
+
+def lyric_on(event):
+    return " ".join(
+        str(s) for s in syllables
+        if list(graph.edges_between(event, s, EdgeType.LYRIC))
+    )
+
+print(f"{'onset':<8}{'tone':<6}{'duration':<28}lyric")
+for event in graph.walk_line(melody[0]):
+    onset = graph.relative_onset(melody[0], event).rational_length
+    tone = next(iter(event.tones))
+    print(f"{str(onset):<8}{format(tone, 'ascii'):<6}{event.duration!r:<28}{lyric_on(event)}")
+```
+
+The chord line is walked the same way,
+and its onsets are still measured from the first melody note
+because the two lines are pinned together.
+
+```{python}
+for event in graph.walk_line(chords[0]):
+    onset = graph.relative_onset(melody[0], event).rational_length
+    print(f"{str(onset):<8}{event.chord}")
+```
+
+Transposing a span of the graph transforms every tone in it.
+
+```{python}
+graph.transform_tones(melody[0], melody[-1], TonalVector.transpose, P5)
+print(" ".join(format(next(iter(e.tones)), "ascii") for e in graph.walk_line(melody[0])))
+```
