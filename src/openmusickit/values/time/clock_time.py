@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from fractions import Fraction
 
-from openmusickit.errors import TemporalCompatibilityError
+from openmusickit.errors import ScalingError, TemporalCompatibilityError
 from openmusickit.values.time.duration import (
     Duration,
     Measurable,
@@ -50,7 +50,23 @@ class ClockDuration(Duration, Measurable):
 
         >>> ClockDuration.from_seconds(1).scale(Fraction(1, 4)).milliseconds
         Fraction(250, 1)
+
+        Raises
+        ------
+        ScalingError
+            if ``scalar`` is not a positive rational.
+
+        >>> ClockDuration(7).scale(0)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.ScalingError: A ClockDuration can only be scaled by a positive scalar.
         """
+        try:
+            scalar = Fraction(scalar)
+        except (TypeError, ValueError) as e:
+            raise ScalingError(f"Cannot scale a ClockDuration by {scalar!r}.") from e
+        if scalar <= 0:
+            raise ScalingError("A ClockDuration can only be scaled by a positive scalar.")
         return ClockDuration(self.microseconds * scalar)
 
     def __add__(self, other):
@@ -99,12 +115,14 @@ class ClockDuration(Duration, Measurable):
         return ClockDuration(self.microseconds * scalar)
 
     def __truediv__(self, scalar):
-        """Exact for a Fraction divisor.
+        """Exact for any rational divisor: the result is a Fraction, never a float.
 
         >>> ClockDuration(6) / Fraction(3)
         ClockDuration(microseconds=Fraction(2, 1))
+        >>> ClockDuration(7) / 3
+        ClockDuration(microseconds=Fraction(7, 3))
         """
-        return ClockDuration(self.microseconds / scalar)
+        return ClockDuration(Fraction(self.microseconds) / scalar)
 
     @property
     def temporal_system(self) -> TemporalSystem:

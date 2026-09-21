@@ -134,7 +134,7 @@ def test_from_duration_needs_a_clock_time_ratio(duration_symbols):
         ClockDuration.from_duration(quarter, triplet(quarter))
 
 
-# --- Defects pinned as strict xfails; each is an entry in _plans/revisit.md ---
+# --- contract edges: other systems, zero, exact division, scaling -----------------
 
 
 def test_metrical_time_plus_clock_time_is_refused():
@@ -148,22 +148,12 @@ def test_metrical_time_plus_clock_time_is_refused():
         ClockDuration(250_000) + quarter
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: ClockDuration + ZeroDuration raises TypeError "
-    "(ZeroDuration has no __radd__, unlike GraceDuration)",
-)
 def test_zero_is_the_additive_identity_on_either_side():
     for a in CLOCKS:
         assert ZeroDuration() + a == a, a
         assert a + ZeroDuration() == a, a
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: ClockDuration.__truediv__ divides through float, so an int divisor "
-    "loses the exactness the class promises",
-)
 def test_division_by_an_int_is_exact():
     assert ClockDuration(7) / 3 == ClockDuration(F(7, 3))
     for a in CLOCKS:
@@ -171,11 +161,6 @@ def test_division_by_an_int_is_exact():
             assert (a / k) * k == a, (a, k)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: ClockDuration.scale accepts zero and negative scalars against the "
-    "Measurable.scale contract",
-)
 def test_scaling_by_a_non_positive_scalar_raises_scaling_error():
     for k in [0, -1, F(-1, 2)]:
         with pytest.raises(ScalingError):

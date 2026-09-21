@@ -5,20 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `ClockDuration` small contract gaps (2026-09-21)
-
-Three, each pinned in `tests/values/time/test_clock_duration.py`:
-
-- `ClockDuration(5) + ZeroDuration()` raises `TypeError`, though
-  `ZeroDuration() + ClockDuration(5)` and `ClockDuration(5) + grace` work.
-  `ZeroDuration` has no `__radd__`; `GraceDuration` does.
-  (`test_zero_is_the_additive_identity_on_either_side`)
-- `__truediv__` computes `microseconds / scalar`, which for two ints is a
-  float, so `ClockDuration(7) / 3` is inexact while `scale(Fraction(1, 3))`
-  is exact. (`test_division_by_an_int_is_exact`)
-- `scale` accepts zero and negative scalars; `Measurable.scale` says to raise
-  `ScalingError`. (`test_scaling_by_a_non_positive_scalar_raises_scaling_error`)
-
 ## `Chord.inversion` accepts a bass the chord does not contain (2026-09-21)
 
 `maj.inversion(Db)` and `C(maj) / Db` succeed, setting a bass that is not
@@ -225,3 +211,13 @@ excludes symbol-and-tie pairs.
 still declines with `TypeError` (`ClockDuration.__add__` returns
 `NotImplemented`), which a grace on the right relies on. Pinned by
 `test_metrical_time_plus_clock_time_is_refused`.
+
+### `ClockDuration` small contract gaps (2026-09-21, resolved 2026-09-21)
+
+All three closed. `ZeroDuration` has `__radd__` (any Duration plus zero
+is that Duration, and `sum` may start from 0), so `ClockDuration(5) +
+ZeroDuration()` works. `ClockDuration.__truediv__` divides through
+`Fraction`, so `ClockDuration(7) / 3` is exact. `ClockDuration.scale`
+raises `ScalingError` for anything but a positive rational, as
+`Measurable.scale` requires. The three tests in
+`tests/values/time/test_clock_duration.py` pass.

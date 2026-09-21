@@ -237,8 +237,8 @@ class ZeroDuration(Duration, Measurable):
     and it is its own negation.
 
     >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
-    >>> ZeroDuration() + quarter
-    MetricalDuration(1, 4)
+    >>> ZeroDuration() + quarter, quarter + ZeroDuration()
+    (MetricalDuration(1, 4), MetricalDuration(1, 4))
     >>> quarter - quarter
     ZeroDuration()
     >>> ZeroDuration().rational_length, -ZeroDuration()
@@ -273,6 +273,22 @@ class ZeroDuration(Duration, Measurable):
         if not isinstance(other, Duration):
             raise TypeError(f"Cannot add {type(other)} to a Duration.")
         return other
+
+    def __radd__(self, other):
+        """Any Duration plus zero is that Duration, even one that does not know
+        about ZeroDuration (`ClockDuration`); and `sum` may start from 0.
+
+        >>> from openmusickit.values.time.clock_time import ClockDuration
+        >>> ClockDuration(5) + ZeroDuration()
+        ClockDuration(microseconds=5)
+        >>> sum([ZeroDuration(), ZeroDuration()])
+        ZeroDuration()
+        """
+        if isinstance(other, Duration):
+            return other
+        if other == 0:
+            return self
+        return NotImplemented
 
     def __neg__(self) -> ZeroDuration:
         return self
