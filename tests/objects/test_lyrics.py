@@ -9,6 +9,7 @@ from openmusickit.objects.omk_object import Spanner
 from openmusickit.systems.wsmn.temporal.symbols import quarter
 from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F
 from openmusickit.values.text.word import LexicalStress, Word
+from tests.graph.helpers import snapshot
 
 PRIMARY = LexicalStress.PRIMARY
 
@@ -190,6 +191,50 @@ def test_unlink_stops_at_the_given_object_not_an_equal_one(graph_with_notes):
         for n, s in zip(notes[:3], syllables[:3], strict=True)
     )
     assert len(list(graph.edges_between(notes[3], syllables[3], EdgeType.LYRIC))) == 1
+
+
+def test_zip_then_unlink_restores_the_lyric_edges_exactly(graph_with_notes):
+    """Zipping adds one LYRIC edge per syllable and nothing else; unlinking
+    the sequence removes exactly those, leaving the NEXT chain among the
+    syllables; zipping again reproduces the same edges."""
+    graph, notes = graph_with_notes
+    syllables = graph.add_lyrics("Al-le-lu-ia")
+    before = snapshot(graph)
+
+    graph.zip_lyrics_to_objects(syllables[0], notes[0])
+    zipped = snapshot(graph)
+    assert zipped[0] == before[0]
+    added = sorted(set(zipped[1]) - set(before[1]))
+    assert [(s, t, kind) for s, t, kind, _ in added] == [
+        (str(n.id), str(s.id), "LYRIC")
+        for n, s in sorted(zip(notes, syllables, strict=True), key=lambda p: str(p[0].id))
+    ]
+
+    graph.unlink_lyric_sequence(syllables[0])
+    assert snapshot(graph) == before
+    assert [graph.get_next(s) for s in syllables] == syllables[1:] + [None]
+
+    graph.zip_lyrics_to_objects(syllables[0], notes[0])
+    assert snapshot(graph) == zipped
+
+
+def test_connect_and_unlink_one_syllable_are_inverses(graph_with_notes):
+    graph, notes = graph_with_notes
+    syllables = graph.add_lyrics("A-men")
+    before = snapshot(graph)
+    graph.connect_lyric_to_object(syllables[1], notes[2])
+    assert graph.get_edge(notes[2], syllables[1], EdgeType.LYRIC).type is EdgeType.LYRIC
+    graph.unlink_lyric_from_object(syllables[1], notes[2])
+    assert list(graph.edges_between(notes[2], syllables[1], EdgeType.LYRIC)) == []
+    assert snapshot(graph) == before
+
+    # a syllable not yet on the graph is put there by connect; the undo removes it too
+    (loose,) = parse_lyrics("la")
+    graph.connect_lyric_to_object(loose, notes[3])
+    assert graph.get_node(loose.id) is loose
+    graph.unlink_lyric_from_object(loose, notes[3])
+    graph.remove_node(loose)
+    assert snapshot(graph) == before
 
 
 # --- zip: melismas, rests, context events -------------------------------------

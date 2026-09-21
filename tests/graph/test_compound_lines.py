@@ -26,15 +26,7 @@ from openmusickit.systems.wsmn.temporal.symbols import (
 from openmusickit.systems.wsmn.tonal.symbols import M2, A, B, C, D, E, F, G, maj
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.time.duration import GraceDuration, ZeroDuration
-
-
-def notes(*tones, duration=quarter):
-    return [NoteEvent(tones={t}, duration=duration) for t in tones]
-
-
-def names(events):
-    return [format(next(iter(n.tones)), "ascii") for n in events]
-
+from tests.graph.helpers import names, notes
 
 # --- NEXT is a chain -----------------------------------------------------------
 

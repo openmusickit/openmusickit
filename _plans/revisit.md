@@ -97,6 +97,34 @@ overflow as `ValueError`. The class could do the same. Pinned by
 `test_walking_off_the_table_is_a_value_error` in
 `tests/systems/wsmn/tonal/test_interval_quality.py` (Part 5, item 6).
 
+## Backend exceptions leak through the adapter (2026-09-21)
+
+Testing plan, Part 5 item 2. `RustworkxAdapter._rxid` raises a raw
+`KeyError` for any node or edge it does not know, so `get_node` of an
+unknown id (documented on `OmkGraph.get_node` as returning `None`),
+`remove_node`, `add_edge`, `get_edge`, `has_edge`, `edges_between`,
+`successors`, `predecessors`, `get_next`, `degree`, `remove_edge` and
+`get_edge_endpoints` all let it out, against the `GraphError` docstring
+("backend exceptions never pass through the adapter boundary"). Separately,
+`get_edge` between two nodes with no edge at all lets
+`rustworkx.NoEdgeBetweenNodes` escape, where the same call with an edge of
+another type present raises `GraphError`. Pinned by the two strict xfails
+at the end of `tests/graph/test_adapter_contract.py`.
+
+## `OmkGraph.remove_edge` returns None (2026-09-21)
+
+Testing plan, Part 5 item 3. The method is annotated `-> OmkEdge` and
+returns the adapter's `None`. An undo has to keep its own reference to what
+it removed. Pinned by `test_remove_edge_returns_the_removed_edge` in
+`tests/graph/test_graph_inverses.py`.
+
+## `Branch` and `Simultaneous` regenerate `__repr__` (2026-09-21, noticed in passing)
+
+`TimedEdge` defines a compact `__repr__`, but its subclasses are plain
+`@dataclass`es with the default `repr=True`, so `repr(Branch())` is the
+generated form with every field. Cosmetic; `@dataclass(repr=False)` on the
+two subclasses would restore the intended form.
+
 ## Resolved
 
 ### `_tonal_modulo` implicit None (2026-09-18, resolved 2026-09-19)
@@ -186,3 +214,11 @@ carries the section metadata and language and spans first to last syllable
 primary/secondary stress). Also fixed on the way: `syl_str` for `END` had the
 hyphen on the wrong side, and `unlink_lyric_sequence` stopped on `==` rather
 than `is`. See `_plans/completed/lyrics.md`.
+
+### Testing plan, Part 5 items 4, 5 and 8 (2026-09-21, resolved 2026-09-21)
+
+Test-side findings, fixed by the test changes of Steps 1 and 4: the
+`tuplet_ratio_symbols` fixture now builds six ratios from the factories;
+`test_chords.py` sweeps all 35 roots (the natural-root restriction was
+stale); alias names are deduplicated by identity with `tests.domains.distinct`
+and every fixture's size is pinned in `tests/test_fixtures.py`.

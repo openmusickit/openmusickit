@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-4 done 2026-09-21.** Steps 5-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-5 done 2026-09-21.** Steps 6-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -646,6 +646,16 @@ Check: every mutator in 3.2 has a do/inspect/undo test; `remove_node`,
 `remove_edge`, `insert_event`, `insert_line_from_list`, `branches_from`,
 `edges()`, `add_annotation`, `unlink_lyric_from_object`, `nudge` are
 executed by `tests/` (confirm with the coverage command in Verification).
+
+Execution notes (2026-09-21): graph objects and edges are unhashable by
+design, so the contract tests compare collections by id. A NEXT edge back
+from the tail of a two-event line is a two-event cycle and is accepted (the
+one-in/one-out rule does not forbid it); the contract test notes rather
+than asserts it, pending Part 5 item 1 in Step 8. Beside the `KeyError` of
+Part 5 item 2, `get_edge` between two unconnected nodes lets
+`rustworkx.NoEdgeBetweenNodes` out; both are strict xfails. The composite
+mutators (`add_line`, `insert_event`) are also checked against their
+primitive expansion by snapshot, ahead of 3.3.
 
 ### Step 6. Add Hypothesis and a reference adapter
 
