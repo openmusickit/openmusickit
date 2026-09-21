@@ -5,6 +5,11 @@ with plain `OmkObject`s, `NoteEvent`s and `Part`s as nodes and `OmkEdge`s
 as edges, and asserts the behaviour the ABC docstrings promise. Step 6 of
 the testing plan adds a dict-backed reference adapter to `ADAPTERS`, which
 turns these into a differential test as well.
+
+The two tests at the end pin Part 5, item 2 of the plan: they pass against
+the reference adapter, which defines the intended behaviour, and are strict
+xfails against `RustworkxAdapter` until it stops letting backend exceptions
+out.
 """
 
 from uuid import uuid4
@@ -19,8 +24,9 @@ from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.objects.part import Part
 from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+from tests.graph.dict_adapter import DictAdapter
 
-ADAPTERS = [RustworkxAdapter]
+ADAPTERS = [RustworkxAdapter, DictAdapter]
 
 MARKS, ANNOTATES, LYRIC = EdgeType.MARKS, EdgeType.ANNOTATES, EdgeType.LYRIC
 
@@ -247,12 +253,25 @@ def test_has_node_is_false_for_an_unknown_node(adapter):
 # --- Part 5, item 2: backend exceptions must not cross the adapter boundary ---
 
 
-@pytest.mark.xfail(
+LEAKS_KEY_ERROR = pytest.mark.xfail(
     strict=True,
     reason="revisit: a missing node or edge raises a raw KeyError from _rxid "
     "instead of GraphError (or None from get_node)",
 )
-def test_a_missing_node_or_edge_is_a_graph_error_not_a_backend_exception(adapter):
+LEAKS_NO_EDGE = pytest.mark.xfail(
+    strict=True,
+    reason="revisit: get_edge between two nodes with no edge at all lets "
+    "rustworkx.NoEdgeBetweenNodes escape; with an edge of another type it is a GraphError",
+)
+
+
+@pytest.mark.parametrize(
+    "adapter_class",
+    [pytest.param(RustworkxAdapter, marks=LEAKS_KEY_ERROR), DictAdapter],
+    ids=lambda cls: cls.__name__,
+)
+def test_a_missing_node_or_edge_is_a_graph_error_not_a_backend_exception(adapter_class):
+    adapter = adapter_class()
     c, stranger = note(C), note(D)
     adapter.add_node(c)
     assert adapter.get_node(uuid4()) is None
@@ -274,12 +293,13 @@ def test_a_missing_node_or_edge_is_a_graph_error_not_a_backend_exception(adapter
             operation()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: get_edge between two nodes with no edge at all lets "
-    "rustworkx.NoEdgeBetweenNodes escape; with an edge of another type it is a GraphError",
+@pytest.mark.parametrize(
+    "adapter_class",
+    [pytest.param(RustworkxAdapter, marks=LEAKS_NO_EDGE), DictAdapter],
+    ids=lambda cls: cls.__name__,
 )
-def test_get_edge_between_unconnected_nodes_is_a_graph_error(adapter):
+def test_get_edge_between_unconnected_nodes_is_a_graph_error(adapter_class):
+    adapter = adapter_class()
     c, d = note(C), note(D)
     adapter.add_node(c)
     adapter.add_node(d)

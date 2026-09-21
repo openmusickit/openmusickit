@@ -7,9 +7,15 @@ module often binds several names to one object (`quarter is crotchet`);
 `tests.domains.distinct` keeps one name per object when a law should be
 checked once per value. `tests/test_fixtures.py` pins the size of every
 fixture so an empty one fails loudly.
+
+Hypothesis runs under the `default` profile (100 examples, no deadline,
+since graph tests allocate); `uv run pytest --hypothesis-profile=thorough`
+runs 2,000 examples per property. Tests marked `slow` are skipped by
+default (`-m "not slow"` in `addopts`); `uv run pytest -m slow` runs them.
 """
 
 import pytest
+from hypothesis import settings
 
 from openmusickit.systems.wsmn.scoring import symbols as scoring_symbols
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
@@ -23,6 +29,10 @@ from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.scoring.mark import Mark
 from openmusickit.values.time.duration import GraceDuration
 from tests.domains import TONAL_OCT_TUPLES, TONAL_TUPLES
+
+settings.register_profile("default", max_examples=100, deadline=None)
+settings.register_profile("thorough", max_examples=2000, deadline=None)
+settings.load_profile("default")
 
 
 def _symbols_of(module, kind) -> dict:

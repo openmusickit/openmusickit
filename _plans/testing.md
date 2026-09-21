@@ -1,6 +1,6 @@
 # Testing audit and test-development plan
 
-Status: **approved 2026-09-21; Steps 1-5 done 2026-09-21.** Steps 6-12 unexecuted; update this line as each lands.
+Status: **approved 2026-09-21; Steps 1-6 done 2026-09-21.** Steps 7-12 unexecuted; update this line as each lands.
 
 Written 2026-09-21 for two readers: the developer (to approve) and the agents who
 will execute it in later sessions without this conversation's context.
@@ -676,6 +676,15 @@ Files: `pyproject.toml` (dev group), `uv.lock`; `tests/conftest.py`
 
 Check: `uv run pytest` passes with both adapters; `uv run pytest
 --hypothesis-profile=thorough -m slow` is runnable.
+
+Execution notes (2026-09-21): `DictAdapter` implements the documented
+contract for unknown nodes and edges (`GraphError`; `get_node` answers
+`None`), so the two Part 5 item 2 tests are parametrized per adapter and
+pass against it while staying strict xfails against `RustworkxAdapter`.
+No current test takes more than a second, so nothing carries the `slow`
+marker yet; `uv run pytest -m slow` deselects everything (pytest exit code
+5) until Step 8 adds the thorough property runs. `--hypothesis-profile=
+thorough` was verified to override the profile loaded in `conftest.py`.
 
 ### Step 7. Hypothesis strategies
 
