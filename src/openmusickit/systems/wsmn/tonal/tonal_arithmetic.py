@@ -254,10 +254,17 @@ def tonal_higher_of(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
 
     >>> tonal_higher_of((0,0,0),(0,10,0)) # C, C-flat
     (0, 0, 0)
+
+    On an enharmonic tie the higher diatonic position wins
+    (a diminished fifth over an augmented fourth, C4 over B-sharp 3):
+
+    >>> tonal_higher_of((3, 6), (4, 6)) # aug4, dim5
+    (4, 6)
+    >>> tonal_higher_of((6, 0, -1), (0, 0, 0)) # B-sharp 3, C4
+    (0, 0, 0)
     """
-    if tonal_int(x) == tonal_int(y):  # if same half-steps, larger diatonic
-        # dim5 > aug4
-        if x[0] > y[0]:
+    if tonal_int(x) == tonal_int(y):
+        if _diatonic_position(x) > _diatonic_position(y):
             return x
         else:
             return y
@@ -284,9 +291,14 @@ def tonal_lower_of(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int, ...]:
 
     >>> tonal_lower_of((6, 0), (6, 0))
     (6, 0)
+
+    On an enharmonic tie the lower diatonic position wins:
+
+    >>> tonal_lower_of((6, 0, -1), (0, 0, 0)) # B-sharp 3, C4
+    (6, 0, -1)
     """
     if tonal_int(x) == tonal_int(y):
-        if x[0] < y[0]:
+        if _diatonic_position(x) < _diatonic_position(y):
             return x
         else:
             return y
@@ -504,6 +516,17 @@ def tonal_nearest_instance(x: tuple[int, ...], y: tuple[int, ...]) -> tuple[int,
         return abs((z[0] + z[2] * D_LEN) - (x[0] + x[2] * D_LEN))
 
     return min(candidates, key=lambda z: (abs_int_diff(x, z), diatonic_steps(z)))
+
+
+def _diatonic_position(x: tuple[int, ...]) -> int:
+    """The letter's position on the staff, counting octaves if x has one.
+
+    >>> _diatonic_position((6, 0)), _diatonic_position((6, 0, -1)), _diatonic_position((0, 0, 0))
+    (6, -1, 0)
+    """
+    if len(x) == 2:
+        return x[0]
+    return x[0] + x[2] * D_LEN
 
 
 def _tonal_unmodulo(x: tuple[int, ...]) -> tuple[int, ...]:

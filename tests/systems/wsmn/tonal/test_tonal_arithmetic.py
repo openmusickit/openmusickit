@@ -4,11 +4,8 @@ octave-qualified pitch in the test domain (`tests.domains`).
 A law about the *size* of a derived interval (`tonal_int`, `abs_int_diff`)
 is asserted where that interval is itself in the domain, at most doubly
 altered. The pairs whose difference falls outside it (a doubly diminished
-second, a quadruply flattened third) are covered by the strict-xfail tests
-at the end, one per defect, each pointing at `_plans/revisit.md`.
+second, a quadruply flattened third) have their own tests at the end.
 """
-
-import pytest
 
 from openmusickit.systems.wsmn.tonal import tonal_arithmetic as ta
 from openmusickit.systems.wsmn.tonal.tonal_arithmetic import _negative_tuple, _tonal_modulo
@@ -250,7 +247,7 @@ def test_negative_tuple(tonal_tuples, tonal_oct_tuples):
         assert ta.tonal_sum(x, neg_x) == (0, 0, 0)
 
 
-# --- Defects pinned as strict xfails; each is an entry in _plans/revisit.md ---
+# --- Laws beyond the doubly altered domain, and tie-breaks ------------------------
 
 
 def test_abs_int_diff_is_never_negative(tonal_tuples):
@@ -278,12 +275,10 @@ def test_lower_of_returns_a_normalized_tuple_on_a_tie(tonal_tuples, tonal_oct_tu
                 assert ta.tonal_lower_of(x, y) in (x, y), (x, y, ta.tonal_lower_of(x, y))
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="revisit: the higher_of/lower_of tie-break compares letters without the octave, "
-    "so B-sharp 3 is called higher than C4",
-)
 def test_higher_of_enharmonic_tie_across_an_octave_goes_to_the_higher_letter(tonal_oct_tuples):
+    """Two spellings of one pitch are ordered by staff position, letter and
+    octave together, so C4 is the higher of it and B-sharp 3."""
+
     def diatonic_position(t):
         return t[0] + 7 * t[2]
 

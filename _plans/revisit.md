@@ -5,15 +5,6 @@ and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the bottom under "Resolved" with a pointer to the
 commit or plan that settled it.
 
-## `higher_of`/`lower_of` tie-break ignores the octave (2026-09-21)
-
-On an enharmonic tie the docstring says the larger diatonic value wins
-(a diminished fifth over an augmented fourth), and the code compares `d`
-alone. Across an octave boundary that names B-sharp 3 the higher of it and
-C4, though C4 is spelled on the higher letter. Is the intended rule the
-diatonic *position* (`d + 7 * o`)? Pinned, under that reading, by
-`test_higher_of_enharmonic_tie_across_an_octave_goes_to_the_higher_letter`.
-
 ## `MetricalDuration + TiedDuration` raises (2026-09-21)
 
 `MetricalDuration.__add__` handles a tie on the right with
@@ -234,3 +225,11 @@ extreme needs a wider representation, not a wider window. Pinned by
 `tonal_lower_of` no longer unmodulos its arguments (`tonal_int` already
 reads the wrapped chromatic value), so it returns one of them as given on
 every path. Pinned by `test_lower_of_returns_a_normalized_tuple_on_a_tie`.
+
+### `higher_of`/`lower_of` tie-break ignores the octave (2026-09-21, resolved 2026-09-21)
+
+Yes, the rule is the diatonic position: `tonal_higher_of` and
+`tonal_lower_of` now break an enharmonic tie on `d + 7 * o` (letter alone
+for abstract tuples, via `_diatonic_position`), so C4 is the higher of it
+and B-sharp 3. Pinned by
+`test_higher_of_enharmonic_tie_across_an_octave_goes_to_the_higher_letter`.
