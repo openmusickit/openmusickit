@@ -152,6 +152,23 @@ and then include them in proposed plans of work.
 When discussing how a feature should be built with the developer,
 how the new code should be tests is part of the discussion.
 
+The default `uv run pytest` is the fast set:
+100 Hypothesis examples per property,
+with tests marked `slow` deselected (the "1 deselected" in its summary).
+The heavy set is one command:
+
+    uv run pytest --hypothesis-profile=thorough -m ""
+
+which runs every property at 2,000 examples and includes the `slow` tests,
+in about three minutes.
+Run the heavy set once at the start of any multi-commit piece of work
+and once at its end.
+The start run is the baseline:
+a failure at the end can then be placed on one side of the work,
+and a failure already present at the start is not the work's to fix
+(record it in `_plans/revisit.md` and carry on).
+Do not run it after every commit; that is what the fast set is for.
+
 ### `__repr__` round-trips
 
 A `__repr__` is an expression that evaluates to an equal object,

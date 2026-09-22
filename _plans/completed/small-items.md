@@ -214,3 +214,22 @@ developer's note, 2026-09-21). Pinned by
 `test_walk_span_terminates_when_lines_branch_into_each_other`. The state
 machine in `test_graph_state_machine.py` still builds no cycles, because
 its model tracks lines by head and tail; teaching it cycles is a follow-up.
+
+### Graph state machine is flaky under the thorough profile (2026-09-22, resolved 2026-09-22)
+
+Not a Hypothesis defect and not the percussion work: latent since the
+state machine was written (95c322e, 2026-09-21). `remove_pin` drew from
+`sorted(self.pins, key=str)`, an order set by the uuid4 ids, which differ
+on every run. Hypothesis records a draw as an index and compares runs that
+share a prefix of choices, so the same index removed a different pin the
+next time; that changed whether `pin` early-returned and whether
+`remove_pin`'s precondition held, and rule selection (rejection sampling
+over all rules, then a first-time `is_enabled` boolean) drew a different
+type at the same position, which the choice tree reports as
+`FlakyStrategyDefinition`. The thorough profile failed within seconds; the
+default profile failed 4 of 10 runs once the example database held the
+failing case. `pins` is now an insertion-ordered list sampled directly,
+and the module docstring states the rule: every `sampled_from` in the
+machine draws from a list in insertion order, never from anything ordered
+by id. Verified: three thorough and ten default runs green; the full suite
+green under both profiles.

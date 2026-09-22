@@ -15,6 +15,13 @@ the model tracks lines by head and tail, which a cycle has neither of. Walkers d
 `test_graph_properties.py`); teaching the model cycles is a follow-up.
 Pins may go anywhere.
 
+Every `sampled_from` here draws from a list in insertion order. Hypothesis
+records a draw as an index and compares runs that share a prefix of choices,
+so the index must name the same thing in every run; event ids are random
+uuids, and ordering anything by id (a set of ids, `sorted(..., key=str)`)
+would make the same index pick a different item each run and trip
+`FlakyStrategyDefinition`.
+
 Run with `uv run pytest --hypothesis-profile=thorough` for 2,000 runs.
 """
 
@@ -47,7 +54,7 @@ class GraphModel(RuleBasedStateMachine):
         self.next: dict[UUID, UUID | None] = {}
         self.prev: dict[UUID, UUID | None] = {}
         self.parent: dict[UUID, UUID | None] = {}  # branch parent of a head
-        self.pins: set[tuple[UUID, UUID]] = set()
+        self.pins: list[tuple[UUID, UUID]] = []  # insertion order, see the module docstring
         self.groups: dict[UUID, LineGroup] = {}
         self.group_of: dict[UUID, UUID | None] = {}  # group a head is a line of
 
@@ -131,7 +138,7 @@ class GraphModel(RuleBasedStateMachine):
             return
         for graph in self.graphs:
             graph.add_simultaneous(a, b, displacement=displacement)
-        self.pins.add((a.id, b.id))
+        self.pins.append((a.id, b.id))
 
     @precondition(lambda self: self._loose_heads())
     @rule(data=st.data(), displacement=st.sampled_from([None, quarter, -eighth]))
@@ -159,7 +166,7 @@ class GraphModel(RuleBasedStateMachine):
                     table[key] = None
             del table[event.id]
         del self.group_of[event.id]
-        self.pins = {pair for pair in self.pins if event.id not in pair}
+        self.pins = [pair for pair in self.pins if event.id not in pair]
         del self.events[event.id]
 
     @precondition(lambda self: self.groups)
@@ -192,11 +199,11 @@ class GraphModel(RuleBasedStateMachine):
     @precondition(lambda self: self.pins)
     @rule(data=st.data())
     def remove_pin(self, data):
-        a_id, b_id = data.draw(st.sampled_from(sorted(self.pins, key=str)))
+        a_id, b_id = data.draw(st.sampled_from(self.pins))
         a, b = self.events[a_id], self.events[b_id]
         for graph in self.graphs:
             graph.remove_edge(graph.get_edge(a, b, EdgeType.SIMULTANEOUS))
-        self.pins.discard((a_id, b_id))
+        self.pins.remove((a_id, b_id))
 
     # --- invariants ---
 
