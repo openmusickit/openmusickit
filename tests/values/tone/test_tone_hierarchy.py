@@ -1,5 +1,6 @@
-"""The Tone / Interval class hierarchy: TonalVector and SilentTone are Tones,
-TonalVector is also an Interval, and the base-class contract behaves."""
+"""The Tone / Interval class hierarchy: TonalVector, SilentTone and UnpitchedTone
+subclasses are Tones, TonalVector is also an Interval, and the base-class
+contract behaves."""
 
 import copy
 import pickle
@@ -11,6 +12,7 @@ from openmusickit.systems.wsmn.tonal.wsmn import WSMN
 from openmusickit.values.tone.interval import Interval, IntervalRepresentation
 from openmusickit.values.tone.silent_tone import SilentTone
 from openmusickit.values.tone.tone import ANY_TONAL_SYSTEM, PitchRepresentation, TonalSystem, Tone
+from openmusickit.values.tone.unpitched_tone import UnpitchedTone
 
 
 def test_tonal_vector_is_tone_and_interval():
@@ -83,3 +85,46 @@ def test_tonal_system_is_declared_by_each_subclass():
     assert SilentTone().tonal_system is ANY_TONAL_SYSTEM
     assert WSMN.compatible_with(ANY_TONAL_SYSTEM)
     assert not WSMN.compatible_with(TonalSystem("Other", "..."))
+
+
+# --- UnpitchedTone ------------------------------------------------------------
+
+
+class Knock(UnpitchedTone):
+    """A sound with no pitch and no system, for testing the base class."""
+
+    __slots__ = ()
+
+    @property
+    def tonal_system(self):
+        return ANY_TONAL_SYSTEM
+
+    def __eq__(self, other):
+        return type(other) is Knock
+
+    def __hash__(self):
+        return hash(Knock)
+
+
+def test_unpitched_tone_is_a_tone_with_no_pitch():
+    knock = Knock()
+    assert isinstance(knock, Tone)
+    assert isinstance(knock, UnpitchedTone)
+    assert not isinstance(knock, Interval)
+    assert knock.pitch is None
+    assert format(knock) == str(knock)
+    assert format(knock, "ascii") == str(knock)  # the spec is ignored when there is no pitch
+
+
+def test_silence_is_not_an_unpitched_tone():
+    assert not isinstance(SilentTone(), UnpitchedTone)
+    assert not issubclass(SilentTone, UnpitchedTone)
+
+
+def test_transform_tones_passes_over_tones_of_a_universal_system():
+    from openmusickit.objects.note_event import NoteEvent
+    from openmusickit.systems.wsmn.tonal.symbols import M3, C, E
+
+    note = NoteEvent(tones={C, Knock()})
+    note.transform_tones(TonalVector.transpose, M3)
+    assert note.tones == {E, Knock()}

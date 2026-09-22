@@ -17,7 +17,8 @@ class NoteEvent(SequentialEvent, TonalObject):
     or because it has not yet been specified (for example, in a sketch or draft).
 
     A Rest is represented as a NoteEvent with a SilentTone.
-    Unpitched percussion notes would be NoteEvents holding an unpitched Tone subclass (not yet defined)."""
+    An unpitched percussion note is a NoteEvent holding an `UnpitchedTone`
+    (in WSMN, a `PercussionTone`); which instrument it is on is the Part's business."""
 
     tones: set[Tone]
 
@@ -83,7 +84,9 @@ class NoteEvent(SequentialEvent, TonalObject):
 
     def transform_tones(self, operation: Callable[..., Tone], *args, **kwargs) -> None:
         """Replaces every tone of this NoteEvent with the result of
-        `operation(tone, *args, **kwargs)`. SilentTones are left as they are.
+        `operation(tone, *args, **kwargs)`. Tones of a universal tonal system
+        (a SilentTone) belong to no system, so no system's operation applies
+        to them: they are left as they are.
 
         `operation` is typically a method of the relevant Tone subclass
         (such as `TonalVector.transpose`), but any callable that accepts a
@@ -132,7 +135,7 @@ class NoteEvent(SequentialEvent, TonalObject):
         """
         new_tones = set()
         for tone in self.tones:
-            if type(tone) is SilentTone:
+            if tone.tonal_system.universal:
                 new_tones.add(tone)
                 continue
             new_tones.add(apply_tone_operation(operation, tone, *args, **kwargs))

@@ -27,8 +27,9 @@ class TonalSystem:
 
     - A TemporalSystem, using base classes defined in `values.time`.
     - Chords or other harmonic structures, subclassing `ToneCollection`.
-    - Unpitched (percussion) tones, and structural units such as measures
-      and sections; base classes for these do not exist yet.
+    - Unpitched (percussion) tones, subclassing `UnpitchedTone`.
+    - Structural units such as measures and sections;
+      base classes for these do not exist yet.
 
     All of these elements of a complete musical system are optional,
     and are decoupled from each other (there is no `MusicalSystem` class),
@@ -83,7 +84,8 @@ class Tone(ABC):
 
     - SilentTone represents any rest or silence.
 
-    (An unpitched percussion tone would be another subclass; it does not exist yet.)
+    - UnpitchedTone is the base for sounds with no pitch (a drum stroke, a clap);
+    WSMN's PercussionTone implements it.
 
     >>> from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
     >>> from openmusickit.values.tone.silent_tone import SilentTone
