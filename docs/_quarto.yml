@@ -46,14 +46,20 @@ quartodoc:
   renderer:
     style: markdown
     show_signature_annotations: true
-  # `options` applies to each listed module; `member_options` to the classes in it.
+  # `options` applies to every documented object, recursively; `member_options`
+  # overrides it for the members of each listed module (its classes and
+  # functions). Modules get a page with summary tables (children: separate);
+  # each class gets its own page with its methods embedded on it.
   # Static analysis already lists inherited dataclass fields in constructor
   # signatures; include_inherited adds the inherited methods and properties.
   # (`dynamic: true` gives the same signatures and crashes on two aliases here.)
   options:
     include_inherited: true
+    member_order: source
+    signature_name: short
+    children: separate
     member_options:
-      include_inherited: true
+      children: embedded
   # Module order: abstract values first, then the WSMN implementation,
   # then the score objects and the graph that holds them.
   sections:
