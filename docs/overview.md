@@ -69,6 +69,8 @@ The Western Standard Music Notation (WSMN) implementation includes:
 - standard Metrical Durations (whole, half, quarter, etc; dots, tuples)
   and TimeSignature
 - chords, chords symbols, and an implementation of Common Practice harmonic theory
+- unpitched percussion: tones as a relative pitch and a stroke,
+  with palettes for the instrument classes (drum kit, hand drums, orchestral)
 - contextual Tuning calculation for just intonation and other non-tempered tunings.
 - linear scores with standard roadmap and expression nodes
 - just about anything else you would need to represent and vectorize

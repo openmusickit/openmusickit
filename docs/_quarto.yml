@@ -71,6 +71,7 @@ quartodoc:
         - values.tone.tone
         - values.tone.interval
         - values.tone.silent_tone
+        - values.tone.unpitched_tone
         - values.tone.tone_collection
         - values.tone.modal_context
         - values.time.duration
@@ -95,6 +96,9 @@ quartodoc:
         - systems.wsmn.scoring.bar_line_shape
         - name: systems.wsmn.scoring.symbols
           children: embedded  # hundreds of constants; one page, not one page each
+        - systems.wsmn.percussion.percussion_tone
+        - name: systems.wsmn.percussion.symbols
+          children: embedded  # dozens of constants; one page, not one page each
     - title: Objects
       desc: Score objects, the things that become nodes in the graph.
       contents:

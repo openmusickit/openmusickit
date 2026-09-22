@@ -229,3 +229,71 @@ Transposing a span of the graph transforms every tone in it.
 graph.transform_tones(melody[0], melody[-1], TonalVector.transpose, P5)
 print(" ".join(format(next(iter(e.tones)), "ascii") for e in graph.walk_line(melody[0])))
 ```
+
+## A drum kit
+
+Unpitched percussion has no pitch to name,
+so a `PercussionTone` is a relative pitch and a stroke,
+either or both left out:
+`PercussionTone()` is a plain hit on whatever the part is,
+and the ready-made ones have names.
+The instrument is the `PercussionPart`,
+which may carry a palette of the tones it is expected to use.
+A drum kit is one part per drum, each on its own line,
+held together by a `LineGroup`:
+the origin its lines are measured from,
+so they need no pins to be aligned.
+
+```{python}
+from openmusickit.objects.note_event import Rest
+from openmusickit.objects.part import LineGroup, PercussionPart, Stint
+from openmusickit.systems.wsmn.percussion.symbols import (
+    bass_drums, closed, hi_hats, hit, open_hat, snare_drums,
+)
+from openmusickit.systems.wsmn.temporal.symbols import eighth
+
+
+def line(*tones, duration):
+    return [
+        Rest(duration) if tone is None else NoteEvent(tones={tone}, duration=duration)
+        for tone in tones
+    ]
+
+
+kit = OmkGraph(GraphMeta())
+hi_hat = line(*[closed] * 7, open_hat, duration=eighth)
+snare = line(None, hit, None, hit, duration=quarter)
+kick = line(hit, None, hit, None, duration=quarter)
+for drum in (hi_hat, snare, kick):
+    kit.add_line(drum)
+
+drums = LineGroup(name="Drum kit")
+kit.add_group(drums, [hi_hat[0], snare[0], kick[0]])
+kit.add_stint(PercussionPart(name="Hi-hat", palette=hi_hats), Stint(), hi_hat[0])
+kit.add_stint(PercussionPart(name="Snare", palette=snare_drums), Stint(), snare[0])
+kit.add_stint(PercussionPart(name="Kick", palette=bass_drums), Stint(), kick[0])
+```
+
+Each line is walked on its own,
+and onsets on any line can be measured from any event of another,
+because the group relates them.
+
+```{python}
+for name, drum in (("hi-hat", hi_hat), ("snare", snare), ("kick", kick)):
+    cells = []
+    for event in kit.walk_line(drum[0]):
+        onset = kit.relative_onset(hi_hat[0], event).rational_length
+        sound = "rest" if event.is_rest else f"{next(iter(event.tones))}"
+        cells.append(f"{str(onset):>4} {sound}")
+    print(f"{name:<7}", "  |  ".join(cells))
+```
+
+A tone prints as its readable form,
+and a remap over a line is an ordinary tone operation.
+
+```{python}
+print(f"{closed}", "/", f"{open_hat}", "/", f"{hit}")
+kit.transform_tones(hi_hat[0], None, lambda tone: open_hat if tone == closed else tone)
+print(" ".join(f"{next(iter(e.tones))}" for e in kit.walk_line(hi_hat[0])))
+print(len(list(kit.walk_group(drums))), "events in the kit")
+```

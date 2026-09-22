@@ -22,7 +22,7 @@ def test_marking_and_mark_spanner_are_marked_omk_objects():
 def test_attachment_mode_is_checked_for_every_mark(mark_symbols):
     """A Marking takes any mark that can sit on a single event (SINGLE or
     EITHER), a MarkSpanner any mark that can span (SPAN or EITHER); the
-    wrong placement is a ValueError, for all 201 marks in the table."""
+    wrong placement is a ValueError, for all 213 marks in the table."""
     for name, mark in mark_symbols.items():
         assert mark.attachment_mode in (
             AttachmentMode.SINGLE,

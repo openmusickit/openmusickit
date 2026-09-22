@@ -19,3 +19,13 @@ itself (dataclass default) evaluates, and whether any other custom `__repr__`
 in `src/` was written for compactness rather than fidelity.
 
 
+
+## Graph state machine is flaky under the thorough profile (2026-09-23)
+
+`uv run pytest tests/graph/test_graph_state_machine.py --hypothesis-profile=thorough`
+fails with `FlakyStrategyDefinition` ("data generation behaved differently
+between test cases") on the committed tree before the percussion work as well
+as after it; the default profile passes. The `remove_pin` rule draws from
+`sampled_from(sorted(self.pins, key=str))`, an order that depends on the
+uuid4 ids generated during the run, so the same choice sequence can see a
+different list. Noticed while adding the group rules; not fixed here.

@@ -1,17 +1,40 @@
 # Plan: unpitched percussion
 
-Status: **in progress** (approved 2026-09-23). Written as an exploratory memo
-2026-09-22, revised 2026-09-23 after dialog; the developer's final notes:
-the §3 vocabulary is a start to amend later, body percussion is a palette,
-the ready-made open tones are `open_hat` and `open_hand`, and string output
-through `Tone.__format__` must work for a tone whose `pitch` is None.
-The first draft (2026-09-22) proposed tones that named their instrument
-and a legend modelled as a modal context;
-both were dropped in discussion.
-Decisions made so far are in §0, the model they imply in §1 and §2,
-the drafted vocabularies for later review in §3,
-what is deferred in §4, and what is still pending in §5.
-The survey of other systems that informed the first draft is kept in §7.
+Status: **implemented 2026-09-23** (`UnpitchedTone`; `PercussionTone`,
+`RelativePitch`, `Stroke`, `WSMN_PERCUSSION`; `PercussionPart`, `LineGroup`,
+`Contains`, the group methods on `OmkGraph`; percussion symbols and palettes;
+twelve marks; docs). Written as an exploratory memo 2026-09-22, revised
+2026-09-23 after dialog; the developer's final notes: the §3 vocabulary is a
+start to amend later, body percussion is a palette, the ready-made open tones
+are `open_hat` and `open_hand`, and string output through `Tone.__format__`
+must work for a tone whose `pitch` is None.
+
+Notes from implementation:
+
+- The tone's field is `relative_pitch`, not `pitch`: a field named `pitch`
+  would shadow the `Tone.pitch` property (`PitchRepresentation | None`) that
+  `Tone.__format__` reads, and a relative pitch is not a pitch. `pitch` stays
+  None, so `f"{tone}"` gives `str(tone)` ("high open", "hit") and a format
+  spec is ignored rather than an error.
+- `RelativePitch` is an `IntEnum` (ordering for free) with `__str__` giving
+  the display form ("low-mid"); `Stroke` values are display forms with
+  spaces ("rim shot").
+- Palettes include the stroke-only tones as well as the pitched ones (a lone
+  djembe plays "slap" with no relative pitch), so `hand_drums` has 40 tones,
+  `toms` 36, `bass_drums` 12. `open_hand` is an alias of `open_hat` (one
+  object), so the symbol sweep's `distinct` sees one tone.
+- `Contains` fixes `anchor` to ONSET with `init=False`; `_timing_neighbours`
+  treats a `LineGroup` as a node of the timing graph, so `relative_onset`
+  crosses a group and `check_alignment` reports a pin that disagrees with it.
+- `add_branch` also refuses a head that is a line of a group, the mirror of
+  `add_to_group` refusing a branched head.
+- `walk_group` and `group_members` yield lines in no particular order (the
+  adapter's edge order is not insertion order), like `stints`.
+- The compound-lines piano fixture now puts the left hand in a group; the
+  mid-line second voice stays a branch. The `add_branch` docstring and the
+  `graph` package docstring no longer call the drummer's feet a branch.
+- The thorough Hypothesis profile fails the graph state machine before and
+  after this work (`_plans/revisit.md`); the default profile is green.
 
 ---
 
