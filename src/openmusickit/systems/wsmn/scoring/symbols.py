@@ -1,5 +1,5 @@
-"""Ready-to-go marks (articulations, dynamics, ornaments, techniques, and the like)
-and bar lines. Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
+"""Ready-to-go marks (articulations, dynamics, ornaments, techniques, and the like),
+tempo terms, and bar lines. Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
 sticking, beaters, snares) and its tones in `systems.wsmn.percussion.symbols`.
 
 ```
@@ -28,12 +28,16 @@ Examples
 >>> slur.binds, phrase_mark.binds
 (True, False)
 
+>>> allegro.name
+'allegro'
+
 >>> end_repeat
 BarLineShape(BarLineComponent.DOTS, BarLineComponent.THIN, BarLineComponent.THICK)
 """
 
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineComponent, BarLineShape
 from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
+from openmusickit.values.scoring.tempo_term import TempoTerm
 
 # =============================================================================
 # ARTICULATIONS
@@ -1751,6 +1755,150 @@ eyeglasses = Mark(
     description="An eyeglasses sign: watch the conductor.",
     kind=MarkType.OTHER,
     attachment_mode=AttachmentMode.SINGLE,
+)
+
+# =============================================================================
+# TEMPO TERMS
+# =============================================================================
+# Words a TempoEvent may carry (`TempoEvent(term=allegro)`), beside a ratio or
+# alone. The beats-per-minute ranges in the descriptions are the conventional
+# modern ones (the commonly reproduced table, as on Wikipedia's "Tempo" page),
+# and mean beats of whatever value the meter's beat is written as; they are
+# description only, a term has no range field. Gradual changes (rit., accel.)
+# are not tempo terms and are not here.
+
+# --- rate words, slowest to fastest ------------------------------------------
+
+larghissimo = TempoTerm(
+    name="larghissimo",
+    description="Very, very slow: about 24 beats per minute or fewer.",
+)
+
+grave = TempoTerm(
+    name="grave",
+    description="Very slow and solemn: about 25 to 45 beats per minute.",
+)
+
+largo = TempoTerm(
+    name="largo",
+    description="Slow and broad: about 40 to 60 beats per minute.",
+)
+
+lento = TempoTerm(
+    name="lento",
+    description="Slow: about 45 to 60 beats per minute.",
+)
+
+larghetto = TempoTerm(
+    name="larghetto",
+    description="Rather slow and broad: about 60 to 66 beats per minute.",
+)
+
+adagio = TempoTerm(
+    name="adagio",
+    description="Slow and expressive: about 66 to 76 beats per minute.",
+)
+
+adagietto = TempoTerm(
+    name="adagietto",
+    description="Slightly faster than adagio: about 70 to 80 beats per minute.",
+)
+
+andante = TempoTerm(
+    name="andante",
+    description="At a walking pace: about 76 to 108 beats per minute.",
+)
+
+andantino = TempoTerm(
+    name="andantino",
+    description="Slightly faster than andante (though sometimes read as slightly slower): about 80 to 108 beats per minute.",
+)
+
+andante_moderato = TempoTerm(
+    name="andante moderato",
+    description="Between andante and moderato: about 92 to 112 beats per minute.",
+)
+
+moderato = TempoTerm(
+    name="moderato",
+    description="At a moderate speed: about 108 to 120 beats per minute.",
+)
+
+allegretto = TempoTerm(
+    name="allegretto",
+    description="Moderately fast: about 112 to 120 beats per minute.",
+)
+
+allegro_moderato = TempoTerm(
+    name="allegro moderato",
+    description="Close to, but not quite, allegro: about 116 to 120 beats per minute.",
+)
+
+allegro = TempoTerm(
+    name="allegro",
+    description="Fast and bright: about 120 to 156 beats per minute.",
+)
+
+allegro_vivace = TempoTerm(
+    name="allegro vivace",
+    description="Faster and livelier than allegro: about 124 to 156 beats per minute.",
+    aliases=("molto allegro",),
+)
+
+vivace = TempoTerm(
+    name="vivace",
+    description="Lively and fast: about 156 to 176 beats per minute.",
+)
+
+vivacissimo = TempoTerm(
+    name="vivacissimo",
+    description="Very fast and lively: about 172 to 176 beats per minute.",
+)
+
+allegrissimo = TempoTerm(
+    name="allegrissimo",
+    description="Very fast: about 172 to 176 beats per minute.",
+)
+
+presto = TempoTerm(
+    name="presto",
+    description="Very, very fast: about 168 to 200 beats per minute.",
+)
+
+prestissimo = TempoTerm(
+    name="prestissimo",
+    description="Faster than presto: about 200 beats per minute or more.",
+)
+
+# --- restorers and free tempo: words with no range of their own --------------
+
+a_tempo = TempoTerm(
+    name="a tempo",
+    description="Back to the tempo in force before the last departure from it (a ritardando, an accelerando, a rubato passage).",
+)
+
+tempo_primo = TempoTerm(
+    name="tempo primo",
+    description="Back to the first tempo of the piece or movement.",
+    aliases=("Tempo I",),
+)
+
+listesso_tempo = TempoTerm(
+    name="l'istesso tempo",
+    description="The same tempo: the beat keeps its speed across a change of meter or of note value.",
+    aliases=("lo stesso tempo",),
+)
+
+rubato = TempoTerm(
+    name="rubato",
+    description="Freely: the beat is stretched and pressed at the performer's discretion, the overall pace kept.",
+    aliases=("tempo rubato",),
+)
+
+ad_libitum = TempoTerm(
+    name="ad libitum",
+    description="At will: the tempo of the passage is left to the performer.",
+    aliases=("ad lib.",),
 )
 
 # =============================================================================

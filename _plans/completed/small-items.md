@@ -244,3 +244,15 @@ kind of defect (it printed the two `TemporalUnit`s, which `Tempo(n, beat)`
 cannot take back) and now prints the constructor's arguments, with the clock
 time only when it is not the default minute. The `Marking` / `MarkSpanner`
 half of the revisit entry is still open.
+
+### Verbal tempo indications have no home (2026-09-22, resolved 2026-09-22)
+
+A tempo word is a `TempoTerm` (`values/scoring/tempo_term.py`: `name`,
+`description`, `aliases`; frozen; no range field, the conventional
+beats-per-minute range is description only), held by `TempoEvent.term` beside
+or instead of the ratio. It is not a `Mark`: nothing places it with a MARKS
+edge, and `kind`, `attachment_mode` and `binds` mean nothing for it. The WSMN
+table (`systems/wsmn/scoring/symbols.py`, TEMPO TERMS) has the twenty ranged
+words of the conventional modern table and the five restorers (a tempo, tempo
+primo, l'istesso tempo, rubato, ad libitum). Gradual changes (rit., accel.)
+stay open in `revisit.md`.

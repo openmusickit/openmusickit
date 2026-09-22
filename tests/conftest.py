@@ -30,6 +30,7 @@ from openmusickit.systems.wsmn.tonal.interval_quality import QUALITIES
 from openmusickit.systems.wsmn.tonal.key import Key, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.scoring.mark import Mark
+from openmusickit.values.scoring.tempo_term import TempoTerm
 from openmusickit.values.time.duration import GraceDuration
 from openmusickit.values.tone.tone_collection import ToneCollection
 from tests.domains import TONAL_OCT_TUPLES, TONAL_TUPLES, symbols_of
@@ -157,6 +158,12 @@ def mark_symbols():
 def bar_line_symbols():
     """All the BarLineShape symbols (`single_bar`, `end_repeat`, ...) in `scoring.symbols`, by name."""
     return symbols_of(scoring_symbols, BarLineShape)
+
+
+@pytest.fixture
+def tempo_term_symbols():
+    """All the TempoTerm symbols (`allegro`, `andante`, `a_tempo`, ...) in `scoring.symbols`, by name."""
+    return symbols_of(scoring_symbols, TempoTerm)
 
 
 # --- percussion symbols ------------------------------------------------------

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from openmusickit.errors import OmkWarning
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
+from openmusickit.values.scoring.tempo_term import TempoTerm
 from openmusickit.values.time.duration import Duration, Measurable, TemporalRatio, ZeroDuration
 from openmusickit.values.tone.modal_context import ModalContext
 from openmusickit.values.tone.tone import Tone
@@ -166,7 +167,8 @@ class MeterEvent(TemporalContextEvent):
 @dataclass(kw_only=True, slots=True)
 class TempoEvent(TemporalContextEvent):
     """Sets the tempo for the material that follows:
-    the rate at which its durations pass, as a `TemporalRatio`.
+    the rate at which its durations pass, as a `TemporalRatio`,
+    the word for it, as a `TempoTerm`, or both.
 
     The ratio's nominal side is in the units of the line's own system;
     its contextual side is what those units are measured against from here on.
@@ -182,7 +184,7 @@ class TempoEvent(TemporalContextEvent):
     >>> from openmusickit.systems.wsmn.temporal.symbols import dotted_quarter, quarter
     >>> from openmusickit.values.time.clock_time import Tempo
     >>> TempoEvent(tempo=Tempo(120, quarter))
-    TempoEvent(tempo=Tempo(120, MetricalDuration(1, 4)))
+    TempoEvent(tempo=Tempo(120, MetricalDuration(1, 4)), term=None)
     >>> TempoEvent().tempo is None
     True
 
@@ -192,9 +194,26 @@ class TempoEvent(TemporalContextEvent):
 
     >>> modulation = TempoEvent(tempo=TemporalRatio(dotted_quarter, quarter))
     >>> modulation
-    TempoEvent(tempo=TemporalRatio(MetricalDuration(1, 4, dots=1), MetricalDuration(1, 4)))
+    TempoEvent(tempo=TemporalRatio(MetricalDuration(1, 4, dots=1), MetricalDuration(1, 4)), term=None)
     >>> modulation.tempo.multiplier
     Fraction(2, 3)
+
+    The term is the word as printed (Allegro, Andante, a tempo):
+    a `TempoTerm` from the system's vocabulary, or one made for the score.
+    It stands beside the ratio when the score gives both,
+    and alone when the score gives no figure.
+    A term says nothing about clock time by itself,
+    so `tempo` stays `None` until something sets it.
+
+    >>> from openmusickit.systems.wsmn.scoring.symbols import a_tempo, allegro
+    >>> event = TempoEvent(tempo=Tempo(132, quarter), term=allegro)
+    >>> event.tempo, event.term.name
+    (Tempo(132, MetricalDuration(1, 4)), 'allegro')
+    >>> TempoEvent(term=a_tempo).tempo is None, TempoEvent().term is None
+    (True, True)
+    >>> TempoEvent(term=TempoTerm(name="tempo giusto"))
+    TempoEvent(tempo=None, term=TempoTerm(name='tempo giusto', description=None, aliases=()))
     """
 
     tempo: TemporalRatio | None = None
+    term: TempoTerm | None = None

@@ -15,16 +15,17 @@ evaluable: print the symbol's name when the mark is one of the ready-made
 itself (dataclass default) evaluates, and whether any other custom `__repr__`
 in `src/` was written for compactness rather than fidelity.
 
-## Verbal tempo indications have no home (2026-09-22)
+## Gradual tempo changes (rit., accel.) have no home (2026-09-22)
 
-`TempoEvent` holds the ratio (a metronome marking, a metric modulation, a
-cross-system pacing); the word that usually goes with it (Allegro, Andante,
-rit., a tempo) is notation with nowhere to go: `MarkType`
-(`src/openmusickit/values/scoring/mark.py`) has no tempo kind and the WSMN
-marks table has no tempo words. Decide whether they are marks (a `Marking`
-attached to the `TempoEvent` with a MARKS edge, or to a note when there is no
-ratio) or a text attribute on the event, and whether gradual changes (rit.,
-accel.) are spanners. Noticed while adding `TemporalContextEvent`.
+`TempoEvent` holds the word (`term: TempoTerm`,
+`src/openmusickit/values/scoring/tempo_term.py`; the WSMN words are in
+`src/openmusickit/systems/wsmn/scoring/symbols.py`), so Allegro, Andante,
+a tempo and the other indications at a point have a home. Gradual changes
+(rit., rall., accel., and their dashed extensions) do not: they are a process
+over a stretch of material, not a context in force from a point, so a
+`MarkSpanner` looks more like them than a `TempoEvent`, but `MarkType` has no
+tempo kind and the marks table has no such marks. Deferred until a realizer or
+renderer needs them.
 
 ## No graph query for the context in force at an event (2026-09-22)
 

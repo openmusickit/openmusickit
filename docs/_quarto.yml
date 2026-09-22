@@ -79,6 +79,7 @@ quartodoc:
         - values.text.word
         - values.scoring.mark
         - values.scoring.division_shape
+        - values.scoring.tempo_term
     - title: Western Standard Music Notation
       desc: The WSMN implementation of the abstract values.
       contents:

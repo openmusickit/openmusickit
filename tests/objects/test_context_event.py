@@ -1,6 +1,6 @@
 """Temporal context events: a meter or a tempo placed in a line, holding
-any Measurable or any TemporalRatio, taking no time, and printing a repr
-that builds them back."""
+any Measurable, any TemporalRatio or a TempoTerm, taking no time, and
+printing a repr that builds them back."""
 
 import copy
 import itertools
@@ -17,6 +17,7 @@ from openmusickit.objects.context_event import (
     TemporalContextEvent,
 )
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
+from openmusickit.systems.wsmn.scoring.symbols import a_tempo, allegro, andante
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.symbols import (
     dotted_quarter,
@@ -29,6 +30,7 @@ from openmusickit.systems.wsmn.temporal.symbols import (
 )
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
 from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+from openmusickit.values.scoring.tempo_term import TempoTerm
 from openmusickit.values.time.clock_time import ClockDuration, Tempo
 from openmusickit.values.time.duration import (
     CompoundTemporalUnit,
@@ -52,6 +54,7 @@ NAMESPACE = {
         ("MetricalDuration", MetricalDuration),
         ("ClockDuration", ClockDuration),
         ("Tempo", Tempo),
+        ("TempoTerm", TempoTerm),
     ]
 }
 
@@ -75,6 +78,7 @@ def test_duration_cannot_be_given_at_construction():
 def test_values_default_to_unspecified():
     assert MeterEvent().meter is None
     assert TempoEvent().tempo is None
+    assert TempoEvent().term is None
 
 
 def test_a_meter_is_any_measurable():
@@ -101,6 +105,14 @@ def test_a_tempo_is_any_temporal_ratio():
     assert dotted_quarter.rational_length * modulation.multiplier == quarter.rational_length
 
 
+def test_a_tempo_may_carry_a_term_a_ratio_or_both():
+    """The word alone says nothing about clock time; with a figure, both are held."""
+    alone = TempoEvent(term=allegro)
+    assert alone.term is allegro and alone.tempo is None
+    both = TempoEvent(tempo=Tempo(132, quarter), term=allegro)
+    assert both.tempo == Tempo(132, quarter) and both.term is allegro
+
+
 def test_equality_ignores_id_and_compares_the_value():
     assert MeterEvent(meter=four_four) == MeterEvent(meter=four_four)
     assert MeterEvent(meter=four_four) != MeterEvent(meter=six_eight)
@@ -109,6 +121,10 @@ def test_equality_ignores_id_and_compares_the_value():
     assert TempoEvent(tempo=Tempo(120, quarter)) == TempoEvent(tempo=Tempo(120, quarter))
     assert TempoEvent(tempo=Tempo(120, quarter)) != TempoEvent(tempo=Tempo(60, quarter))
     assert TempoEvent() == TempoEvent()
+    assert TempoEvent(term=allegro) == TempoEvent(term=allegro)
+    assert TempoEvent(term=allegro) != TempoEvent(term=andante)
+    figure = TempoEvent(tempo=Tempo(120, quarter))
+    assert TempoEvent(tempo=Tempo(120, quarter), term=allegro) != figure
     assert MeterEvent() != TempoEvent()
 
 
@@ -120,7 +136,7 @@ def test_equality_is_the_values_equality():
     assert TempoEvent(tempo=Tempo(120, quarter)) == TempoEvent(tempo=Tempo(60, half))
 
 
-def test_repr_round_trips(time_signature_symbols):
+def test_repr_round_trips(time_signature_symbols, tempo_term_symbols):
     events = [
         MeterEvent(),
         TempoEvent(),
@@ -132,14 +148,18 @@ def test_repr_round_trips(time_signature_symbols):
         TempoEvent(tempo=Tempo(120, quarter)),
         TempoEvent(tempo=Tempo(60, dotted_quarter, ClockDuration.from_seconds(30))),
         TempoEvent(tempo=TemporalRatio(dotted_quarter, quarter)),
+        TempoEvent(term=allegro),
+        TempoEvent(tempo=Tempo(132, quarter), term=allegro),
+        TempoEvent(term=TempoTerm(name="tempo giusto")),
     ]
     events += [MeterEvent(meter=ts) for ts in time_signature_symbols.values()]
+    events += [TempoEvent(term=term) for term in tempo_term_symbols.values()]
     for event in events:
         assert eval(repr(event), NAMESPACE) == event, repr(event)
 
 
 def test_relative_onset_passes_through_temporal_contexts():
-    """A meter or a tempo takes no time: onsets across them are what they
+    """A meter or a tempo (a ratio, a word, or both) takes no time: onsets across them are what they
     would be without them, in both directions."""
     plain, marked = notes(C, D, E), notes(C, D, E)
     without = OmkGraph(GraphMeta())
@@ -148,11 +168,12 @@ def test_relative_onset_passes_through_temporal_contexts():
     with_contexts.add_line(
         [
             MeterEvent(meter=four_four),
-            TempoEvent(tempo=Tempo(120, quarter)),
+            TempoEvent(tempo=Tempo(120, quarter), term=allegro),
             marked[0],
             MeterEvent(meter=six_eight),
             marked[1],
             TempoEvent(tempo=TemporalRatio(dotted_quarter, quarter)),
+            TempoEvent(term=a_tempo),
             marked[2],
         ]
     )

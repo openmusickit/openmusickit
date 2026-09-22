@@ -103,6 +103,11 @@ def test_bar_line_symbols(bar_line_symbols):
     assert len(distinct(bar_line_symbols)) == 14
 
 
+def test_tempo_term_symbols(tempo_term_symbols):
+    assert len(tempo_term_symbols) == 25
+    assert len(distinct(tempo_term_symbols)) == 25
+
+
 def test_percussion_tone_symbols(percussion_tone_symbols):
     """43 names for 42 tones (`open_hat` and `open_hand` are one)."""
     assert len(percussion_tone_symbols) == 43
