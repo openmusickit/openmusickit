@@ -263,3 +263,17 @@ class Tempo(TemporalRatio):
 
     def __init__(self, n: int, beat: Duration, clock_time: ClockDuration = ONE_MINUTE):
         super().__init__(TemporalUnit(n, beat), TemporalUnit(1, clock_time))
+
+    def __repr__(self):
+        """The constructor's arguments; the clock time only when it is not the default minute.
+
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+        >>> Tempo(120, quarter)
+        Tempo(120, MetricalDuration(1, 4))
+        >>> Tempo(2, quarter, ClockDuration.from_seconds(1))
+        Tempo(2, MetricalDuration(1, 4), ClockDuration(microseconds=1000000))
+        """
+        n, beat, clock_time = self.nominal.count, self.nominal.base, self.contextual.base
+        if clock_time == ONE_MINUTE:
+            return f"{type(self).__name__}({n}, {beat!r})"
+        return f"{type(self).__name__}({n}, {beat!r}, {clock_time!r})"

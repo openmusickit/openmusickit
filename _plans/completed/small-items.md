@@ -233,3 +233,14 @@ and the module docstring states the rule: every `sampled_from` in the
 machine draws from a list in insertion order, never from anything ordered
 by id. Verified: three thorough and ten default runs green; the full suite
 green under both profiles.
+
+### `ContextEvent` repr printed its fixed duration (2026-09-22, resolved 2026-09-22)
+
+`ContextEvent.duration` is now `repr=False`, as `DivisionEvent`'s already was,
+so `ContextEvent()`, `ModalContextEvent(modal_context=None)` and the new
+`MeterEvent` / `TempoEvent` reprs evaluate. Done while adding the temporal
+context events, whose reprs inherit the field. `Tempo.__repr__` had the same
+kind of defect (it printed the two `TemporalUnit`s, which `Tempo(n, beat)`
+cannot take back) and now prints the constructor's arguments, with the clock
+time only when it is not the default minute. The `Marking` / `MarkSpanner`
+half of the revisit entry is still open.

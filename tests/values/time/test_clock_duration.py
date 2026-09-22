@@ -11,9 +11,10 @@ from fractions import Fraction as F
 import pytest
 
 from openmusickit.errors import ScalingError, TemporalCompatibilityError
+from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.symbols import eighth, half, quarter, triplet
 from openmusickit.values.time.clock_time import CLOCK_TIME, ONE_MINUTE, ClockDuration, Tempo
-from openmusickit.values.time.duration import ZeroDuration
+from openmusickit.values.time.duration import TemporalRatio, TemporalUnit, ZeroDuration
 from tests.domains import distinct
 
 MICROSECONDS = [0, 1, 7, 1_000, 1_000_000, 60_000_000, F(1, 3), F(5, 2)]
@@ -165,3 +166,21 @@ def test_scaling_by_a_non_positive_scalar_raises_scaling_error():
     for k in [0, -1, F(-1, 2)]:
         with pytest.raises(ScalingError):
             ClockDuration(7).scale(k)
+
+
+def test_tempo_repr_round_trips(duration_symbols):
+    """`Tempo(n, beat)` for the default minute, `Tempo(n, beat, clock_time)` otherwise."""
+    namespace = {
+        "Tempo": Tempo,
+        "ClockDuration": ClockDuration,
+        "MetricalDuration": MetricalDuration,
+        "TemporalRatio": TemporalRatio,
+        "TemporalUnit": TemporalUnit,
+    }
+    for name, beat in distinct(duration_symbols).items():
+        for tempo in (Tempo(60, beat), Tempo(2, beat, ClockDuration.from_seconds(1))):
+            assert eval(repr(tempo), namespace) == tempo, name
+    assert repr(Tempo(120, quarter)) == "Tempo(120, MetricalDuration(1, 4))"
+    assert repr(Tempo(1, quarter, ClockDuration(5))) == (
+        "Tempo(1, MetricalDuration(1, 4), ClockDuration(microseconds=5))"
+    )
