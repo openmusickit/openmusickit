@@ -56,6 +56,7 @@ quartodoc:
   # (`dynamic: true` gives the same signatures and crashes on two aliases here.)
   options:
     include_inherited: true
+    include_empty: true  # list undocumented members too, so the gaps are visible
     member_order: source
     signature_name: short
     children: separate
@@ -84,11 +85,14 @@ quartodoc:
         - systems.wsmn.tonal.interval_quality
         - systems.wsmn.tonal.chords
         - systems.wsmn.tonal.key
-        - systems.wsmn.tonal.symbols
+        - name: systems.wsmn.tonal.symbols
+          children: embedded  # hundreds of constants; one page, not one page each
         - systems.wsmn.temporal.metrical_duration
         - systems.wsmn.temporal.time_signature
-        - systems.wsmn.temporal.symbols
-        - systems.wsmn.scoring.symbols
+        - name: systems.wsmn.temporal.symbols
+          children: embedded  # hundreds of constants; one page, not one page each
+        - name: systems.wsmn.scoring.symbols
+          children: embedded  # hundreds of constants; one page, not one page each
     - title: Objects
       desc: Score objects, the things that become nodes in the graph.
       contents:

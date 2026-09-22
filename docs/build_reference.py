@@ -9,7 +9,8 @@ OMK's value types carry their algebra in dunders
 (``__add__``, ``__sub__``, ``__lt__``, ``__format__``, ...),
 so those belong in the reference,
 while single-underscore helpers do not.
-This script patches quartodoc's member filter accordingly.
+This script patches quartodoc's member filter accordingly,
+and also drops members griffe synthesizes (a dataclass's generated ``__init__``).
 """
 
 from __future__ import annotations
@@ -40,11 +41,19 @@ def _fetch_members_keeping_dunders(self, el, obj):
         names = _fetch_members(self, el, obj)
     finally:
         el.include_private = include_private
+    members = obj.all_members if el.include_inherited else obj.members
     return [
         name
         for name in names
-        if not name.startswith("_") or (_is_dunder(name) and name not in HIDDEN_DUNDERS)
+        if (not name.startswith("_") or (_is_dunder(name) and name not in HIDDEN_DUNDERS))
+        and not _is_synthesized(members[name])
     ]
+
+
+def _is_synthesized(member) -> bool:
+    """True for members griffe invents rather than reads, such as a dataclass ``__init__``."""
+    target = member.final_target if member.is_alias else member
+    return not target.lineno
 
 
 _DUNDER_HEADING = re.compile(r"^(#+ )(__\w+__)( \{)", re.MULTILINE)
