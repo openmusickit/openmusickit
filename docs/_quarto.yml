@@ -1,11 +1,12 @@
 project:
   type: website
   output-dir: _site
-  # Generate the API reference pages before every render/preview,
-  # so `quarto render` and `quarto preview` are self-contained.
-  pre-render: quartodoc build
 
 # Pull in the sidebar that quartodoc generates for the reference section.
+# Run `quartodoc build` yourself before rendering or previewing (see README.md).
+# It is deliberately not a `pre-render` step: quartodoc rewrites this sidebar
+# file on every run, the preview server treats that as a config change and
+# reloads every open browser tab, which cancels in-flight page navigation.
 metadata-files:
   - reference/_sidebar.yml
 

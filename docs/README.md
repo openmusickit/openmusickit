@@ -13,10 +13,17 @@ so Quarto finds the project's virtualenv.
 
 ```bash
 cd docs
-uv run quarto preview     # build, serve on localhost, rebuild on change
-uv run quarto render      # build only, into docs/_site/
+uv run quartodoc build      # write reference/ pages and reference/_sidebar.yml
+uv run quarto preview       # build, serve on localhost, rebuild pages as you edit them
+uv run quarto render        # build only, into docs/_site/
 ```
 
-Both commands run `quartodoc build` first (the `pre-render` step in `_quarto.yml`),
-which writes the `reference/` pages and `reference/_sidebar.yml`.
-Everything generated (`reference/`, `_site/`, `.quarto/`) is gitignored.
+Run `quartodoc build` first, and again whenever docstrings change.
+It is a separate step rather than a Quarto `pre-render` hook on purpose:
+quartodoc rewrites `reference/_sidebar.yml` on every run,
+the preview server treats that as a config change and reloads every open tab,
+and that reload cancels whatever page you were navigating to.
+
+`quarto preview` renders pages on demand the first time you open them,
+so a brief "Render" overlay on first navigation is normal.
+Everything generated (`reference/`, `_site/`, `.quarto/`, `objects.json`) is gitignored.
