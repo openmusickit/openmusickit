@@ -18,7 +18,9 @@ uv run quarto preview       # build, serve on localhost, rebuild pages as you ed
 uv run quarto render        # build only, into docs/_site/
 ```
 
-Run `quartodoc build` first, and again whenever docstrings change.
+Run `quartodoc build` first, and again whenever docstrings change,
+then restart `quarto preview` if it is running:
+it does not recover from the reference pages being regenerated underneath it.
 It is a separate step rather than a Quarto `pre-render` hook on purpose:
 quartodoc rewrites `reference/_sidebar.yml` on every run,
 the preview server treats that as a config change and reloads every open tab,
