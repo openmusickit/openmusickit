@@ -13,16 +13,18 @@ so Quarto finds the project's virtualenv.
 
 ```bash
 cd docs
-uv run quartodoc build      # write reference/ pages and reference/_sidebar.yml
-uv run quarto preview       # build, serve on localhost, rebuild pages as you edit them
-uv run quarto render        # build only, into docs/_site/
+uv run python build_reference.py   # write reference/ pages and reference/_sidebar.yml
+uv run quarto preview              # build, serve on localhost, rebuild pages as you edit them
+uv run quarto render               # build only, into docs/_site/
 ```
 
-Run `quartodoc build` first, and again whenever docstrings change,
+Run `build_reference.py` first, and again whenever docstrings change,
 then restart `quarto preview` if it is running:
 it does not recover from the reference pages being regenerated underneath it.
+The script is `quartodoc build` plus a patch that keeps dunder methods
+(quartodoc's own `include_private` would also expose every `_helper`).
 It is a separate step rather than a Quarto `pre-render` hook on purpose:
-quartodoc rewrites `reference/_sidebar.yml` on every run,
+it rewrites `reference/_sidebar.yml` on every run,
 the preview server treats that as a config change and reloads every open tab,
 and that reload cancels whatever page you were navigating to.
 
