@@ -1,4 +1,5 @@
-"""Ready-to-go marks: articulations, dynamics, ornaments, techniques, and the like.
+"""Ready-to-go marks (articulations, dynamics, ornaments, techniques, and the like)
+and bar lines.
 
 ```
 from openmusickit.systems.wsmn.scoring.symbols import *
@@ -25,8 +26,12 @@ Examples
 
 >>> slur.binds, phrase_mark.binds
 (True, False)
+
+>>> end_repeat
+BarLineShape(BarLineComponent.DOTS, BarLineComponent.THIN, BarLineComponent.THICK)
 """
 
+from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineComponent, BarLineShape
 from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
 
 # =============================================================================
@@ -1646,3 +1651,39 @@ eyeglasses = Mark(
     kind=MarkType.OTHER,
     attachment_mode=AttachmentMode.SINGLE,
 )
+
+# =============================================================================
+# BAR LINES
+# =============================================================================
+# A BarLineShape lists its components in time order (LilyPond's `\bar`
+# string order). The MusicXML bar-style / LilyPond glyph each one renders as
+# is noted beside it; repeat dots are MusicXML's <repeat> element.
+
+single_bar = BarLineShape(BarLineComponent.THIN)  # regular / "|"
+double_bar = BarLineShape(BarLineComponent.THIN, BarLineComponent.THIN)  # light-light / "||"
+final_bar = BarLineShape(BarLineComponent.THIN, BarLineComponent.THICK)  # light-heavy / "|."
+reverse_final_bar = BarLineShape(
+    BarLineComponent.THICK, BarLineComponent.THIN
+)  # heavy-light / ".|"
+heavy_bar = BarLineShape(BarLineComponent.THICK)  # heavy / "."
+double_heavy_bar = BarLineShape(
+    BarLineComponent.THICK, BarLineComponent.THICK
+)  # heavy-heavy / ".."
+dashed_bar = BarLineShape(BarLineComponent.DASHED)  # dashed / "!"
+dotted_bar = BarLineShape(BarLineComponent.DOTTED)  # dotted / ";"
+short_bar = BarLineShape(BarLineComponent.SHORT)  # short / ","
+tick_bar = BarLineShape(BarLineComponent.TICK)  # tick / "'"
+invisible_bar = BarLineShape()  # none / ""
+start_repeat = BarLineShape(
+    BarLineComponent.THICK, BarLineComponent.THIN, BarLineComponent.DOTS
+)  # heavy-light + forward repeat / ".|:"
+end_repeat = BarLineShape(
+    BarLineComponent.DOTS, BarLineComponent.THIN, BarLineComponent.THICK
+)  # light-heavy + backward repeat / ":|."
+double_repeat = BarLineShape(
+    BarLineComponent.DOTS,
+    BarLineComponent.THIN,
+    BarLineComponent.THICK,
+    BarLineComponent.THIN,
+    BarLineComponent.DOTS,
+)  # ":|.|:"

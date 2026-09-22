@@ -18,6 +18,7 @@ from hypothesis import strategies as st
 from openmusickit.errors import GraphError, OmkWarning
 from openmusickit.graph.edge import EdgeType
 from openmusickit.graph.graph import GraphMeta, OmkGraph
+from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.part import Part, Stint
 from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter
@@ -39,6 +40,18 @@ def test_relative_onset_of_an_event_to_itself_is_zero(line):
     graph = fresh(line)
     for event in line:
         assert graph.relative_onset(event, event) == ZeroDuration()
+
+
+def test_relative_onset_passes_through_a_division():
+    """A division takes no time: onsets across it are what they would be
+    without it, in both directions."""
+    plain, divided = notes(C, D, E), notes(C, D, E)
+    without = fresh(plain)
+    with_bar = fresh([divided[0], DivisionEvent(), divided[1], divided[2]])
+    for i, j in itertools.permutations(range(3), 2):
+        assert with_bar.relative_onset(divided[i], divided[j]) == without.relative_onset(
+            plain[i], plain[j]
+        )
 
 
 @given(lines(min_size=2))

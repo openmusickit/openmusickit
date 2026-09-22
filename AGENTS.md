@@ -152,6 +152,23 @@ and then include them in proposed plans of work.
 When discussing how a feature should be built with the developer,
 how the new code should be tests is part of the discussion.
 
+### `__repr__` round-trips
+
+A `__repr__` is an expression that evaluates to an equal object,
+given the obvious imports from the module that defines the class.
+Print full symbols (`BarLineComponent.THIN`, not `THIN`; `Mark(name=...)`, not `Mark(...)`),
+and use the constructor's real signature.
+Readability comes from short constructors and named symbols, not from an abbreviated repr.
+
+Custom __repr__ methods may always use symbols that appear in any relevant symbols.py module.
+(So a Chord __repr__ can include pitch names directly, for example.)
+
+When a dataclass's default repr does not evaluate
+(an enum member prints as `<Kind.NAME: 'name'>`; a custom `__init__` takes varargs),
+write one that does.
+
+A doctest that shows the repr is then also a test of construction.
+
 
 ## Philosophy and Approach
 

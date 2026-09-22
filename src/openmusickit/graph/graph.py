@@ -19,13 +19,12 @@ from openmusickit.graph.edge import (
 )
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
-from openmusickit.objects.context_event import ContextEvent
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyrics
 from openmusickit.objects.marking import Marked, Marking
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
 from openmusickit.objects.part import Part, Stint
-from openmusickit.values.time.duration import Duration, GraceDuration, ZeroDuration
+from openmusickit.values.time.duration import Duration, ZeroDuration
 from openmusickit.values.tone.tone import Tone
 
 
@@ -1014,9 +1013,10 @@ class OmkGraph:
         syllable onset, until either line runs out.
 
         Walking the events from `start_object`, a syllable begins on every
-        event except: a rest; a `ContextEvent` (nothing to sing); a grace
-        note (sung on the syllable of the note it decorates; to put a
-        syllable on one, use `connect_lyric_to_object`); and an event that
+        event except: a rest; anything of zero duration (a context event or
+        a division, which have nothing to sing, and a grace note, sung on
+        the syllable of the note it decorates; to put a syllable on one, use
+        `connect_lyric_to_object`); and an event that
         lies under a binding `MarkSpanner` (`mark.binds`: a slur or a tie)
         without starting it -- those continue the syllable begun on the
         span's first note. An event that ends one binding span and starts
@@ -1060,11 +1060,9 @@ class OmkGraph:
 
     def _begins_syllable(self, obj: SequentialEvent) -> bool:
         """Whether a syllable can begin on `obj`, ignoring any span it is under."""
-        if isinstance(obj, ContextEvent):
+        if isinstance(obj.duration, ZeroDuration):
             return False
         if isinstance(obj, NoteEvent) and obj.is_rest:
-            return False
-        if isinstance(obj.duration, GraceDuration):
             return False
         return True
 

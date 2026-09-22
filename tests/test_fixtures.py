@@ -89,3 +89,8 @@ def test_time_signature_symbols(time_signature_symbols):
 def test_mark_symbols(mark_symbols):
     assert len(mark_symbols) == 201
     assert len(distinct(mark_symbols)) == 201
+
+
+def test_bar_line_symbols(bar_line_symbols):
+    assert len(bar_line_symbols) == 14
+    assert len(distinct(bar_line_symbols)) == 14

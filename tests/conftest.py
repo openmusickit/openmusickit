@@ -18,6 +18,7 @@ import pytest
 from hypothesis import settings
 
 from openmusickit.systems.wsmn.scoring import symbols as scoring_symbols
+from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineShape
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
@@ -147,3 +148,9 @@ def time_signature_symbols():
 def mark_symbols():
     """All the Mark symbols (`staccato`, `slur`, `piano`, ...) in `scoring.symbols`, by name."""
     return symbols_of(scoring_symbols, Mark)
+
+
+@pytest.fixture
+def bar_line_symbols():
+    """All the BarLineShape symbols (`single_bar`, `end_repeat`, ...) in `scoring.symbols`, by name."""
+    return symbols_of(scoring_symbols, BarLineShape)

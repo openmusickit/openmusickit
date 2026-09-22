@@ -282,6 +282,19 @@ def test_zip_skips_rests_and_context_events():
     assert _sung(graph, c) == ["Je"] and _sung(graph, d) == ["sus"]
 
 
+def test_zip_skips_divisions():
+    from openmusickit.objects.division_event import DivisionEvent
+    from openmusickit.systems.wsmn.scoring.symbols import single_bar
+
+    graph = OmkGraph(GraphMeta())
+    c, bar, d = NoteEvent(tones={C}), DivisionEvent(shape=single_bar), NoteEvent(tones={D})
+    graph.add_line([c, bar, d])
+    syllables = graph.add_lyrics("Je-sus")
+    graph.zip_lyrics_to_objects(syllables[0], c)
+    assert _sung(graph, bar) == []
+    assert _sung(graph, c) == ["Je"] and _sung(graph, d) == ["sus"]
+
+
 def test_zip_a_span_ending_where_another_starts_continues(graph_with_notes):
     from openmusickit.objects.marking import MarkSpanner
     from openmusickit.systems.wsmn.scoring.symbols import slur

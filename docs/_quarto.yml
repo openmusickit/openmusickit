@@ -77,6 +77,7 @@ quartodoc:
         - values.time.clock_time
         - values.text.word
         - values.scoring.mark
+        - values.scoring.division_shape
     - title: Western Standard Music Notation
       desc: The WSMN implementation of the abstract values.
       contents:
@@ -91,6 +92,7 @@ quartodoc:
         - systems.wsmn.temporal.time_signature
         - name: systems.wsmn.temporal.symbols
           children: embedded  # hundreds of constants; one page, not one page each
+        - systems.wsmn.scoring.bar_line_shape
         - name: systems.wsmn.scoring.symbols
           children: embedded  # hundreds of constants; one page, not one page each
     - title: Objects
@@ -100,6 +102,7 @@ quartodoc:
         - objects.note_event
         - objects.chord_event
         - objects.context_event
+        - objects.division_event
         - objects.lyrics
         - objects.marking
         - objects.part
