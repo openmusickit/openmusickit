@@ -9,6 +9,7 @@ update the literal in the same commit.
 from tests.domains import (
     ABSTRACT_VECTORS,
     ALL_VECTORS,
+    PERCUSSION_TONES,
     QUALIFIED_VECTORS,
     TONAL_OCT_TUPLES,
     TONAL_TUPLES,
@@ -28,6 +29,12 @@ def test_tonal_vector_domains():
     assert len(QUALIFIED_VECTORS) == 175
     assert len(ALL_VECTORS) == 210
     assert len(set(ALL_VECTORS)) == 210
+
+
+def test_percussion_tone_domain():
+    """Six relative pitches (five and none) by twenty-nine strokes (twenty-eight and none)."""
+    assert len(PERCUSSION_TONES) == 6 * 29
+    assert len(set(PERCUSSION_TONES)) == 6 * 29
 
 
 def test_tonal_tuple_fixtures(tonal_tuples, tonal_oct_tuples):

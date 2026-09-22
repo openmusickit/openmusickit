@@ -14,6 +14,7 @@ from fractions import Fraction
 from hypothesis import strategies as st
 
 from openmusickit.objects.note_event import NoteEvent
+from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.tonal.constants import ACCIDENTALS, DIATONES, QualityType
@@ -22,6 +23,7 @@ from openmusickit.utils.number_names import ORDINALS
 from tests.domains import (
     ABSTRACT_VECTORS,
     ALL_VECTORS,
+    PERCUSSION_TONES,
     QUALIFIED_VECTORS,
     distinct,
     symbols_of,
@@ -37,6 +39,11 @@ def tonal_vectors(qualified: bool | None = None) -> st.SearchStrategy[TonalVecto
     if qualified is None:
         return st.sampled_from(ALL_VECTORS)
     return st.sampled_from(QUALIFIED_VECTORS if qualified else ABSTRACT_VECTORS)
+
+
+def percussion_tones() -> st.SearchStrategy[PercussionTone]:
+    """Any PercussionTone, from the domain list."""
+    return st.sampled_from(PERCUSSION_TONES)
 
 
 # --- durations ----------------------------------------------------------------------
@@ -60,16 +67,22 @@ def positive_fractions(max_denominator: int = 64) -> st.SearchStrategy[Fraction]
 # --- events and lines ----------------------------------------------------------------
 
 
-def note_events() -> st.SearchStrategy[NoteEvent]:
-    """A NoteEvent with zero to three tones and a note value, or, one time in ten, no duration."""
+def note_events(unpitched: bool = False) -> st.SearchStrategy[NoteEvent]:
+    """A NoteEvent with zero to three tones and a note value, or, one time in ten, no duration.
+
+    The tones are pitched; with `unpitched=True` percussion tones are mixed
+    in, for tests that never transpose."""
     durations = st.integers(0, 9).flatmap(lambda i: st.none() if i == 0 else metrical_durations())
-    tones = st.frozensets(tonal_vectors(), max_size=3).map(set)
+    tone = st.one_of(tonal_vectors(), percussion_tones()) if unpitched else tonal_vectors()
+    tones = st.frozensets(tone, max_size=3).map(set)
     return st.builds(NoteEvent, tones=tones, duration=durations)
 
 
-def lines(min_size: int = 1, max_size: int = 6) -> st.SearchStrategy[list[NoteEvent]]:
+def lines(
+    min_size: int = 1, max_size: int = 6, unpitched: bool = False
+) -> st.SearchStrategy[list[NoteEvent]]:
     """A list of fresh note events, ready for `OmkGraph.add_line`."""
-    return st.lists(note_events(), min_size=min_size, max_size=max_size)
+    return st.lists(note_events(unpitched), min_size=min_size, max_size=max_size)
 
 
 # --- spellings ------------------------------------------------------------------------

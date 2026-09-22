@@ -89,14 +89,14 @@ class GraphModel(RuleBasedStateMachine):
 
     # --- rules ---
 
-    @rule(event=note_events())
+    @rule(event=note_events(unpitched=True))
     def add_node(self, event):
         for graph in self.graphs:
             graph.add_node(event)
         self._register(event)
 
     @precondition(lambda self: self._tails())
-    @rule(data=st.data(), event=note_events())
+    @rule(data=st.data(), event=note_events(unpitched=True))
     def append_next(self, data, event):
         tail = data.draw(st.sampled_from(self._tails()))
         for graph in self.graphs:

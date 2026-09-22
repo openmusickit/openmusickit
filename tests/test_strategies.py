@@ -8,9 +8,11 @@ from fractions import Fraction
 from hypothesis import given, settings
 
 from openmusickit.objects.note_event import NoteEvent
+from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.time.duration import Duration
+from openmusickit.values.tone.tone import Tone
 from tests import strategies as omk
 
 FEW = settings(max_examples=10)
@@ -43,11 +45,24 @@ def test_positive_fractions(x):
 
 
 @FEW
+@given(omk.percussion_tones())
+def test_percussion_tones(tone):
+    assert isinstance(tone, PercussionTone)
+
+
+@FEW
 @given(omk.note_events())
 def test_note_events(event):
     assert isinstance(event, NoteEvent)
     assert len(event.tones) <= 3
+    assert all(isinstance(t, TonalVector) for t in event.tones)
     assert event.duration is None or isinstance(event.duration, Duration)
+
+
+@FEW
+@given(omk.note_events(unpitched=True))
+def test_note_events_with_percussion(event):
+    assert all(isinstance(t, Tone) for t in event.tones)
 
 
 @FEW

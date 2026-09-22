@@ -1,8 +1,8 @@
 """Finite domains the exhaustive tests sweep, as plain module-level lists.
 
 These are the values a law is checked against *in full*: every pitch class,
-every octave-qualified pitch in a five-octave band, and every `TonalVector`
-built from them. Fixtures in `conftest.py` hand the same lists to tests that
+every octave-qualified pitch in a five-octave band, every `TonalVector`
+built from them, and every `PercussionTone`. Fixtures in `conftest.py` hand the same lists to tests that
 want them injected; tests that parametrize import them from here directly.
 
 `distinct` is for the `*_symbols` fixtures, whose modules bind several names
@@ -13,6 +13,11 @@ is checked once per value rather than once per spelling.
 from collections.abc import Mapping
 from types import ModuleType
 
+from openmusickit.systems.wsmn.percussion.percussion_tone import (
+    PercussionTone,
+    RelativePitch,
+    Stroke,
+)
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 
 _MAJOR_SCALE = [(0, 0), (1, 2), (2, 4), (3, 5), (4, 7), (5, 9), (6, 11)]
@@ -38,6 +43,13 @@ ALL_VECTORS: list[TonalVector] = ABSTRACT_VECTORS + QUALIFIED_VECTORS
 
 TONAL_CLASSES: frozenset[tuple[int, int]] = frozenset(TONAL_TUPLES)
 """The 35 pitch classes as a set, for membership tests on derived values."""
+
+PERCUSSION_TONES: list[PercussionTone] = [
+    PercussionTone(relative_pitch=pitch, stroke=stroke)
+    for pitch in [None, *RelativePitch]
+    for stroke in [None, *Stroke]
+]
+"""Every PercussionTone: each relative pitch or none, with each stroke or none."""
 
 
 def in_domain(t: tuple[int, ...]) -> bool:
