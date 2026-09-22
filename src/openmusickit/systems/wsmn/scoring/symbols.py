@@ -1,5 +1,6 @@
 """Ready-to-go marks (articulations, dynamics, ornaments, techniques, and the like)
-and bar lines.
+and bar lines. Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
+sticking, beaters, snares) and its tones in `systems.wsmn.percussion.symbols`.
 
 ```
 from openmusickit.systems.wsmn.scoring.symbols import *
@@ -118,6 +119,14 @@ unstress = Mark(
     description="An unstress mark: the note is explicitly de-emphasized.",
     kind=MarkType.ARTICULATION,
     attachment_mode=AttachmentMode.SINGLE,
+)
+
+ghost = Mark(
+    name="ghost",
+    description="A ghost note (the head in parentheses): played very softly, felt more than heard.",
+    kind=MarkType.ARTICULATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("ghost note", "parenthesized", "parenthesised"),
 )
 
 # --- jazz / commercial articulations ----------------------------------------
@@ -621,6 +630,14 @@ tremolo = Mark(
     kind=MarkType.ORNAMENT,
     attachment_mode=AttachmentMode.EITHER,
     aliases=("trem.",),
+)
+
+buzz_roll = Mark(
+    name="buzz roll",
+    description="A buzz roll (z through the stem): a multiple-bounce roll on a drum.",
+    kind=MarkType.ORNAMENT,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("buzz", "press roll", "z"),
 )
 
 arpeggio = Mark(
@@ -1214,6 +1231,72 @@ hole_closed = Mark(
     attachment_mode=AttachmentMode.SINGLE,
 )
 
+# --- percussion ---------------------------------------------------------------
+
+choke = Mark(
+    name="choke",
+    description="Choke: grab the cymbal (or damp the instrument) right after the stroke.",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("choked",),
+)
+
+with_sticks = Mark(
+    name="with sticks",
+    description="Play with drumsticks (the drumstick pictogram or the word).",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("sticks",),
+)
+
+with_brushes = Mark(
+    name="with brushes",
+    description="Play with brushes (the brush pictogram or the word).",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("brushes",),
+)
+
+with_hands = Mark(
+    name="with hands",
+    description="Play with the hands.",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("hands", "with the hands"),
+)
+
+hard_mallets = Mark(
+    name="hard mallets",
+    description="Play with hard mallets (the filled-circle pictogram).",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("hard mallet", "hard sticks"),
+)
+
+soft_mallets = Mark(
+    name="soft mallets",
+    description="Play with soft mallets (the open-circle pictogram).",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("soft mallet", "soft sticks"),
+)
+
+snares_on = Mark(
+    name="snares on",
+    description="Snares on: engage the snares of a snare drum.",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("with snares",),
+)
+
+snares_off = Mark(
+    name="snares off",
+    description="Snares off: release the snares of a snare drum.",
+    kind=MarkType.TECHNIQUE,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("without snares", "senza corde"),
+)
+
 # --- keyboard pedaling --------------------------------------------------------
 
 sustain_pedal = Mark(
@@ -1433,6 +1516,24 @@ fingering_5 = Mark(
     kind=MarkType.FINGERING,
     attachment_mode=AttachmentMode.SINGLE,
     aliases=("5",),
+)
+
+# --- sticking -----------------------------------------------------------------
+
+stick_right = Mark(
+    name="stick right",
+    description="Sticking R: play this stroke with the right hand.",
+    kind=MarkType.FINGERING,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("R", "right hand"),
+)
+
+stick_left = Mark(
+    name="stick left",
+    description="Sticking L: play this stroke with the left hand.",
+    kind=MarkType.FINGERING,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("L", "left hand"),
 )
 
 # --- plucking-hand fingering (guitar, harp) -----------------------------------

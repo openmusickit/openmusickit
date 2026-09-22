@@ -17,6 +17,8 @@ default (`-m "not slow"` in `addopts`); `uv run pytest -m slow` runs them.
 import pytest
 from hypothesis import settings
 
+from openmusickit.systems.wsmn.percussion import symbols as percussion_symbols
+from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
 from openmusickit.systems.wsmn.scoring import symbols as scoring_symbols
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineShape
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
@@ -29,6 +31,7 @@ from openmusickit.systems.wsmn.tonal.key import Key, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.scoring.mark import Mark
 from openmusickit.values.time.duration import GraceDuration
+from openmusickit.values.tone.tone_collection import ToneCollection
 from tests.domains import TONAL_OCT_TUPLES, TONAL_TUPLES, symbols_of
 
 settings.register_profile("default", max_examples=100, deadline=None)
@@ -154,3 +157,19 @@ def mark_symbols():
 def bar_line_symbols():
     """All the BarLineShape symbols (`single_bar`, `end_repeat`, ...) in `scoring.symbols`, by name."""
     return symbols_of(scoring_symbols, BarLineShape)
+
+
+# --- percussion symbols ------------------------------------------------------
+
+
+@pytest.fixture
+def percussion_tone_symbols():
+    """All the PercussionTone symbols (`hit`, `rim_shot`, `high_open`, ...) in
+    `percussion.symbols`, by name. `open_hat` and `open_hand` are one tone."""
+    return symbols_of(percussion_symbols, PercussionTone)
+
+
+@pytest.fixture
+def palette_symbols():
+    """All the palettes (`hand_drums`, `hi_hats`, ...) in `percussion.symbols`, by name."""
+    return symbols_of(percussion_symbols, ToneCollection)

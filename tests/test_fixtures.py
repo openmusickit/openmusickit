@@ -94,10 +94,21 @@ def test_time_signature_symbols(time_signature_symbols):
 
 
 def test_mark_symbols(mark_symbols):
-    assert len(mark_symbols) == 201
-    assert len(distinct(mark_symbols)) == 201
+    assert len(mark_symbols) == 213
+    assert len(distinct(mark_symbols)) == 213
 
 
 def test_bar_line_symbols(bar_line_symbols):
     assert len(bar_line_symbols) == 14
     assert len(distinct(bar_line_symbols)) == 14
+
+
+def test_percussion_tone_symbols(percussion_tone_symbols):
+    """43 names for 42 tones (`open_hat` and `open_hand` are one)."""
+    assert len(percussion_tone_symbols) == 43
+    assert len(distinct(percussion_tone_symbols)) == 42
+
+
+def test_palette_symbols(palette_symbols):
+    assert len(palette_symbols) == 16
+    assert len(distinct(palette_symbols)) == 16

@@ -53,7 +53,7 @@ def test_mark_table_invariants(mark_symbols):
     aliases are unique across the table and never collide with a name;
     `binds` is only set on marks that can span."""
     names = [mark.name for mark in mark_symbols.values()]
-    assert len(set(names)) == len(names) == 201
+    assert len(set(names)) == len(names) == 213
     aliases = [alias for mark in mark_symbols.values() for alias in mark.aliases]
     assert len(set(aliases)) == len(aliases)
     assert not set(aliases) & set(names)
