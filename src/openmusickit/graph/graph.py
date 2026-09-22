@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 from openmusickit.errors import GraphError, OmkWarning
 from openmusickit.graph.edge import (
     Branch,
+    Contains,
     EdgeType,
     Next,
     OmkEdge,
@@ -23,7 +24,7 @@ from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyric
 from openmusickit.objects.marking import Marked, Marking
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
-from openmusickit.objects.part import Part, Stint
+from openmusickit.objects.part import LineGroup, Part, Stint
 from openmusickit.values.time.duration import Duration, ZeroDuration
 from openmusickit.values.tone.tone import Tone
 
@@ -37,7 +38,7 @@ class GraphMeta:
 class OmkGraph:
     """A graph representation of music: objects (see `objects`) as nodes,
     related by typed edges (see `graph.edge`). See the `graph` package
-    docstring for lines, branches, pins, parts and stints.
+    docstring for lines, branches, pins, groups, parts and stints.
 
     >>> from openmusickit.objects.note_event import NoteEvent
     >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
@@ -491,14 +492,17 @@ class OmkGraph:
         default; its offset for a voice that begins after this event) plus the
         signed `displacement`.
 
-        A whole-piece layer (the pianist's left hand, the drummer's feet) is a
-        line branched head-from-head; a one-measure second voice is a short
-        line branched from the event it starts under. Either way it just ends
-        when it ends; there is no join.
+        A branch is a second voice within one instrument's line: a
+        one-measure second voice is a short line branched from the event it
+        starts under; a voice that runs the whole piece is branched head from
+        head. Either way it just ends when it ends; there is no join. Lines
+        that are their own things done together (the pianist's hands, the
+        drums of a kit) are not branches but the lines of a `LineGroup`.
 
         `parent` must be on the graph; `head` may or may not be. `head` must be
-        the head of a line (no NEXT in), not already branched, and not the
-        start of a Stint (whoever performs the parent performs the branch).
+        the head of a line (no NEXT in), not already branched, not a line of a
+        group, and not the start of a Stint (whoever performs the parent
+        performs the branch).
 
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, half
@@ -523,6 +527,10 @@ class OmkGraph:
             raise GraphError(f"{head!r} is not the head of a line.")
         if any(self._graph.in_edges(head, EdgeType.BRANCHES)):
             raise GraphError(f"{head!r} is already branched from another line.")
+        if any(self._graph.in_edges(head, EdgeType.CONTAINS)):
+            raise GraphError(
+                f"{head!r} is a line of a group; a branch belongs to its parent's line."
+            )
         if any(self._graph.predecessors(head, Stint, EdgeType.STARTS_AT)):
             raise GraphError(
                 f"A Stint starts at {head!r}; a branched line is performed by "
@@ -582,7 +590,8 @@ class OmkGraph:
     def relative_onset(self, reference: SequentialEvent, event: SequentialEvent) -> Duration:
         """How long after the onset of `reference` the onset of `event` falls
         (negative if before), found by following NEXT edges through event
-        durations and branches and pins through their anchors.
+        durations, and branches, pins and groups through their anchors and
+        displacements.
 
         There is no score origin; a position only ever means "relative to".
         An event with `duration=None` is opaque: nothing is known about what
@@ -616,7 +625,7 @@ class OmkGraph:
         """Breadth-first search of the timing graph from `reference`, skipping
         the edge `ignoring`; None if `event` is not reached."""
         offsets: dict[UUID, Duration] = {reference.id: ZeroDuration()}
-        queue: deque[SequentialEvent] = deque([reference])
+        queue: deque[OmkObject] = deque([reference])
         while queue:
             node = queue.popleft()
             if node is event:
@@ -629,18 +638,21 @@ class OmkGraph:
         return None
 
     def _timing_neighbours(
-        self, node: SequentialEvent, ignoring: OmkEdge | None
-    ) -> Iterator[tuple[SequentialEvent, Duration]]:
-        """Every event whose onset is a known distance from the onset of
+        self, node: OmkObject, ignoring: OmkEdge | None
+    ) -> Iterator[tuple[OmkObject, Duration]]:
+        """Every node whose onset is a known distance from the onset of
         `node`, with that distance: the next and previous events in the line,
-        and the far ends of branches and pins in either direction."""
-        following = self.get_next(node)
-        if following is not None and node.duration is not None:
-            yield following, node.duration
-        previous = self.get_previous(node)
-        if previous is not None and previous.duration is not None:
-            yield previous, -previous.duration
-        for edge_type in (EdgeType.BRANCHES, EdgeType.SIMULTANEOUS):
+        and the far ends of branches, pins and group memberships in either
+        direction. A `LineGroup` is a node of the timing graph too: its
+        origin is where its lines are measured from."""
+        if isinstance(node, SequentialEvent):
+            following = self.get_next(node)
+            if following is not None and node.duration is not None:
+                yield following, node.duration
+            previous = self.get_previous(node)
+            if previous is not None and previous.duration is not None:
+                yield previous, -previous.duration
+        for edge_type in (EdgeType.BRANCHES, EdgeType.SIMULTANEOUS, EdgeType.CONTAINS):
             for edge in self._graph.out_edges(node, edge_type):
                 delta = self._timed_delta(edge, node)
                 if edge is not ignoring and delta is not None:
@@ -652,12 +664,12 @@ class OmkGraph:
                     yield source, -delta
 
     @staticmethod
-    def _timed_delta(edge: TimedEdge, source: SequentialEvent) -> Duration | None:
+    def _timed_delta(edge: TimedEdge, source: OmkObject) -> Duration | None:
         """How long after the onset of `source` the target of `edge` starts;
         None if the edge hangs from the offset of an event of unknown duration."""
         delta = edge.displacement if edge.displacement is not None else ZeroDuration()
         if edge.anchor is TimingAnchor.OFFSET:
-            if source.duration is None:
+            if not isinstance(source, SequentialEvent) or source.duration is None:
                 return None
             delta = source.duration + delta
         return delta
@@ -665,9 +677,9 @@ class OmkGraph:
     def check_alignment(self) -> list[Simultaneous]:
         """Checks every pin against the rest of the timing graph.
 
-        Branches alone keep timing a tree, always consistent. Pins make it a
-        graph: two pins between the same lines can disagree with the lines'
-        own durations. That is a musical fact to report, not an error: each
+        Branches and groups alone keep timing a tree, always consistent. Pins
+        make it a graph: a pin between two lines of one group, or two pins
+        between the same lines, can disagree with the lines' own durations. That is a musical fact to report, not an error: each
         pin whose claim differs from the offset found by another path is
         returned, with an `OmkWarning`. A pin with no other path is unchecked.
 
@@ -705,6 +717,128 @@ class OmkGraph:
             )
             conflicts.append(edge)
         return conflicts
+
+    # Groups: lines that belong together, measured from one origin
+
+    def add_group(self, group: LineGroup, heads: Iterable[SequentialEvent] = ()) -> None:
+        """Puts `group` on the graph holding the lines that start at `heads`,
+        each starting at the group's origin (`add_to_group` places a line
+        later than that).
+
+        The hands of a pianist, the drums of a kit, the three instruments of
+        one percussionist: lines that are their own things done together.
+        Nothing is said about who plays them; a Part points at the group
+        (`add_performs`) or at a line (`add_stint`).
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, half
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F, G, A
+        >>> graph = OmkGraph(GraphMeta())
+        >>> rh = [NoteEvent(tones={t}, duration=quarter) for t in (C, D, E, F)]
+        >>> lh = [NoteEvent(tones={t}, duration=half) for t in (G, A)]
+        >>> graph.add_line(rh)
+        >>> graph.add_line(lh)
+        >>> piano = LineGroup(name="Piano")
+        >>> graph.add_group(piano, [rh[0], lh[0]])
+        >>> graph.relative_onset(rh[0], lh[1]), graph.relative_onset(lh[1], rh[3])
+        (MetricalDuration(1, 2), MetricalDuration(1, 4))
+        >>> sorted(format(next(iter(n.tones))) for n in graph.walk_group(piano))
+        ['A', 'C', 'D', 'E', 'F', 'G']
+        """
+        self.add_node(group)
+        for head in heads:
+            self.add_to_group(group, head)
+
+    def add_to_group(
+        self, group: LineGroup, head: SequentialEvent, displacement: Duration | None = None
+    ) -> None:
+        """Adds the line starting at `head` to `group`, starting `displacement`
+        after the group's origin (at the origin if None).
+
+        `head` must be the head of a line (no NEXT in) and not branched: a
+        branched line belongs to its parent's line, which is in the group
+        through its own head.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, half
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F, G, A
+        >>> graph = OmkGraph(GraphMeta())
+        >>> tune = [NoteEvent(tones={t}, duration=quarter) for t in (C, D, E, F)]
+        >>> late = [NoteEvent(tones={t}, duration=quarter) for t in (G, A)]
+        >>> graph.add_line(tune)
+        >>> graph.add_line(late)
+        >>> duet = LineGroup()
+        >>> graph.add_group(duet, [tune[0]])
+        >>> graph.add_to_group(duet, late[0], displacement=half)   # enters two beats in
+        >>> graph.relative_onset(tune[0], late[1])
+        MetricalDuration(1, 2, dots=1)
+        >>> graph.add_to_group(duet, tune[1])
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: NoteEvent(...) is not the head of a line.
+
+        Raises
+        ------
+        GraphError
+            if `head` is not the head of a line, is branched, or is already in `group`.
+        """
+        self.add_node(group)
+        self.add_node(head)
+        if self.get_previous(head) is not None:
+            raise GraphError(f"{head!r} is not the head of a line.")
+        if any(self._graph.in_edges(head, EdgeType.BRANCHES)):
+            raise GraphError(
+                f"{head!r} is branched from another line; it is in the group through its parent."
+            )
+        self._graph.add_edge(group, head, Contains(displacement=displacement))
+
+    def group_members(self, group: LineGroup) -> Iterator[SequentialEvent]:
+        """The heads of the lines in `group`, in no particular order.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d = (NoteEvent(tones={t}) for t in (C, D))
+        >>> group = LineGroup()
+        >>> graph.add_group(group, [c, d])
+        >>> sorted(format(next(iter(n.tones))) for n in graph.group_members(group))
+        ['C', 'D']
+        """
+        return self._graph.successors(group, SequentialEvent, EdgeType.CONTAINS)
+
+    def groups_of(self, head: SequentialEvent) -> Iterator[LineGroup]:
+        """The groups whose lines start at `head`.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d = (NoteEvent(tones={t}) for t in (C, D))
+        >>> graph.add_line([c, d])
+        >>> group = LineGroup(name="Duo")
+        >>> graph.add_group(group, [c])
+        >>> list(graph.groups_of(c)) == [group], list(graph.groups_of(d))
+        (True, [])
+        """
+        return self._graph.predecessors(head, LineGroup, EdgeType.CONTAINS)
+
+    def walk_group(self, group: LineGroup) -> Iterator[SequentialEvent]:
+        """Every event of every line in `group`, line by line (the lines in
+        no particular order): `walk_span` from each head, so second voices
+        come along and pins are not entered.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e, f = (NoteEvent(tones={t}) for t in (C, D, E, F))
+        >>> graph.add_line([c, d])
+        >>> graph.add_line([e, f])
+        >>> group = LineGroup()
+        >>> graph.add_group(group, [c, e])
+        >>> sorted(format(next(iter(n.tones))) for n in graph.walk_group(group))
+        ['C', 'D', 'E', 'F']
+        """
+        for head in self.group_members(group):
+            yield from self.walk_span(head)
 
     # Parts and stints (who performs what)
 
@@ -754,6 +888,30 @@ class OmkGraph:
         True
         """
         return self._graph.successors(part, Stint, EdgeType.PERFORMS)
+
+    def add_performs(self, part: Part, group: LineGroup) -> None:
+        """Records that `part` plays every line of `group`: one instrument
+        with several lines, as a pianist has two hands. A group whose lines
+        are different instruments gets a stint per line instead.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, G
+        >>> graph = OmkGraph(GraphMeta())
+        >>> rh, lh = (NoteEvent(tones={t}) for t in (C, G))
+        >>> piano_lines = LineGroup()
+        >>> graph.add_group(piano_lines, [rh, lh])
+        >>> piano = Part(name="Piano")
+        >>> graph.add_performs(piano, piano_lines)
+        >>> list(graph.groups(piano)) == [piano_lines], list(graph.stints(piano))
+        (True, [])
+        """
+        self.add_node(part)
+        self.add_node(group)
+        self.add_edge(part, group, EdgeType.PERFORMS)
+
+    def groups(self, part: Part) -> Iterator[LineGroup]:
+        """The groups `part` plays every line of (see `add_performs`)."""
+        return self._graph.successors(part, LineGroup, EdgeType.PERFORMS)
 
     def walk_stint(self, stint: Stint) -> Iterator[SequentialEvent]:
         """The events `stint` covers (`walk_span` from its start to its end).

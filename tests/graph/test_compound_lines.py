@@ -1,6 +1,7 @@
-"""Compound lines: branches (same performer), pins (independent lines),
+"""Compound lines: branches (a second voice within one line), pins
+(independent lines), groups (lines done together, see test_line_group.py),
 parts and stints (who performs what), grace notes (zero width).
-See _plans/compound-lines.md."""
+See _plans/compound-lines.md and _plans/percussion.md."""
 
 import warnings
 
@@ -13,7 +14,7 @@ from openmusickit.objects.chord_event import ChordEvent
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.note_event import NoteEvent
-from openmusickit.objects.part import Part, Stint
+from openmusickit.objects.part import LineGroup, Part, Stint
 from openmusickit.systems.wsmn.scoring.symbols import crescendo, slur, staccato
 from openmusickit.systems.wsmn.temporal.symbols import (
     eighth,
@@ -56,13 +57,13 @@ def test_next_edges_carry_no_timing():
     assert not hasattr(edge, "displacement")
 
 
-# --- piano: a second voice mid-line, the left hand as a layer --------------------
+# --- piano: a second voice mid-line (a branch), the left hand (a group) ----------
 
 
 @pytest.fixture
 def piano():
-    """Right hand c-d-e-f (quarters) with a second voice a-b (eighths) under d;
-    left hand g-a (halves) branched head from head."""
+    """Right hand c-d-e-f (quarters) with a second voice a-b (eighths)
+    branched under d; left hand g-a (halves) in a group with the right."""
     graph = OmkGraph(GraphMeta())
     rh = notes(C, D, E, F)
     voice2 = notes(A, B, duration=eighth)
@@ -71,26 +72,34 @@ def piano():
     graph.add_line(voice2)
     graph.add_line(lh)
     graph.add_branch(rh[1], voice2[0])
-    graph.add_branch(rh[0], lh[0])
+    graph.add_group(LineGroup(name="Piano"), [rh[0], lh[0]])
     return graph, rh, voice2, lh
 
 
-def test_span_walk_covers_voices_and_layers_and_line_walk_does_not(piano):
+def test_span_walk_covers_the_voice_but_not_the_other_hand(piano):
     graph, rh, voice2, lh = piano
     assert names(graph.walk_line(rh[0])) == ["C", "D", "E", "F"]
-    assert names(graph.walk_span(rh[0])) == ["C", "G", "A", "D", "A", "B", "E", "F"]
+    assert names(graph.walk_span(rh[0])) == ["C", "D", "A", "B", "E", "F"]
     assert names(graph.walk_span(rh[1], rh[2])) == ["D", "A", "B", "E"]
+    (piano_group,) = graph.groups_of(rh[0])
+    assert sorted(names(graph.walk_group(piano_group))) == sorted(names(rh + voice2 + lh))
 
 
-def test_span_transpose_covers_all_three_lines(piano):
+def test_span_transpose_covers_the_voice_and_the_group_walks_the_hands(piano):
     graph, rh, voice2, lh = piano
     graph.transform_tones(rh[0], None, TonalVector.transpose, M2)
     assert names(rh) == ["D", "E", "F#", "G"]
     assert names(voice2) == ["B", "C#"]
+    assert names(lh) == ["G", "A"]  # the other hand is its own line
+    (piano_group,) = graph.groups_of(rh[0])
+    for head in graph.group_members(piano_group):
+        graph.transform_tones(head, None, TonalVector.transpose, M2)
+    assert names(rh) == ["E", "F#", "G#", "A"]
+    assert names(voice2) == ["C#", "D#"]
     assert names(lh) == ["A", "B"]
 
 
-def test_branch_timing(piano):
+def test_branch_and_group_timing(piano):
     graph, rh, voice2, lh = piano
     assert graph.relative_onset(rh[0], voice2[0]) == quarter
     assert graph.relative_onset(rh[0], voice2[1]) == quarter + eighth
@@ -123,6 +132,13 @@ def test_a_head_is_branched_at_most_once_and_must_be_a_head():
         graph.add_branch(d, a)  # already branched
     with pytest.raises(GraphError):
         graph.add_stint(Part(name="Left hand"), Stint(), a)  # a is owned by whoever does c
+    with pytest.raises(GraphError):
+        graph.add_group(LineGroup(), [a])  # a is in any group through c
+    e, f = notes(E, F)
+    graph.add_line([e, f])
+    graph.add_group(LineGroup(), [e])
+    with pytest.raises(GraphError):
+        graph.add_branch(c, e)  # e is a line of a group, not a voice of c's line
 
 
 # --- incomplete music: pins ------------------------------------------------------

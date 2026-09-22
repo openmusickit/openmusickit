@@ -1,16 +1,17 @@
 """A rule-based state machine over the graph: random sequences of adding
-events, appending, branching, pinning and removing, with the same sequence
-applied to an `OmkGraph` on `RustworkxAdapter` and one on the dict-backed
-reference adapter, and a small model of lines and branches kept beside them.
+events, appending, branching, pinning, grouping and removing, with the same
+sequence applied to an `OmkGraph` on `RustworkxAdapter` and one on the
+dict-backed reference adapter, and a small model of lines, branches and
+groups kept beside them.
 
 After every step: the two adapters agree on the snapshot; NEXT degree is at
 most one each way and matches the model; every event is at zero onset from
 itself; consecutive onsets follow durations; every walk terminates within
 the node count; `check_alignment` runs.
 
-The generator never makes a NEXT cycle (it only appends to a tail) and
-never branches a head from its own tree: the model tracks lines by head
-and tail, which a cycle has neither of. Walkers do stop on cycles (see
+The generator never makes a NEXT cycle (it only appends to a tail), never
+branches a head from its own tree, and puts a head in at most one group:
+the model tracks lines by head and tail, which a cycle has neither of. Walkers do stop on cycles (see
 `test_graph_properties.py`); teaching the model cycles is a follow-up.
 Pins may go anywhere.
 
@@ -28,6 +29,7 @@ from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, 
 from openmusickit.graph.edge import EdgeType
 from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.note_event import NoteEvent
+from openmusickit.objects.part import LineGroup
 from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter
 from openmusickit.values.time.duration import ZeroDuration
 from tests.graph.dict_adapter import DictAdapter
@@ -46,6 +48,8 @@ class GraphModel(RuleBasedStateMachine):
         self.prev: dict[UUID, UUID | None] = {}
         self.parent: dict[UUID, UUID | None] = {}  # branch parent of a head
         self.pins: set[tuple[UUID, UUID]] = set()
+        self.groups: dict[UUID, LineGroup] = {}
+        self.group_of: dict[UUID, UUID | None] = {}  # group a head is a line of
 
     # --- the model ---
 
@@ -67,10 +71,14 @@ class GraphModel(RuleBasedStateMachine):
     def _free_heads(self) -> list[NoteEvent]:
         return [e for e in self._heads() if self.parent[e.id] is None]
 
+    def _loose_heads(self) -> list[NoteEvent]:
+        """Heads that are neither branched nor in a group."""
+        return [e for e in self._free_heads() if self.group_of[e.id] is None]
+
     def _branch_pairs(self) -> list[tuple[NoteEvent, NoteEvent]]:
         return [
             (parent, head)
-            for head in self._free_heads()
+            for head in self._loose_heads()
             for parent in self.events.values()
             if parent is not head and self._root(parent) != head.id
         ]
@@ -86,6 +94,7 @@ class GraphModel(RuleBasedStateMachine):
     def _register(self, event: NoteEvent) -> None:
         self.events[event.id] = event
         self.next[event.id] = self.prev[event.id] = self.parent[event.id] = None
+        self.group_of[event.id] = None
 
     # --- rules ---
 
@@ -124,6 +133,20 @@ class GraphModel(RuleBasedStateMachine):
             graph.add_simultaneous(a, b, displacement=displacement)
         self.pins.add((a.id, b.id))
 
+    @precondition(lambda self: self._loose_heads())
+    @rule(data=st.data(), displacement=st.sampled_from([None, quarter, -eighth]))
+    def group_lines(self, data, displacement):
+        heads = data.draw(
+            st.lists(st.sampled_from(self._loose_heads()), min_size=1, unique_by=lambda e: e.id)
+        )
+        group = LineGroup()
+        for graph in self.graphs:
+            graph.add_group(group, heads[:-1])
+            graph.add_to_group(group, heads[-1], displacement=displacement)
+        self.groups[group.id] = group
+        for head in heads:
+            self.group_of[head.id] = group.id
+
     @precondition(lambda self: self.events)
     @rule(data=st.data())
     def remove_node(self, data):
@@ -135,8 +158,20 @@ class GraphModel(RuleBasedStateMachine):
                 if value == event.id:
                     table[key] = None
             del table[event.id]
+        del self.group_of[event.id]
         self.pins = {pair for pair in self.pins if event.id not in pair}
         del self.events[event.id]
+
+    @precondition(lambda self: self.groups)
+    @rule(data=st.data())
+    def remove_group(self, data):
+        group = data.draw(st.sampled_from(list(self.groups.values())))
+        for graph in self.graphs:
+            graph.remove_node(group)
+        for head, member_of in self.group_of.items():
+            if member_of == group.id:
+                self.group_of[head] = None
+        del self.groups[group.id]
 
     @precondition(lambda self: self._next_pairs())
     @rule(data=st.data())
@@ -168,7 +203,7 @@ class GraphModel(RuleBasedStateMachine):
     @invariant()
     def adapters_agree(self):
         assert snapshot(self.rx) == snapshot(self.ref)
-        assert self.rx._graph.num_nodes() == len(self.events)
+        assert self.rx._graph.num_nodes() == len(self.events) + len(self.groups)
 
     @invariant()
     def next_is_one_in_one_out_and_matches_the_model(self):
@@ -199,6 +234,14 @@ class GraphModel(RuleBasedStateMachine):
             assert len(list(itertools.islice(self.rx.walk_line(head), n + 1))) <= n
         for root in self._free_heads():
             assert len(list(itertools.islice(self.rx.walk_span(root), n + 1))) <= n
+        for group in self.groups.values():
+            assert len(list(itertools.islice(self.rx.walk_group(group), n + 1))) <= n
+
+    @invariant()
+    def group_membership_matches_the_model(self):
+        for group in self.groups.values():
+            members = {m.id for m in self.rx.group_members(group)}
+            assert members == {h for h, g in self.group_of.items() if g == group.id}
 
     @invariant()
     def alignment_check_runs(self):

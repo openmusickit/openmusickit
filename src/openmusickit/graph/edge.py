@@ -159,3 +159,23 @@ class Simultaneous(TimedEdge):
     """
 
     type: EdgeType = field(default=EdgeType.SIMULTANEOUS, init=False)
+
+
+@dataclass(kw_only=True, slots=True, repr=False)
+class Contains(TimedEdge):
+    """From a `LineGroup` to the head of one of its lines: the line starts at
+    the group's origin plus the displacement. A group has no offset, so the
+    anchor is always the origin and only `displacement` can be set.
+
+    >>> from openmusickit.systems.wsmn.temporal.symbols import whole
+    >>> Contains(displacement=whole)
+    Contains(displacement=MetricalDuration(1, 1))
+    >>> Contains().displacement is None, Contains().type
+    (True, <EdgeType.CONTAINS: 'contains'>)
+    """
+
+    type: EdgeType = field(default=EdgeType.CONTAINS, init=False)
+    anchor: TimingAnchor = field(default=TimingAnchor.ONSET, init=False)
+
+    def __repr__(self):
+        return f"{type(self).__name__}(displacement={self.displacement})"

@@ -13,7 +13,7 @@ from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.chord_event import ChordEvent
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.omk_object import OmkObject
-from openmusickit.objects.part import Part, Stint
+from openmusickit.objects.part import LineGroup, Part, Stint
 from openmusickit.systems.wsmn.scoring.symbols import slur, staccato
 from openmusickit.systems.wsmn.temporal.symbols import eighth, half, quarter, whole
 from openmusickit.systems.wsmn.tonal.symbols import A, B, C, D, E, F, G, maj
@@ -217,6 +217,27 @@ def test_pin_can_be_undone():
         graph.relative_onset(melody[0], chords[0])
     with pytest.raises(GraphError):
         graph.relative_onset(chords[0], melody[0])
+    assert snapshot(graph) == before
+
+
+def test_group_can_be_undone_edge_by_edge_or_by_removing_the_node():
+    graph = fresh()
+    rh, lh = notes(C, D), notes(E, F)
+    graph.add_line(rh)
+    graph.add_line(lh)
+    before = snapshot(graph)
+    group = LineGroup(name="Piano")
+    graph.add_group(group, [rh[0]])
+    graph.add_to_group(group, lh[0], displacement=quarter)
+    assert graph.relative_onset(rh[0], lh[1]) == half
+    graph.remove_edge(graph.get_edge(group, lh[0], EdgeType.CONTAINS))
+    with pytest.raises(GraphError):
+        graph.relative_onset(rh[0], lh[1])
+    graph.remove_edge(graph.get_edge(group, rh[0], EdgeType.CONTAINS))
+    graph.remove_node(group)
+    assert snapshot(graph) == before
+    graph.add_group(group, [rh[0], lh[0]])
+    graph.remove_node(group)  # takes its edges with it
     assert snapshot(graph) == before
 
 
