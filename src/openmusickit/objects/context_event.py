@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from openmusickit.errors import OmkWarning
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
+from openmusickit.values.scoring.clef import Clef
 from openmusickit.values.scoring.tempo_term import TempoTerm
 from openmusickit.values.time.duration import Duration, Measurable, TemporalRatio, ZeroDuration
 from openmusickit.values.tone.modal_context import ModalContext
@@ -217,3 +218,29 @@ class TempoEvent(TemporalContextEvent):
 
     tempo: TemporalRatio | None = None
     term: TempoTerm | None = None
+
+
+@dataclass(kw_only=True, slots=True)
+class ClefEvent(ContextEvent):
+    """Sets the clef for the material that follows:
+    what fixes the meaning of the staff's lines
+    (in WSMN, a `StaffClef`: a G, F or C sign on a line, with an optional octave change).
+
+    A clef belongs to the line it is in, as a meter does,
+    and governs what follows it there until the next one.
+    `None` means undefined or undecided.
+    A percussion line takes the percussion clef (`symbols.percussion_clef`).
+    A clef says nothing about the tones themselves,
+    only about where a renderer puts them on a staff,
+    so a ClefEvent is not a `TonalObject` and transposing a span leaves it alone.
+
+    >>> from openmusickit.systems.wsmn.scoring.symbols import bass_clef_8vb, treble_clef
+    >>> ClefEvent(clef=treble_clef)
+    ClefEvent(clef=StaffClef(ClefSign.G, 2))
+    >>> ClefEvent(clef=bass_clef_8vb).clef.reference_tone
+    TonalVector((3, 5, -2))
+    >>> ClefEvent().clef is None
+    True
+    """
+
+    clef: Clef | None = None

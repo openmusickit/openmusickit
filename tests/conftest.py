@@ -21,6 +21,7 @@ from openmusickit.systems.wsmn.percussion import symbols as percussion_symbols
 from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
 from openmusickit.systems.wsmn.scoring import symbols as scoring_symbols
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineShape
+from openmusickit.systems.wsmn.scoring.staff_clef import StaffClef
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
@@ -164,6 +165,12 @@ def bar_line_symbols():
 def tempo_term_symbols():
     """All the TempoTerm symbols (`allegro`, `andante`, `a_tempo`, ...) in `scoring.symbols`, by name."""
     return symbols_of(scoring_symbols, TempoTerm)
+
+
+@pytest.fixture
+def clef_symbols():
+    """All the StaffClef symbols (`treble_clef`, `bass_clef`, `alto_clef`, ...) in `scoring.symbols`, by name."""
+    return symbols_of(scoring_symbols, StaffClef)
 
 
 # --- percussion symbols ------------------------------------------------------

@@ -1,5 +1,5 @@
 """Ready-to-go marks (articulations, dynamics, ornaments, techniques,
-expression and navigation words, and the like), tempo terms, and bar lines.
+expression and navigation words, and the like), tempo terms, bar lines, and clefs.
 Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
 sticking, beaters, snares) and its tones in `systems.wsmn.percussion.symbols`.
 
@@ -43,9 +43,13 @@ Examples
 
 >>> end_repeat
 BarLineShape(BarLineComponent.DOTS, BarLineComponent.THIN, BarLineComponent.THICK)
+
+>>> treble_clef
+StaffClef(ClefSign.G, 2)
 """
 
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineComponent, BarLineShape
+from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
 from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
 from openmusickit.values.scoring.tempo_term import TempoTerm
 
@@ -2143,3 +2147,33 @@ double_repeat = BarLineShape(
     BarLineComponent.THIN,
     BarLineComponent.DOTS,
 )  # ":|.|:"
+
+# =============================================================================
+# CLEFS
+# =============================================================================
+# A StaffClef is a sign on a staff line (1 is the bottom line, MusicXML's
+# numbering) with an optional octave change (MusicXML's clef-octave-change).
+# The LilyPond `\clef` name and the MusicXML sign and line are noted beside
+# each. The percussion tones are in `systems.wsmn.percussion.symbols`.
+
+treble_clef = StaffClef(ClefSign.G, 2)  # treble / G 2
+french_clef = StaffClef(ClefSign.G, 1)  # french / G 1
+soprano_clef = StaffClef(ClefSign.C, 1)  # soprano / C 1
+mezzo_soprano_clef = StaffClef(ClefSign.C, 2)  # mezzosoprano / C 2
+alto_clef = StaffClef(ClefSign.C, 3)  # alto / C 3
+tenor_clef = StaffClef(ClefSign.C, 4)  # tenor / C 4
+baritone_clef = StaffClef(ClefSign.C, 5)  # baritone / C 5
+baritone_f_clef = StaffClef(ClefSign.F, 3)  # varbaritone / F 3
+bass_clef = StaffClef(ClefSign.F, 4)  # bass / F 4
+subbass_clef = StaffClef(ClefSign.F, 5)  # subbass / F 5
+treble_clef_8vb = StaffClef(
+    ClefSign.G, 2, octave_change=-1
+)  # "treble_8" / G 2, -1: the vocal tenor clef
+treble_clef_8va = StaffClef(ClefSign.G, 2, octave_change=1)  # "treble^8" / G 2, +1
+bass_clef_8vb = StaffClef(ClefSign.F, 4, octave_change=-1)  # "bass_8" / F 4, -1
+bass_clef_8va = StaffClef(ClefSign.F, 4, octave_change=1)  # "bass^8" / F 4, +1
+treble_clef_15ma = StaffClef(ClefSign.G, 2, octave_change=2)  # "treble^15" / G 2, +2
+bass_clef_15mb = StaffClef(ClefSign.F, 4, octave_change=-2)  # "bass_15" / F 4, -2
+percussion_clef = StaffClef(ClefSign.PERCUSSION)  # percussion / percussion
+tab_clef = StaffClef(ClefSign.TAB)  # tab / TAB
+no_clef = StaffClef(ClefSign.NONE)  # \omit Clef / none

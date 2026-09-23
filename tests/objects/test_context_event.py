@@ -1,6 +1,6 @@
-"""Temporal context events: a meter or a tempo placed in a line, holding
-any Measurable, any TemporalRatio or a TempoTerm, taking no time, and
-printing a repr that builds them back."""
+"""Temporal context events (a meter or a tempo placed in a line, holding
+any Measurable, any TemporalRatio or a TempoTerm) and the clef event: all
+taking no time, and printing a repr that builds them back."""
 
 import copy
 import itertools
@@ -10,6 +10,7 @@ import pytest
 
 from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.context_event import (
+    ClefEvent,
     ContextEvent,
     MeterEvent,
     ModalContextEvent,
@@ -17,7 +18,15 @@ from openmusickit.objects.context_event import (
     TemporalContextEvent,
 )
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
-from openmusickit.systems.wsmn.scoring.symbols import a_tempo, allegro, andante
+from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
+from openmusickit.systems.wsmn.scoring.symbols import (
+    a_tempo,
+    allegro,
+    andante,
+    bass_clef,
+    percussion_clef,
+    treble_clef,
+)
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.symbols import (
     dotted_quarter,
@@ -29,7 +38,8 @@ from openmusickit.systems.wsmn.temporal.symbols import (
     two_two,
 )
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
-from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+from openmusickit.systems.wsmn.tonal.symbols import M2, C, D, E
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.scoring.tempo_term import TempoTerm
 from openmusickit.values.time.clock_time import ClockDuration, Tempo
 from openmusickit.values.time.duration import (
@@ -55,6 +65,9 @@ NAMESPACE = {
         ("ClockDuration", ClockDuration),
         ("Tempo", Tempo),
         ("TempoTerm", TempoTerm),
+        ("ClefEvent", ClefEvent),
+        ("StaffClef", StaffClef),
+        ("ClefSign", ClefSign),
     ]
 }
 
@@ -73,6 +86,8 @@ def test_duration_cannot_be_given_at_construction():
         MeterEvent(duration=quarter)
     with pytest.raises(TypeError):
         TempoEvent(duration=None)
+    with pytest.raises(TypeError):
+        ClefEvent(duration=quarter)
 
 
 def test_values_default_to_unspecified():
@@ -136,12 +151,13 @@ def test_equality_is_the_values_equality():
     assert TempoEvent(tempo=Tempo(120, quarter)) == TempoEvent(tempo=Tempo(60, half))
 
 
-def test_repr_round_trips(time_signature_symbols, tempo_term_symbols):
+def test_repr_round_trips(time_signature_symbols, tempo_term_symbols, clef_symbols):
     events = [
         MeterEvent(),
         TempoEvent(),
         ContextEvent(),
         ModalContextEvent(),
+        ClefEvent(),
         MeterEvent(meter=TemporalUnit(3, quarter)),
         MeterEvent(meter=CompoundTemporalUnit([TemporalUnit(2, eighth), TemporalUnit(3, eighth)])),
         MeterEvent(meter=dotted_quarter),
@@ -154,19 +170,21 @@ def test_repr_round_trips(time_signature_symbols, tempo_term_symbols):
     ]
     events += [MeterEvent(meter=ts) for ts in time_signature_symbols.values()]
     events += [TempoEvent(term=term) for term in tempo_term_symbols.values()]
+    events += [ClefEvent(clef=clef) for clef in clef_symbols.values()]
     for event in events:
         assert eval(repr(event), NAMESPACE) == event, repr(event)
 
 
 def test_relative_onset_passes_through_temporal_contexts():
-    """A meter or a tempo (a ratio, a word, or both) takes no time: onsets across them are what they
-    would be without them, in both directions."""
+    """A meter, a tempo (a ratio, a word, or both) or a clef takes no time: onsets across them
+    are what they would be without them, in both directions."""
     plain, marked = notes(C, D, E), notes(C, D, E)
     without = OmkGraph(GraphMeta())
     without.add_line(plain)
     with_contexts = OmkGraph(GraphMeta())
     with_contexts.add_line(
         [
+            ClefEvent(clef=treble_clef),
             MeterEvent(meter=four_four),
             TempoEvent(tempo=Tempo(120, quarter), term=allegro),
             marked[0],
@@ -174,6 +192,7 @@ def test_relative_onset_passes_through_temporal_contexts():
             marked[1],
             TempoEvent(tempo=TemporalRatio(dotted_quarter, quarter)),
             TempoEvent(term=a_tempo),
+            ClefEvent(clef=bass_clef),
             marked[2],
         ]
     )
@@ -190,6 +209,41 @@ def test_events_survive_deepcopy():
         MeterEvent(meter=four_four),
         TempoEvent(tempo=Tempo(120, quarter)),
         TempoEvent(tempo=TemporalRatio(dotted_quarter, quarter)),
+        ClefEvent(clef=treble_clef),
     ):
         twin = copy.deepcopy(event)
         assert twin == event and twin is not event
+
+
+def test_a_clef_event_is_a_context_event_of_zero_duration():
+    event = ClefEvent()
+    assert isinstance(event, ContextEvent) and isinstance(event, SequentialEvent)
+    assert not isinstance(event, TemporalContextEvent)
+    assert not isinstance(event, TonalObject)
+    assert isinstance(event.duration, ZeroDuration)
+
+
+def test_clef_defaults_to_unspecified_and_holds_what_it_is_given():
+    assert ClefEvent().clef is None
+    assert ClefEvent(clef=treble_clef).clef is treble_clef
+    assert ClefEvent(clef=percussion_clef).clef.reference_tone is None
+
+
+def test_equality_ignores_id_and_compares_the_clef():
+    assert ClefEvent(clef=treble_clef) == ClefEvent(clef=StaffClef(ClefSign.G, 2))
+    assert ClefEvent(clef=treble_clef) != ClefEvent(clef=bass_clef)
+    assert ClefEvent() == ClefEvent() and ClefEvent() != ClefEvent(clef=treble_clef)
+    assert ClefEvent(clef=treble_clef).id != ClefEvent(clef=treble_clef).id
+    assert ClefEvent() != MeterEvent()
+
+
+def test_transform_tones_leaves_a_clef_alone():
+    """A clef is about the staff, not the tones: transposing a span moves
+    the notes and leaves the clef as it was."""
+    clef = ClefEvent(clef=treble_clef)
+    c, d = notes(C, D)
+    graph = OmkGraph(GraphMeta())
+    graph.add_line([clef, c, d])
+    graph.transform_tones(clef, None, TonalVector.transpose, M2)
+    assert clef.clef is treble_clef
+    assert c.tones == {D} and d.tones == {E}

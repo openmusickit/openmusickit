@@ -80,6 +80,7 @@ quartodoc:
         - values.scoring.mark
         - values.scoring.division_shape
         - values.scoring.tempo_term
+        - values.scoring.clef
     - title: Western Standard Music Notation
       desc: The WSMN implementation of the abstract values.
       contents:
@@ -95,6 +96,7 @@ quartodoc:
         - name: systems.wsmn.temporal.symbols
           children: embedded  # hundreds of constants; one page, not one page each
         - systems.wsmn.scoring.bar_line_shape
+        - systems.wsmn.scoring.staff_clef
         - name: systems.wsmn.scoring.symbols
           children: embedded  # hundreds of constants; one page, not one page each
         - systems.wsmn.percussion.percussion_tone
