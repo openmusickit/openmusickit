@@ -1,5 +1,6 @@
-"""Ready-to-go marks (articulations, dynamics, ornaments, techniques, and the like),
-tempo terms, and bar lines. Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
+"""Ready-to-go marks (articulations, dynamics, ornaments, techniques,
+expression and navigation words, and the like), tempo terms, and bar lines.
+Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
 sticking, beaters, snares) and its tones in `systems.wsmn.percussion.symbols`.
 
 ```
@@ -9,6 +10,9 @@ from openmusickit.systems.wsmn.scoring.symbols import *
 Coverage is intended to be a superset of the marks available in LilyPond and
 MusicXML. Where the two disagree on naming, the most common American-English
 name is used for ``name`` and the alternatives appear in ``aliases``.
+
+A word the table lacks, and every rehearsal mark, is a `Mark` made for the score:
+`Marking(mark=Mark(name="A", kind=MarkType.REHEARSAL, attachment_mode=AttachmentMode.SINGLE))`.
 
 Examples
 --------
@@ -27,6 +31,12 @@ Examples
 
 >>> slur.binds, phrase_mark.binds
 (True, False)
+
+>>> dolce.kind
+<MarkType.EXPRESSION: 'expression'>
+
+>>> da_capo.aliases
+('D.C.',)
 
 >>> allegro.name
 'allegro'
@@ -1680,6 +1690,92 @@ ficta_double_flat = Mark(
 
 
 # =============================================================================
+# EXPRESSION
+# =============================================================================
+# Words that shape delivery. Any of them may carry a dashed extension over a
+# stretch (LilyPond's text spanner, MusicXML <words> with <dashes>), so every
+# one is EITHER. Tempo words are TempoTerms, not marks, and are further down.
+
+dolce = Mark(
+    name="dolce",
+    description="Dolce: sweetly, softly.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+cantabile = Mark(
+    name="cantabile",
+    description="Cantabile: in a singing style.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+legato = Mark(
+    name="legato",
+    description="Legato: smoothly, the notes connected; the word, where a score writes it instead of a slur.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+simile = Mark(
+    name="simile",
+    description="Simile: continue in the same manner (articulation, pedaling, pattern) as just written.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("sim.",),
+)
+
+sotto_voce = Mark(
+    name="sotto voce",
+    description="Sotto voce: in an undertone, subdued.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+agitato = Mark(
+    name="agitato",
+    description="Agitato: agitated, restless.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+tranquillo = Mark(
+    name="tranquillo",
+    description="Tranquillo: calm, tranquil.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+pesante = Mark(
+    name="pesante",
+    description="Pesante: heavy, weighty.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+leggiero = Mark(
+    name="leggiero",
+    description="Leggiero: light, nimble.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+    aliases=("leggero",),
+)
+
+grazioso = Mark(
+    name="grazioso",
+    description="Grazioso: graceful.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+maestoso = Mark(
+    name="maestoso",
+    description="Maestoso: majestic, stately.",
+    kind=MarkType.EXPRESSION,
+    attachment_mode=AttachmentMode.EITHER,
+)
+
+# =============================================================================
 # OTHER
 # =============================================================================
 
@@ -1728,7 +1824,7 @@ segno = Mark(
 
 coda = Mark(
     name="coda",
-    description="A coda sign: marks the coda, or the jump to it.",
+    description="A coda sign: marks the coda; the words at the jump are `to_coda`.",
     kind=MarkType.NAVIGATION,
     attachment_mode=AttachmentMode.SINGLE,
 )
@@ -1739,6 +1835,68 @@ varcoda = Mark(
     kind=MarkType.NAVIGATION,
     attachment_mode=AttachmentMode.SINGLE,
     aliases=("variant coda",),
+)
+
+fine = Mark(
+    name="fine",
+    description="Fine: the end, where a da capo or dal segno finishes. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+)
+
+da_capo = Mark(
+    name="da capo",
+    description="D.C.: go back to the beginning. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("D.C.",),
+)
+
+dal_segno = Mark(
+    name="dal segno",
+    description="D.S.: go back to the segno. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("D.S.",),
+)
+
+da_capo_al_fine = Mark(
+    name="da capo al fine",
+    description="D.C. al Fine: go back to the beginning and play to the fine. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("D.C. al Fine",),
+)
+
+dal_segno_al_fine = Mark(
+    name="dal segno al fine",
+    description="D.S. al Fine: go back to the segno and play to the fine. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("D.S. al Fine",),
+)
+
+da_capo_al_coda = Mark(
+    name="da capo al coda",
+    description="D.C. al Coda: go back to the beginning and play to the coda jump. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("D.C. al Coda",),
+)
+
+dal_segno_al_coda = Mark(
+    name="dal segno al coda",
+    description="D.S. al Coda: go back to the segno and play to the coda jump. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("D.S. al Coda",),
+)
+
+to_coda = Mark(
+    name="to coda",
+    description="To Coda: on the last time through, jump to the coda from here. The jump itself is control flow, which a future module owns; the word here is what is printed.",
+    kind=MarkType.NAVIGATION,
+    attachment_mode=AttachmentMode.SINGLE,
 )
 
 # --- miscellaneous ------------------------------------------------------------
@@ -1755,6 +1913,55 @@ eyeglasses = Mark(
     description="An eyeglasses sign: watch the conductor.",
     kind=MarkType.OTHER,
     attachment_mode=AttachmentMode.SINGLE,
+)
+
+# --- instructions to the players ------------------------------------------------
+# Each states a condition in force until the next word, so they sit at a
+# point; a fill is marked at a point or drawn over a stretch.
+
+solo = Mark(
+    name="solo",
+    description="Solo: one player, or the featured line, alone, until countermanded.",
+    kind=MarkType.OTHER,
+    attachment_mode=AttachmentMode.SINGLE,
+)
+
+tutti = Mark(
+    name="tutti",
+    description="Tutti: everyone; cancels solo or divisi.",
+    kind=MarkType.OTHER,
+    attachment_mode=AttachmentMode.SINGLE,
+)
+
+divisi = Mark(
+    name="divisi",
+    description="Divisi: a section divides to cover the parts written.",
+    kind=MarkType.OTHER,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("div.",),
+)
+
+unisono = Mark(
+    name="unisono",
+    description="Unisono: a divided section rejoins in unison.",
+    kind=MarkType.OTHER,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("unis.",),
+)
+
+a_2 = Mark(
+    name="a 2",
+    description="A 2: both players of a pair play the one line.",
+    kind=MarkType.OTHER,
+    attachment_mode=AttachmentMode.SINGLE,
+    aliases=("a due",),
+)
+
+fill = Mark(
+    name="fill",
+    description="Fill: the player (a drummer, in a chart) improvises over the marked stretch.",
+    kind=MarkType.OTHER,
+    attachment_mode=AttachmentMode.EITHER,
 )
 
 # =============================================================================

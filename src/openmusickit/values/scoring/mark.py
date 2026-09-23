@@ -3,7 +3,18 @@ from enum import StrEnum, auto
 
 
 class MarkType(StrEnum):
-    """The type of a Mark."""
+    """The type of a Mark.
+
+    Text in a score is a Mark too.
+    Words that shape how the material is delivered (dolce, cantabile, legato) are EXPRESSION;
+    the words that direct movement through the score (D.C. al Fine, To Coda)
+    are NAVIGATION, beside the signs;
+    a boxed rehearsal letter or number is REHEARSAL,
+    whose `name` is the label, made for the score;
+    instructions to the players (solo, tutti, divisi) are OTHER.
+    A word the vocabulary lacks is a Mark made for the score,
+    as `TempoTerm` allows for tempo words.
+    """
 
     ARTICULATION = auto()
     DYNAMIC = auto()
@@ -16,8 +27,16 @@ class MarkType(StrEnum):
     PHRASING = (
         auto()
     )  # slurs, ties, pedaling, fermatas: marks that shape how events connect and are sustained
-    NAVIGATION = auto()  # segno, coda, and other signs that direct movement through the score
+    NAVIGATION = (
+        auto()
+    )  # segno, coda, D.C., D.S., fine: signs and words that direct movement through the score
     TRANSPOSITION = auto()  # 8va, 8vb, 15ma, and similar octave lines
+    EXPRESSION = (
+        auto()
+    )  # dolce, cantabile, legato, simile: words that shape how the material is delivered
+    REHEARSAL = (
+        auto()
+    )  # a boxed rehearsal letter or number; the label is the mark's name, made per score
     OTHER = auto()
 
 
