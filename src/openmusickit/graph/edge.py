@@ -166,6 +166,8 @@ class Contains(TimedEdge):
     """From a `LineGroup` to the head of one of its lines: the line starts at
     the group's origin plus the displacement. A group has no offset, so the
     anchor is always the origin and only `displacement` can be set.
+    A `Score`'s CONTAINS edges are plain `OmkEdge`s, not this class:
+    a score is not a timing origin.
 
     >>> from openmusickit.systems.wsmn.temporal.symbols import whole
     >>> Contains(displacement=whole)

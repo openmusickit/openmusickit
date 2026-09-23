@@ -113,6 +113,7 @@ quartodoc:
         - objects.lyrics
         - objects.marking
         - objects.part
+        - objects.score
     - title: Graph
       desc: The score graph and its edges.
       contents:

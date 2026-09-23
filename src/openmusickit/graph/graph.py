@@ -27,6 +27,7 @@ from openmusickit.objects.marking import Marked, Marking
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
 from openmusickit.objects.part import LineGroup, Part, Stint
+from openmusickit.objects.score import Score
 from openmusickit.values.time.duration import Duration, ZeroDuration
 from openmusickit.values.tone.tone import Tone
 
@@ -530,8 +531,8 @@ class OmkGraph:
 
         `parent` must be on the graph; `head` may or may not be. `head` must be
         the head of a line (no NEXT in), not already branched, not a line of a
-        group, and not the start of a Stint (whoever performs the parent
-        performs the branch).
+        group or a score, and not the start of a Stint (whoever performs the
+        parent performs the branch).
 
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.systems.wsmn.temporal.symbols import quarter, half
@@ -558,7 +559,7 @@ class OmkGraph:
             raise GraphError(f"{head!r} is already branched from another line.")
         if any(self._graph.in_edges(head, EdgeType.CONTAINS)):
             raise GraphError(
-                f"{head!r} is a line of a group; a branch belongs to its parent's line."
+                f"{head!r} is a line of a group or a score; a branch belongs to its parent's line."
             )
         if any(self._graph.predecessors(head, Stint, EdgeType.STARTS_AT)):
             raise GraphError(
@@ -673,7 +674,9 @@ class OmkGraph:
         `node`, with that distance: the next and previous events in the line,
         and the far ends of branches, pins and group memberships in either
         direction. A `LineGroup` is a node of the timing graph too: its
-        origin is where its lines are measured from."""
+        origin is where its lines are measured from. A `Score`'s CONTAINS
+        edges are plain, not timed, and are passed over: a score is not a
+        timing origin."""
         if isinstance(node, SequentialEvent):
             following = self.get_next(node)
             if following is not None and node.duration is not None:
@@ -683,13 +686,17 @@ class OmkGraph:
                 yield previous, -previous.duration
         for edge_type in (EdgeType.BRANCHES, EdgeType.SIMULTANEOUS, EdgeType.CONTAINS):
             for edge in self._graph.out_edges(node, edge_type):
+                if edge is ignoring or not isinstance(edge, TimedEdge):
+                    continue
                 delta = self._timed_delta(edge, node)
-                if edge is not ignoring and delta is not None:
+                if delta is not None:
                     yield self._graph.get_target_of_edge(edge), delta
             for edge in self._graph.in_edges(node, edge_type):
+                if edge is ignoring or not isinstance(edge, TimedEdge):
+                    continue
                 source = self._graph.get_source_of_edge(edge)
                 delta = self._timed_delta(edge, source)
-                if edge is not ignoring and delta is not None:
+                if delta is not None:
                     yield source, -delta
 
     @staticmethod
@@ -1062,6 +1069,112 @@ class OmkGraph:
         for edge_type in (EdgeType.MARKS, EdgeType.ANNOTATES, EdgeType.STARTS_AT, EdgeType.ENDS_AT):
             yield from self._graph.predecessors(node, edge_type=edge_type)
         yield from self._graph.successors(node, edge_type=EdgeType.LYRIC)
+
+    # Scores: the work's metadata, naming its top-level lines and parts
+
+    def add_line_to_score(self, score: Score, head: SequentialEvent) -> None:
+        """Records that the line starting at `head` is one of `score`'s.
+
+        `head` must be the head of a line (no NEXT in) and not branched: a
+        branched line is in the score through its parent's head, the same
+        rule as `add_to_group`. The edge is a plain CONTAINS: a Score is not
+        a timing origin, so nothing is said about when the line starts (pins
+        and groups say that). Once per score.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.objects.score import Score
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, F
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e, f = (NoteEvent(tones={t}) for t in (C, D, E, F))
+        >>> graph.add_line([c, d])
+        >>> graph.add_line([e, f])
+        >>> score = Score(title="Two lines")
+        >>> graph.add_line_to_score(score, c)
+        >>> graph.add_line_to_score(score, e)
+        >>> sorted(format(next(iter(n.tones))) for n in graph.score_lines(score))
+        ['C', 'E']
+        >>> list(graph.scores_of(c)) == [score]
+        True
+        >>> graph.relative_onset(score, c)  # a Score is not a timing node
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: No timing path connects Score(...) to NoteEvent(...).
+        >>> graph.add_line_to_score(score, d)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: NoteEvent(...) is not the head of a line.
+
+        Raises
+        ------
+        GraphError
+            if `head` is not the head of a line, is branched, or is already in `score`.
+        """
+        self.add_node(score)
+        self.add_node(head)
+        if self.get_previous(head) is not None:
+            raise GraphError(f"{head!r} is not the head of a line.")
+        if any(self._graph.in_edges(head, EdgeType.BRANCHES)):
+            raise GraphError(
+                f"{head!r} is branched from another line; it is in the score through its parent."
+            )
+        self.add_edge(score, head, EdgeType.CONTAINS)
+
+    def add_part_to_score(self, score: Score, part: Part) -> None:
+        """Records that `part` is one of `score`'s parts. A part with no
+        music yet (an orchestration sketch) is allowed.
+
+        >>> from openmusickit.objects.score import Score
+        >>> graph = OmkGraph(GraphMeta())
+        >>> score, flute = Score(title="Sketch"), Part(name="Flute")
+        >>> graph.add_part_to_score(score, flute)
+        >>> list(graph.score_parts(score)) == [flute], list(graph.scores_of(flute)) == [score]
+        (True, True)
+        >>> list(graph.stints(flute))
+        []
+
+        Raises
+        ------
+        GraphError
+            if `part` is already in `score`.
+        """
+        self.add_node(score)
+        self.add_node(part)
+        self.add_edge(score, part, EdgeType.CONTAINS)
+
+    def score_lines(self, score: Score) -> Iterator[SequentialEvent]:
+        """The heads of the top-level lines of `score`, in no particular order."""
+        return self._graph.successors(score, SequentialEvent, EdgeType.CONTAINS)
+
+    def score_parts(self, score: Score) -> Iterator[Part]:
+        """The parts of `score`, in no particular order."""
+        return self._graph.successors(score, Part, EdgeType.CONTAINS)
+
+    def scores_of(self, node: OmkObject) -> Iterator[Score]:
+        """The scores that hold `node`, a line head or a Part."""
+        return self._graph.predecessors(node, Score, EdgeType.CONTAINS)
+
+    def walk_score(self, score: Score) -> Iterator[SequentialEvent]:
+        """Every event of every line of `score`, line by line (the lines in
+        no particular order): `walk_span` from each head, so second voices
+        come along and pins are not entered.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.objects.score import Score
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E, A
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e, a = (NoteEvent(tones={t}) for t in (C, D, E, A))
+        >>> graph.add_line([c, d])
+        >>> graph.add_line([e])
+        >>> graph.add_line([a])
+        >>> graph.add_branch(d, a)   # a second voice under d
+        >>> score = Score()
+        >>> graph.add_line_to_score(score, c)
+        >>> graph.add_line_to_score(score, e)
+        >>> sorted(format(next(iter(n.tones))) for n in graph.walk_score(score))
+        ['A', 'C', 'D', 'E']
+        """
+        for head in self.score_lines(score):
+            yield from self.walk_span(head)
 
     # Annotations (articulations, memos, analysis)
 

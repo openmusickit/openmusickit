@@ -28,6 +28,7 @@ from . import (
     note_event,
     omk_object,
     part,
+    score,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "note_event",
     "omk_object",
     "part",
+    "score",
 ]
