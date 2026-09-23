@@ -4,7 +4,9 @@ import copy
 import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 from openmusickit.errors import GraphError, OmkWarning
@@ -29,10 +31,28 @@ from openmusickit.values.time.duration import Duration, ZeroDuration
 from openmusickit.values.tone.tone import Tone
 
 
+@dataclass(kw_only=True, slots=True)
 class GraphMeta:
-    """Details about the graph, including title, composer name, etc."""
+    """Details about the graph as a container:
+    a name for it, a description,
+    and `info`, free-form storage for consumers of OMK that OMK itself never reads
+    (as `OmkObject.meta` is for one object).
 
-    pass
+    A graph may hold one score, several,
+    or fragments that are no score at all,
+    so the metadata of a work (title, composer, opus) does not live here:
+    it is on a `Score` node (`objects.score`),
+    which names one connected component.
+
+    >>> GraphMeta()
+    GraphMeta(name=None, description=None, info={})
+    >>> GraphMeta(name="sketches", info={"app": "demo"})
+    GraphMeta(name='sketches', description=None, info={'app': 'demo'})
+    """
+
+    name: str | None = None
+    description: str | None = None
+    info: dict[str, Any] = field(default_factory=dict)
 
 
 class OmkGraph:
@@ -55,6 +75,15 @@ class OmkGraph:
     def __init__(self, meta: GraphMeta, graph_engine: GraphAdapter | None = None):
         self._meta = meta
         self._graph = graph_engine if graph_engine is not None else RustworkxAdapter()
+
+    @property
+    def meta(self) -> GraphMeta:
+        """The graph's own metadata (see `GraphMeta`); a work's is on its `Score`.
+
+        >>> OmkGraph(GraphMeta(name="Sketches")).meta.name
+        'Sketches'
+        """
+        return self._meta
 
     # Load and import
 
