@@ -284,7 +284,7 @@ def test_materialize_copies_the_music_on_the_span_exactly():
     with pytest.warns(OmkWarning) as caught:
         head = graph.materialize(oboe_stint)
     assert sorted(str(w.message).split(" was not copied")[0] for w in caught) == sorted(
-        [repr(verse), "MarkSpanner(mark=Mark(name='slur', ...))"]
+        [repr(verse), repr(MarkSpanner(mark=slur))]
     )
 
     forked = list(graph.walk_stint(oboe_stint))

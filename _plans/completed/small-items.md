@@ -256,3 +256,17 @@ table (`systems/wsmn/scoring/symbols.py`, TEMPO TERMS) has the twenty ranged
 words of the conventional modern table and the five restorers (a tempo, tempo
 primo, l'istesso tempo, rubato, ad libitum). Gradual changes (rit., accel.)
 stay open in `revisit.md`.
+
+### `Marking.__repr__` and `MarkSpanner.__repr__` do not round-trip (2026-09-22, resolved 2026-09-22)
+
+`Mark.__repr__` now prints the constructor call with full enum symbols and
+the fields at their defaults left out, so a mark made for one score
+(`Mark(name="dolce", kind=MarkType.EXPRESSION)`) prints as written and a
+ready-made mark prints every field it sets. `Marking` and `MarkSpanner` drop
+their compact reprs and take the dataclass default, so
+`Marking(mark=Mark(...))` evaluates given the `mark` module's names. The
+entry's other idea, printing the ready-made symbol's name, was not possible:
+`objects/marking.py` may not import `systems/wsmn/scoring/symbols`. Pinned by
+`test_repr_round_trips` in `tests/objects/test_marking.py` over every
+ready-made mark. The other custom reprs in `src/` were checked; the ones that
+do not evaluate are a new entry in `revisit.md`.

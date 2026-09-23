@@ -43,16 +43,17 @@ class AttachmentMode(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Mark:
-    """A mark as it appears in a notation system's vocabulary (a staccato dot,
-    a slur, a fermata, `mf`). The thing placed in a score is a `Marking` or a
-    `MarkSpanner` holding one of these.
+    """A mark as it appears in a notation system's vocabulary
+    (a staccato dot, a slur, a fermata, `mf`).
+    The thing placed in a score is a `Marking` or a `MarkSpanner` holding one of these.
 
-    Most of a Mark is descriptive. The few attributes code acts on are added
-    one at a time, named for what the mark means musically rather than for
-    the code that reads them: `kind` and `attachment_mode` classify it, and
-    `binds` says that the events under a span mark are one articulation
-    (one bow, one breath, one syllable), as under a slur or a tie. A mark
-    that binds cannot begin a new lyric syllable except on its first note.
+    Most of a Mark is descriptive.
+    The few attributes code acts on are added one at a time,
+    named for what the mark means musically rather than for the code that reads them:
+    `kind` and `attachment_mode` classify it,
+    and `binds` says that the events under a span mark are one articulation
+    (one bow, one breath, one syllable), as under a slur or a tie.
+    A mark that binds cannot begin a new lyric syllable except on its first note.
     """
 
     name: str
@@ -61,3 +62,29 @@ class Mark:
     attachment_mode: AttachmentMode | None = None
     aliases: tuple[str, ...] = ()
     binds: bool = False
+
+    def __repr__(self) -> str:
+        """The constructor call that builds this mark back,
+        with the fields at their defaults left out,
+        so a mark made for one score prints as it was written.
+
+        >>> Mark(name="dolce")
+        Mark(name='dolce')
+        >>> Mark(name="A", kind=MarkType.OTHER, attachment_mode=AttachmentMode.SINGLE)
+        Mark(name='A', kind=MarkType.OTHER, attachment_mode=AttachmentMode.SINGLE)
+        >>> from openmusickit.systems.wsmn.scoring.symbols import staccato
+        >>> staccato
+        Mark(name='staccato', description='A staccato dot: the note is played detached and shortened.', kind=MarkType.ARTICULATION, attachment_mode=AttachmentMode.SINGLE)
+        """
+        parts = [f"name={self.name!r}"]
+        if self.description is not None:
+            parts.append(f"description={self.description!r}")
+        if self.kind is not None:
+            parts.append(f"kind=MarkType.{self.kind.name}")
+        if self.attachment_mode is not None:
+            parts.append(f"attachment_mode=AttachmentMode.{self.attachment_mode.name}")
+        if self.aliases:
+            parts.append(f"aliases={self.aliases!r}")
+        if self.binds:
+            parts.append("binds=True")
+        return f"{type(self).__name__}({', '.join(parts)})"

@@ -31,7 +31,7 @@ class Marking(OmkObject, Marked):
 
     >>> from openmusickit.systems.wsmn.scoring.symbols import staccato, slur
     >>> Marking(mark=staccato)
-    Marking(mark=Mark(name='staccato', ...))
+    Marking(mark=Mark(name='staccato', description='A staccato dot: the note is played detached and shortened.', kind=MarkType.ARTICULATION, attachment_mode=AttachmentMode.SINGLE))
     >>> Marking(mark=slur)
     Traceback (most recent call last):
     ...
@@ -43,9 +43,6 @@ class Marking(OmkObject, Marked):
     def __post_init__(self):
         if self.mark.attachment_mode is AttachmentMode.SPAN:
             raise ValueError(f"{self.mark.name!r} is a span mark; place it with a MarkSpanner.")
-
-    def __repr__(self):
-        return f"{type(self).__name__}(mark=Mark(name={self.mark.name!r}, ...))"
 
 
 @dataclass(kw_only=True, slots=True)
@@ -61,7 +58,7 @@ class MarkSpanner(Spanner, Marked):
 
     >>> from openmusickit.systems.wsmn.scoring.symbols import slur, staccato
     >>> MarkSpanner(mark=slur)
-    MarkSpanner(mark=Mark(name='slur', ...))
+    MarkSpanner(mark=Mark(name='slur', description='A slur: the notes under it are played legato.', kind=MarkType.PHRASING, attachment_mode=AttachmentMode.SPAN, aliases=('legato slur',), binds=True))
     >>> MarkSpanner(mark=staccato)
     Traceback (most recent call last):
     ...
@@ -73,6 +70,3 @@ class MarkSpanner(Spanner, Marked):
     def __post_init__(self):
         if self.mark.attachment_mode is AttachmentMode.SINGLE:
             raise ValueError(f"{self.mark.name!r} is a single-event mark; place it with a Marking.")
-
-    def __repr__(self):
-        return f"{type(self).__name__}(mark=Mark(name={self.mark.name!r}, ...))"

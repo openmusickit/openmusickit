@@ -71,9 +71,34 @@ def test_equality_ignores_id_and_compares_the_mark():
     assert Marking(mark=staccato).id != Marking(mark=staccato).id
 
 
-def test_repr_is_compact():
-    assert repr(Marking(mark=staccato)) == "Marking(mark=Mark(name='staccato', ...))"
-    assert repr(MarkSpanner(mark=slur)) == "MarkSpanner(mark=Mark(name='slur', ...))"
+def test_repr_round_trips(mark_symbols):
+    """Every ready-made mark, and the Marking or MarkSpanner holding it,
+    evaluates back to an equal object; a mark made for one score prints
+    only what it set."""
+    namespace = {
+        "Mark": Mark,
+        "MarkType": MarkType,
+        "AttachmentMode": AttachmentMode,
+        "Marking": Marking,
+        "MarkSpanner": MarkSpanner,
+    }
+    for name, mark in mark_symbols.items():
+        assert eval(repr(mark), namespace) == mark, name
+        if mark.attachment_mode is AttachmentMode.SPAN:
+            holder = MarkSpanner(mark=mark)
+        else:
+            holder = Marking(mark=mark)
+        assert eval(repr(holder), namespace) == holder, name
+    assert repr(staccato) == (
+        "Mark(name='staccato', description='A staccato dot: the note is played detached and shortened.', "
+        "kind=MarkType.ARTICULATION, attachment_mode=AttachmentMode.SINGLE)"
+    )
+    minted = Mark(name="A", kind=MarkType.OTHER, attachment_mode=AttachmentMode.SINGLE)
+    assert (
+        repr(minted) == "Mark(name='A', kind=MarkType.OTHER, attachment_mode=AttachmentMode.SINGLE)"
+    )
+    assert eval(repr(minted), namespace) == minted
+    assert repr(Marking(mark=Mark(name="dolce"))) == "Marking(mark=Mark(name='dolce'))"
 
 
 def test_only_slur_and_tie_bind():

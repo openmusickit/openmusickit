@@ -4,17 +4,6 @@ A single running list of design questions that were noticed, discussed briefly,
 and deliberately deferred. One `##` entry per item, newest last. When an item is
 resolved, move its entry to the _plans/completed/small-items.md document.
 
-## `Marking.__repr__` and `MarkSpanner.__repr__` do not round-trip (2026-09-22)
-
-Both print `Marking(mark=Mark(name='staccato', ...))`, which does not evaluate
-(`src/openmusickit/objects/marking.py:47`, `:77`). Noticed while designing
-`BarLineShape.__repr__` (`_plans/division-event.md`), where the rule became
-"a `__repr__` round-trips" (AGENTS.md, Technical Details). Make these two
-evaluable: print the symbol's name when the mark is one of the ready-made
-`symbols`, or the full `Mark(...)` otherwise. Check whether `Mark.__repr__`
-itself (dataclass default) evaluates, and whether any other custom `__repr__`
-in `src/` was written for compactness rather than fidelity.
-
 ## Gradual tempo changes (rit., accel.) have no home (2026-09-22)
 
 `TempoEvent` holds the word (`term: TempoTerm`,
@@ -36,3 +25,15 @@ no context of its own is read by the context of a line it is pinned or grouped
 with is also undecided (the `TemporalContextEvent` docstring says so). A
 `context_in_force(event, kind)` on `OmkGraph` is the obvious shape; decide
 when a realizer or analysis module first needs one.
+
+## Other custom reprs that do not round-trip (2026-09-22)
+
+Found while resolving the `Marking` repr entry. `NoteEvent.__repr__` prints
+`tones=[...]`, a list, for a `set` field, so `eval(repr(note))` builds a
+NoteEvent whose `tones` is a list and does not compare equal;
+`LyricSyllable.__repr__` prints `LyricSyllable('Al -')`, which is not a
+constructor call; the edge reprs (`Next(next, origin=asserted)`,
+`Branch(anchor=offset, displacement=...)`) print enum values bare. The edge
+form was kept deliberately on 2026-09-21, before the round-trip rule went
+into AGENTS.md. Decide whether the rule applies to edges and to
+`Rest(duration=None)`, which evaluates through the factory function.
