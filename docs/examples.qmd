@@ -149,26 +149,36 @@ Independent lines are related in time by pinning one event to another
 with a SIMULTANEOUS edge.
 Lyrics are a line of syllables,
 each attached to the note where it begins with a LYRIC edge.
+A `Score` carries the work's metadata and names the component:
+it points at the heads of its lines.
+A clef, like a key or a meter, is a zero-duration `ClefEvent`
+at the point in the line where it takes effect.
 
 Here is the first phrase of *Twinkle, Twinkle, Little Star*:
-a melody, its lyrics, and a chord line above it.
+a melody under a treble clef, its lyrics, and a chord line above it.
 
 ```{python}
 from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.chord_event import ChordEvent
+from openmusickit.objects.context_event import ClefEvent
 from openmusickit.objects.lyrics import LyricSection
+from openmusickit.objects.score import Score
+from openmusickit.systems.wsmn.scoring.symbols import treble_clef
 from openmusickit.systems.wsmn.temporal.symbols import half, whole
 
 graph = OmkGraph(GraphMeta())
+score = Score(title="Twinkle, Twinkle, Little Star", lyricist="Jane Taylor")
 
-# The melody: one line of NoteEvents.
+# The melody: a clef, then one line of NoteEvents.
 pitches = "C4 C4 G4 G4 A4 A4 G4  F4 F4 E4 E4 D4 D4 C4".split()
 rhythm = [quarter] * 6 + [half] + [quarter] * 6 + [half]
 melody = [
     NoteEvent(tones={TonalVector.from_string(p)}, duration=d)
     for p, d in zip(pitches, rhythm, strict=True)
 ]
-graph.add_line(melody)
+clef = ClefEvent(clef=treble_clef)
+graph.add_line([clef, *melody])
+graph.add_line_to_score(score, clef)  # the clef is the head of the line
 
 # The harmony: its own line, pinned to the first note of the melody.
 chords = [
@@ -182,6 +192,7 @@ chords = [
 ]
 graph.add_line(chords)
 graph.add_simultaneous(melody[0], chords[0])
+graph.add_line_to_score(score, chords[0])
 
 # The lyrics: a line of syllables, zipped onto the notes one syllable per onset.
 verse = LyricSection(section_type="verse", section_number=1)
@@ -221,6 +232,16 @@ because the two lines are pinned together.
 for event in graph.walk_line(chords[0]):
     onset = graph.relative_onset(melody[0], event).rational_length
     print(f"{str(onset):<8}{event.chord}")
+```
+
+The score names the whole:
+its title, every event of every line it holds,
+and the clef, which takes no time.
+
+```{python}
+print(score.title)
+print(len(list(graph.walk_score(score))), "events in the score")
+print(graph.relative_onset(clef, melody[0]))
 ```
 
 Transposing a span of the graph transforms every tone in it.

@@ -1,5 +1,8 @@
 # Clef, Score and text marks: the first slice toward an importer
 
+Status: implemented 2026-09-22 in six commits (GraphMeta fields; Mark repr;
+expression, navigation and instruction words; Clef and ClefEvent; Score; docs).
+
 ## Context
 
 Asked what a MusicXML or LilyPond importer would find missing, the gap
