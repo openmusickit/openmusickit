@@ -1,0 +1,62 @@
+% Preamble for the paper PDFs, injected by render.sh via `pandoc -H`.
+% Engine is tectonic (XeTeX), so fontspec is available and input is UTF-8.
+
+\usepackage{geometry}
+\geometry{a4paper, top=22mm, bottom=24mm, left=26mm, right=26mm}
+
+\usepackage{microtype}
+
+% --- Music glyphs -------------------------------------------------------
+% Latin Modern has no accidentals, so the few that occur in prose are
+% borrowed from Noto Music. Add a line here if a new symbol turns up.
+\usepackage{newunicodechar}
+\newfontfamily\musicfont{Noto Music}
+\newunicodechar{♯}{{\musicfont ♯}}
+\newunicodechar{♭}{{\musicfont ♭}}
+\newunicodechar{♮}{{\musicfont ♮}}
+\newunicodechar{𝄫}{{\musicfont 𝄫}}
+\newunicodechar{𝄪}{{\musicfont 𝄪}}
+
+% --- Math glyph gaps ----------------------------------------------------
+% pandoc's XeTeX template loads unicode-math with Latin Modern Math, which
+% sends \setminus to U+29F5 -- a codepoint that font does not have, so the
+% symbol silently renders as nothing. U+2216 is present and is the same
+% operator here. Keep \setminus in the markdown: it is what MathJax and
+% plain amssymb both want; this only repairs the unicode-math mapping.
+\AtBeginDocument{\let\setminus\smallsetminus}
+
+% --- Verbatim: the paste-ready markup scraps ----------------------------
+% Long macro lines must wrap rather than run into the margin.
+\usepackage{fvextra}
+\usepackage{xcolor}
+\definecolor{scrapbar}{HTML}{8FA6C4}
+\definecolor{scraptext}{HTML}{1F2933}
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{%
+  breaklines=true,
+  breakanywhere=true,
+  fontsize=\small,
+  frame=leftline,
+  framerule=1.2pt,
+  rulecolor=\color{scrapbar},
+  xleftmargin=10pt,
+  framesep=8pt,
+  formatcom=\color{scraptext}%
+}
+
+% --- Layout -------------------------------------------------------------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45\baselineskip}
+
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.6\baselineskip}{0.5\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.1\baselineskip}{0.35\baselineskip}
+
+% Display math sits closer to the prose it belongs to than LaTeX's default.
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{0.6\baselineskip}%
+  \setlength{\belowdisplayskip}{0.6\baselineskip}%
+  \setlength{\abovedisplayshortskip}{0.3\baselineskip}%
+  \setlength{\belowdisplayshortskip}{0.4\baselineskip}%
+}

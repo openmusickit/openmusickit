@@ -299,6 +299,16 @@ def test_key_of_derived_signature_is_standard_with_the_expected_fifths(chromatic
             assert key.signature == KeySignature.from_alts(expected), key.name
 
 
+def test_the_major_signature_of_a_tonic_is_the_tonic_fifths_position(chromatic_tonics):
+    """`TonalVector.fifths_position` and `KeySignature.fifths` are one number
+    reached two ways: where a pitch sits on the line of fifths is the
+    signature of the major key on it. The test above derives its expected
+    value from the formula; this checks the two public APIs against each
+    other, so neither can drift."""
+    for tonic in chromatic_tonics:
+        assert Key.of(tonic, Major).signature.fifths == tonic.fifths_position, tonic
+
+
 def test_key_of_names(chromatic_tonics):
     for tonic in chromatic_tonics:
         for mode in DIATONIC_MODES:
@@ -468,6 +478,23 @@ def test_key_signature_transposes_around_the_circle_of_fifths():
             with pytest.raises(ValueError):
                 signature.transpose(P5, DOWN)
     assert KeySignature().transpose(P1) == KeySignature()
+
+
+def test_transposing_a_signature_moves_it_by_the_interval_fifths_position(chromatic_tonics):
+    """The general form of the circle test above, which covers only fifths
+    and fourths: a signature transposed by *any* interval moves along the
+    line by that interval's own position. This is what "transposition acts
+    on key signatures by translation" means, and it is the reason the tonic
+    and its signature can be transposed independently and still agree."""
+    for n in range(-7, 8):
+        signature = KeySignature.from_alts(n)
+        for interval in chromatic_tonics:
+            try:
+                moved = signature.transpose(interval)
+                fifths = moved.fifths
+            except ValueError:
+                continue  # past triple alterations there is no signature
+            assert fifths == n + interval.fifths_position, (n, interval)
 
 
 def test_a_bare_signature_transposes_like_the_key_it_would_belong_to():

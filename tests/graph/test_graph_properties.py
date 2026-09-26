@@ -12,7 +12,7 @@ import itertools
 import warnings
 
 import pytest
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from openmusickit.errors import GraphError, OmkWarning
@@ -20,13 +20,13 @@ from openmusickit.graph.edge import EdgeType
 from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.note_event import NoteEvent
-from openmusickit.objects.part import Part, Stint
+from openmusickit.objects.part import LineGroup, Part, Stint
 from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter
 from openmusickit.systems.wsmn.tonal.symbols import M2, A, C, D, E, F
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
 from openmusickit.values.time.duration import ZeroDuration
 from tests.graph.helpers import names, notes, snapshot
-from tests.strategies import lines, note_events, tonal_vectors
+from tests.strategies import lines, metrical_durations, note_events, tonal_vectors
 
 
 def fresh(line: list[NoteEvent]) -> OmkGraph:
@@ -158,6 +158,92 @@ def test_materialize_copies_the_span_exactly_and_leaves_the_original(line, data)
     assert set(before[0]) <= set(after[0]) and set(before[1]) <= set(after[1])
     assert list(graph.walk_line(line[0])) == line
     assert list(graph._graph.successors(stint, edge_type=EdgeType.STARTS_AT)) == [head]
+
+
+# --- timing consistency: a forest has a potential, a pin can close a cycle ----------
+
+
+def _along(durations, start, end):
+    """The signed onset from `start` to `end` along one line of known durations."""
+    if start <= end:
+        return sum(durations[start:end], ZeroDuration())
+    return -sum(durations[end:start], ZeroDuration())
+
+
+@given(lines(max_size=2), lines(max_size=2), lines(max_size=2), st.data())
+def test_onsets_compose_when_no_pin_joins_the_lines(first, second, third, data):
+    """NEXT, branch and group edges keep the timing graph a forest, and a
+    forest has a potential: every event has one position, so onsets simply
+    add -- from u to w is from u to v plus from v to w, for any three events
+    the graph connects, whichever way round. That is why branches and groups
+    need no alignment check at all; nothing can disagree until a pin closes
+    a loop."""
+    graph = fresh(first)
+    graph.add_line(second)
+    graph.add_line(third)
+    graph.add_branch(first[data.draw(st.integers(0, len(first) - 1))], second[0])
+    graph.add_group(LineGroup(name="kit"), [first[0], third[0]])  # a shared origin
+
+    events = first + second + third
+    for u, v, w in itertools.permutations(events, 3):
+        try:
+            first_leg = graph.relative_onset(u, v)
+            second_leg = graph.relative_onset(v, w)
+            whole = graph.relative_onset(u, w)
+        except GraphError:
+            continue  # an unknown duration cuts the timing graph; nothing to compose
+        assert whole == first_leg + second_leg, (u, v, w)
+
+
+@given(
+    st.lists(metrical_durations(), min_size=1, max_size=3),
+    st.lists(metrical_durations(), min_size=1, max_size=3),
+    st.data(),
+)
+def test_a_pin_conflicts_exactly_when_its_cycle_does_not_sum_to_zero(first, second, data):
+    """Two pins between the same pair of lines close a cycle, and the cycle
+    either sums to zero or it does not: go along the first line from one pin
+    to the other, across, back along the second line, and across again, and
+    the displacements and durations either return you to where you started
+    or they do not. `check_alignment` reports both pins exactly when they do
+    not -- it is measuring the holonomy of that loop.
+
+    It reports rather than raises because both claims are about the same
+    music: an incomplete source may well say two things that cannot both be
+    true, and which one to believe is not the graph's decision."""
+    a_line = [NoteEvent(tones={C}, duration=d) for d in first]
+    b_line = [NoteEvent(tones={D}, duration=d) for d in second]
+    i, k = (data.draw(st.integers(0, len(first) - 1)) for _ in range(2))
+    j, m = (data.draw(st.integers(0, len(second) - 1)) for _ in range(2))
+    assume((i, j) != (k, m))  # two distinct pins, not one edge added twice
+
+    zero = ZeroDuration()
+    first_disp = data.draw(st.one_of(st.none(), metrical_durations()))
+    anchored = first_disp if first_disp is not None else zero
+    # Half the time make the loop close exactly, so both outcomes are common:
+    # a random second displacement almost never lands on agreement.
+    if data.draw(st.booleans()):
+        second_disp = anchored + _along(second, j, m) - _along(first, i, k)
+    else:
+        second_disp = data.draw(st.one_of(st.none(), metrical_durations()))
+    settled = second_disp if second_disp is not None else zero
+
+    graph = fresh(a_line)
+    graph.add_line(b_line)
+    graph.add_simultaneous(a_line[i], b_line[j], displacement=first_disp)
+    graph.add_simultaneous(a_line[k], b_line[m], displacement=second_disp)
+
+    holonomy = _along(first, i, k) + settled - anchored - _along(second, j, m)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=OmkWarning)
+        conflicts = graph.check_alignment()
+
+    if holonomy == zero:
+        assert conflicts == [], (holonomy, conflicts)
+    else:
+        assert len(conflicts) == 2, (holonomy, conflicts)
+        assert all(edge.type is EdgeType.SIMULTANEOUS for edge in conflicts)
 
 
 # --- cyclic lines: valid music, and walkers go round once ---------------------------

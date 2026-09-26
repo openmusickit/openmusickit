@@ -49,6 +49,22 @@ def test_transpose_up_then_down_is_identity():
             assert a.transpose(i) - i == a, (a, i)
 
 
+def test_an_interval_between_two_pitches_transposes_the_one_to_the_other():
+    """The law the tonal contract is stated in: the difference of two pitches
+    is the interval that carries the first to the second. The tests above
+    sweep a pitch against an *interval*; this sweeps a pitch against another
+    *pitch*, which is the form a tonal system has to satisfy to be one."""
+    for a in ABSTRACT_VECTORS:
+        for b in ABSTRACT_VECTORS:
+            if in_domain(b - a):
+                assert a + (b - a) == b, (a, b)
+                assert a.transpose(b - a) == b, (a, b)
+    for a in QUALIFIED_VECTORS:
+        for b in QUALIFIED_VECTORS:
+            if in_domain(b - a):
+                assert a + (b - a) == b, (a, b)
+
+
 def test_transpose_direction_is_addition_or_subtraction():
     """Transposing up is `+`, transposing down is `-`, and up is the default."""
     for a in ALL_VECTORS:
@@ -153,6 +169,33 @@ def test_distance_is_symmetric_and_within_a_tritone():
         assert a.distance(b) == b.distance(a), (a, b)
 
 
+def test_distance_is_a_magnitude_and_does_not_carry_a_direction():
+    """`distance` answers "how far apart", not "what gets me there": it is
+    unsigned, so transposing by it lands on the second pitch only when that
+    pitch is the higher of the two and nothing is spelled enharmonically.
+    C to G is a fourth away -- C up a fourth is F, not G. Use `b - a` to
+    move from one to the other (see the law in the transposition section).
+
+    This pins a deliberate asymmetry that reads like a bug: making
+    `distance` directed would satisfy every other test in this file."""
+    recovered = [
+        (a, b)
+        for a in ABSTRACT_VECTORS
+        for b in ABSTRACT_VECTORS
+        if a.transpose(a.distance(b)) == b
+    ]
+    assert len(recovered) < len(ABSTRACT_VECTORS) ** 2  # it is not a recovery operation
+    assert symbols.C.distance(symbols.G) == symbols.P4
+    assert symbols.C.transpose(symbols.C.distance(symbols.G)) == symbols.F
+    assert symbols.C + (symbols.G - symbols.C) == symbols.G
+
+    for a in ABSTRACT_VECTORS:
+        for b in ABSTRACT_VECTORS:
+            assert a.distance(b) == a.distance(b).inversion().inversion(), (a, b)
+            if a.transpose(a.distance(b)) != b:
+                assert a + (b - a) == b, (a, b)  # the directed difference always works
+
+
 def test_nearest_instance_has_the_pitch_class_asked_for():
     """The nearest instance of b to a is b's pitch class, placed within a
     tritone of a when a has an octave."""
@@ -176,6 +219,37 @@ def test_comparison_is_a_total_order_up_to_half_step_size():
             assert not (a < b and a > b), (a, b)
             assert (a < b) or (a > b) or int(a) == int(b), (a, b)
             assert (a < b) == (int(a) < int(b)), (a, b)
+
+
+# --- the line of fifths -------------------------------------------------------------
+
+
+def test_fifths_position_is_a_group_homomorphism():
+    """Transposition acts on the line of fifths by translation: the position
+    of a sum is the sum of the positions, for every pair whose sum is still
+    a domain spelling. Read as a pitch, the position is the signed number of
+    sharps in the major key on that tonic; read as an interval, it is how
+    far a signature travels when its tonic moves by that interval."""
+    for a in ABSTRACT_VECTORS:
+        for b in ABSTRACT_VECTORS:
+            if in_domain(a + b):
+                assert (a + b).fifths_position == a.fifths_position + b.fifths_position, (a, b)
+
+
+def test_fifths_position_ignores_the_octave():
+    """A pitch class and every octave of it sit at the same place on the line."""
+    for v in ABSTRACT_VECTORS:
+        for o in (-2, -1, 0, 1, 2):
+            assert v.qualify_octave(o).fifths_position == v.fifths_position, (v, o)
+
+
+def test_the_line_of_fifths_does_not_wrap():
+    """Spelling is what is being counted, so the line is not a circle:
+    B-sharp is twelve fifths up from C, not back at it."""
+    assert symbols.C.fifths_position == 0
+    assert symbols.Bx.fifths_position == 12
+    assert symbols.Cb.fifths_position == -7
+    assert len({v.fifths_position for v in ABSTRACT_VECTORS}) == len(ABSTRACT_VECTORS)
 
 
 # --- value semantics ----------------------------------------------------------------
