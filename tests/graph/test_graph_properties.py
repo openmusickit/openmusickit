@@ -21,9 +21,11 @@ from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.part import LineGroup, Part, Stint
+from openmusickit.objects.sync_line import SyncLine
 from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter
 from openmusickit.systems.wsmn.tonal.symbols import M2, A, C, D, E, F
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
+from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
 from openmusickit.values.time.duration import ZeroDuration
 from tests.graph.helpers import names, notes, snapshot
 from tests.strategies import lines, metrical_durations, note_events, tonal_vectors
@@ -71,6 +73,47 @@ def test_relative_onset_is_antisymmetric_and_follows_the_durations_between(line)
                 graph.relative_onset(line[i], line[j])
             with pytest.raises(GraphError):
                 graph.relative_onset(line[j], line[i])
+
+
+@given(
+    lines(min_size=2, max_size=5),
+    lines(min_size=2, max_size=5),
+    st.integers(min_value=-9, max_value=9),
+    st.integers(min_value=-9, max_value=9),
+)
+def test_a_sync_line_relates_events_antisymmetrically_or_not_at_all(first, second, a, b):
+    """Pinning two lines to one timeline never breaks `on(u,v) == -on(v,u)`,
+    and never lets one line's position be answered in the timeline's units.
+
+    A sync node offers either its line or its pinned events, never both, and
+    that gate has to hold in *both* directions: gating only one way answered
+    in seconds from the sync side while raising from the music side.
+    """
+    assume(first[0] is not second[0])
+    graph = fresh(first)
+    graph.add_line(second)
+    film = SyncLine(temporal_system=CLOCK_TIME)
+    points = (
+        graph.sync_event(first[0], film, ClockDuration.from_seconds(a)),
+        graph.sync_event(second[0], film, ClockDuration.from_seconds(b)),
+    )
+
+    def onset(u, v):
+        try:
+            return graph.relative_onset(u, v)
+        except GraphError:
+            return None
+
+    for u, v in itertools.combinations([*first, *second, *points, film], 2):
+        forward, reverse = onset(u, v), onset(v, u)
+        assert (forward is None) == (reverse is None)
+        if forward is not None:
+            assert forward == -reverse
+            # the answer stays in one system: music in metrical time, the
+            # timeline in clock time, and never a silent change of units
+            musical = u in first or u in second
+            if musical and (v in first or v in second):
+                assert forward.temporal_system is not CLOCK_TIME
 
 
 @given(lines())

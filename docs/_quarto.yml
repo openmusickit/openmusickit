@@ -114,6 +114,7 @@ quartodoc:
         - objects.marking
         - objects.part
         - objects.score
+        - objects.sync_line
     - title: Graph
       desc: The score graph and its edges.
       contents:

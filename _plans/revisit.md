@@ -89,3 +89,65 @@ In WSMN at least, the Instrument would carry a name, range, and transposition
 (btw, for consistency, we should rename WSMN to WSMN_Tonal)
 
 
+
+## `TemporalSystem` has no notion of an absolute system (2026-09-26)
+
+`TemporalSystem` (`src/openmusickit/values/time/duration.py:12`) carries `name`,
+`description` and `universal`. `universal` says "belongs to no system in
+particular" (a `ZeroDuration`), but nothing distinguishes a system in which a
+unit has a fixed length, as a microsecond of `CLOCK_TIME` does, from one in
+which it does not: a quarter note is a quarter note only relative to a tempo.
+
+This surfaced while designing `check_sync_alignment` (`_plans/sync-line.md`).
+Comparing the *distance* between two sync points against the elapsed music
+needs both sides to be paced the same way, and "the same temporal system" does
+not give that -- two stretches of metrical music at different tempos cover the
+same real time in different numbers of quarter notes, so a metrical sync line's
+offsets can only ever agree with one of them. The check was therefore limited to
+order, which survives any positive tempo map and needs no such distinction.
+
+An `absolute` flag would enable a distance check for clock-time music on a
+clock-time sync line, and would likely matter to any conversion or realization
+work. Deferred deliberately, to be decided on its own terms rather than as a
+side effect of sync lines.
+
+## `create_sync_point` is not self-invertible (2026-09-26)
+
+`OmkGraph.create_sync_point` finds or creates, and its return value does not say
+which it did, so a caller cannot know whether to remove the point on undo.
+`sync_event` inherits this. Find-or-create is what the API wants -- the normal
+way to sync an event should not care whether the instant already exists -- but it
+means the graph has one mutator whose inverse is not determined by its result.
+`tests/graph/test_graph_inverses.py` therefore exercises `add_sync_point`, where
+creation is certain. Options if it ever bites: return a `(point, created)` pair,
+or split strict-create from lookup.
+
+## The graph state machine does not exercise sync lines (2026-09-26)
+
+`tests/graph/test_graph_state_machine.py` generates lines, branches, pins,
+groups and stints, but no `SyncLine`. Adding rules for them means extending the
+`adapters_agree` invariant, whose node count is
+`len(self.events) + len(self.groups)` (`:214`), and the `_register` bookkeeping.
+Worth doing when the machine is next touched; the sync line's own laws are
+covered by `tests/graph/test_sync_line.py` and the antisymmetry property in
+`tests/graph/test_graph_properties.py` in the meantime.
+
+## `ClockDuration.__str__` mangles negative durations (2026-09-26)
+
+`str(ClockDuration(-5_000_000))` is `'-1:59:55.000000'`:
+`ClockDuration.__str__` (`src/openmusickit/values/time/clock_time.py:131`) uses
+floor `divmod`, which carries the sign into the wrong field. Noticed while
+planning sync lines, where negative offsets (a count-in before the origin) are
+ordinary; not that work's to fix, and `repr` is used in its doctests instead.
+
+## `materialize` drops a forked line's sync pins (2026-09-26)
+
+`OmkGraph._attachers` (`src/openmusickit/graph/graph.py`) follows MARKS,
+ANNOTATES, STARTS_AT, ENDS_AT and LYRIC, so a `SyncPoint` -- reached by a
+SIMULTANEOUS edge -- is not copied content, and the pin is dropped exactly as
+pins to events outside the span are. That is consistent with the documented
+contract and with group membership, but it means "fork the second oboe at bar
+40" silently loses the forked line's timeline anchoring, which someone will
+notice. Also unenforced: `add_to_group(group, sync_point)` is typed
+`head: SequentialEvent` but is not refused at runtime, and a sync point reached
+by a group's timed CONTAINS would leak past the sync gate.

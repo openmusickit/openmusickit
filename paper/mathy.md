@@ -812,6 +812,16 @@ w : E_t \to \mathcal{D},
 \mathrm{dur}(u) = \bot \ \Longrightarrow\ (u, s(u)) \notin E_t
 \]
 
+A **sync line** \(L\) contributes a third case, and it is the one place where a
+weight is carried by a node rather than an edge: a `SyncPoint` \(p\) holds its
+own offset from the line's origin.
+
+\[
+w(L, p) = \mathrm{off}(p),
+\qquad
+\mathcal{D}_{L} \ \text{fixed by } L \text{, not by the music}
+\]
+
 Relative onset is a path sum (`_relative_onset`, breadth-first):
 
 \[
@@ -825,8 +835,44 @@ Relative onset is a path sum (`_relative_onset`, breadth-first):
 \mathrm{on}(u,v) = -\,\mathrm{on}(v,u)
 \]
 
+but *not* over every path. A sync line and the music meet at its points and do
+not compose: the walk admits no path in which a pin and a sync containment are
+adjacent, in either order.
+
+\[
+P \ \text{admissible}
+\iff
+P \ \notin\
+\Lambda^{*}\,\bigl(
+  \mathrm{SIM}\cdot\mathrm{SYNC}
+  \ \cup\
+  \mathrm{SYNC}\cdot\mathrm{SIM}
+\bigr)\,\Lambda^{*}
+\]
+
+This is a condition on the *language* of paths, not on the weights, so
+\(\mathrm{on}\) is a path sum over a regular sublanguage rather than over all of
+\(G_t\). The reason is that \(\mathbf{0}\) is universal (§1.3): without the
+restriction, a walk that has accumulated nothing yet could step into any system
+for free, and since breadth-first search finds the short way round, the distance
+between two events of one line would come back in the sync line's units. The
+restriction is what keeps \(\mathrm{on}(u,v)\) in the system of the music that
+connects \(u\) to \(v\).
+
+The price is that composition fails across a sync line, by design:
+
+\[
+\mathrm{on}(u, p) = \mathbf{0},
+\qquad
+\mathrm{on}(p, q) = d,
+\qquad
+\mathrm{on}(u, q) = \bot
+\]
+
 **(property-tested)** antisymmetric, zero on the diagonal, and equal to the
-sum of the intervening durations along a line.
+sum of the intervening durations along a line. Antisymmetry is what forces the
+restriction to be two-sided: forbidding only \(\mathrm{SIM}\cdot\mathrm{SYNC}\)
+leaves \(\mathrm{on}(p, v)\) defined where \(\mathrm{on}(v, p)\) is not.
 
 ### 5.5 Consistency as a coboundary
 
@@ -842,9 +888,14 @@ w(u,v) = \phi(v) - \phi(u)
 \ \text{ for every cycle } C
 \]
 
-NEXT, BRANCHES and group CONTAINS edges form a **forest**, so a potential
+NEXT, BRANCHES, group CONTAINS and sync CONTAINS edges form a **forest** (a
+point has one incoming sync containment, a sync line none), so a potential
 always exists and no check is needed. Pins (`Simultaneous`) are the only
 edges that can close a cycle, so they are the only source of inconsistency.
+
+The equivalence above is stated for a weight function on a graph, so it covers
+the sync edges only up to the path restriction of §5.4: a potential exists, but
+\(\mathrm{on}\) does not realize all of its differences.
 
 `check_alignment` measures the holonomy of each such cycle, edge by edge:
 
@@ -899,12 +950,14 @@ Three different containments, distinguished by what they assert about timing:
 \begin{aligned}
 \mathrm{BRANCHES} &:\ \text{same performer; span-inclusive; timed} \\
 \mathrm{CONTAINS}\ (\text{LineGroup}) &:\ \text{timing origin; not span-inclusive} \\
+\mathrm{CONTAINS}\ (\text{SyncLine}) &:\ \text{timing origin; weight on the node; not composable} \\
 \mathrm{CONTAINS}\ (\text{Score}) &:\ \text{membership only; untimed}
 \end{aligned}
 \]
 
-A `Score` is deliberately *not* a timing origin: two of its lines with no pin
-between them have no relative onset at all.
+Three, and a fourth that is an origin without being a bridge. A `Score` is
+deliberately *not* a timing origin: two of its lines with no pin between them
+have no relative onset at all.
 
 \[
 \mathrm{on}(u,v) = \bot

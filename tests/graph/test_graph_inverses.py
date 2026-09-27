@@ -14,10 +14,12 @@ from openmusickit.objects.chord_event import ChordEvent
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.omk_object import OmkObject
 from openmusickit.objects.part import LineGroup, Part, Stint
+from openmusickit.objects.sync_line import SyncLine, SyncPoint
 from openmusickit.systems.wsmn.scoring.symbols import slur, staccato
 from openmusickit.systems.wsmn.temporal.symbols import eighth, half, quarter, whole
 from openmusickit.systems.wsmn.tonal.symbols import A, B, C, D, E, F, G, maj
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection, TonalVector
+from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
 from openmusickit.values.time.duration import ZeroDuration
 from tests.domains import ABSTRACT_VECTORS
 from tests.graph.helpers import names, notes, snapshot
@@ -238,6 +240,51 @@ def test_group_can_be_undone_edge_by_edge_or_by_removing_the_node():
     assert snapshot(graph) == before
     graph.add_group(group, [rh[0], lh[0]])
     graph.remove_node(group)  # takes its edges with it
+    assert snapshot(graph) == before
+
+
+def test_sync_line_must_be_undone_point_by_point():
+    """Unlike a group, whose member heads are already on the graph, a sync
+    line's points are created by `sync_event`, so removing the line alone
+    leaves them behind: the undo takes the pins, then the points, then the
+    line."""
+    graph = fresh()
+    line = notes(C, D, E, duration=whole)
+    graph.add_line(line)
+    before = snapshot(graph)
+    film = SyncLine(temporal_system=CLOCK_TIME, name="Reel 1")
+    start = graph.sync_event(line[0], film, ClockDuration.from_seconds(5))
+    end = graph.sync_event(line[2], film, ClockDuration.from_seconds(9))
+    assert graph.relative_onset(start, end) == ClockDuration.from_seconds(4)
+
+    graph.remove_node(film)  # not enough on its own: the points are orphaned
+    assert snapshot(graph) != before
+    for point, event in ((start, line[0]), (end, line[2])):
+        graph.remove_edge(graph.get_edge(event, point, EdgeType.SIMULTANEOUS))
+        graph.remove_node(point)
+    assert snapshot(graph) == before
+
+
+def test_adding_a_point_to_a_sync_line_can_be_undone():
+    graph = fresh()
+    film = SyncLine(temporal_system=CLOCK_TIME)
+    graph.add_sync_line(film)
+    before = snapshot(graph)
+    point = SyncPoint(offset=ClockDuration.from_seconds(5), name="door slams")
+    graph.add_sync_point(film, point)
+    assert graph.sync_points(film) == [point]
+    graph.remove_edge(graph.get_edge(film, point, EdgeType.CONTAINS))
+    graph.remove_node(point)
+    assert snapshot(graph) == before
+    assert graph.sync_points(film) == []
+
+
+def test_an_empty_sync_line_is_undone_by_removing_it():
+    graph = fresh()
+    before = snapshot(graph)
+    film = SyncLine(temporal_system=CLOCK_TIME)
+    graph.add_sync_line(film)
+    graph.remove_node(film)
     assert snapshot(graph) == before
 
 

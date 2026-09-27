@@ -29,6 +29,19 @@ Time in the graph is relative, and there is no score origin. The pieces:
   displacement from it, zero by default), so its lines need no pins.
   `walk_group` walks them all.
 
+- A **sync line** (`objects.sync_line`; CONTAINS, `OmkGraph.sync_event`) is a
+  named origin in its own temporal system, holding the instants (`SyncPoint`)
+  that music pins to: a stopwatch, a film reel, a tape. It is a second kind of
+  *local* origin, like a group, and no more a score origin than one: it relates
+  its own points to each other, and relates an event to the point it is pinned
+  to, but never joins two musical lines. A walk meets a sync line at a point
+  and does not pass through, so a position in the music is still answered in
+  the music's own units. `check_sync_alignment` reports a timeline whose points
+  run counter to the music; the *distance* between points is never checked,
+  because two stretches of metrical music at different tempos cover the same
+  real time in different numbers of quarter notes, so only their order can be
+  compared.
+
 - A **Part** is an instrument, and by extension whoever plays it. It points
   at a line through a **Stint** (PERFORMS, STARTS_AT, ENDS_AT;
   `OmkGraph.add_stint`), its run on that line, or at a whole group

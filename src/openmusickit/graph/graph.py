@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-from openmusickit.errors import GraphError, OmkWarning
+from openmusickit.errors import GraphError, OmkWarning, TemporalCompatibilityError
 from openmusickit.graph.edge import (
     Branch,
     Contains,
@@ -28,7 +28,8 @@ from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
 from openmusickit.objects.part import LineGroup, Part, Stint
 from openmusickit.objects.score import Score
-from openmusickit.values.time.duration import Duration, ZeroDuration
+from openmusickit.objects.sync_line import SyncLine, SyncPoint
+from openmusickit.values.time.duration import Duration, Measurable, ZeroDuration
 from openmusickit.values.tone.tone import Tone
 
 
@@ -585,7 +586,7 @@ class OmkGraph:
     def add_simultaneous(
         self,
         event: SequentialEvent,
-        other: SequentialEvent,
+        other: SequentialEvent | SyncPoint,
         anchor: TimingAnchor = TimingAnchor.ONSET,
         displacement: Duration | None = None,
     ) -> None:
@@ -617,16 +618,21 @@ class OmkGraph:
         self.add_node(other)
         self._graph.add_edge(event, other, Simultaneous(anchor=anchor, displacement=displacement))
 
-    def relative_onset(self, reference: SequentialEvent, event: SequentialEvent) -> Duration:
+    def relative_onset(self, reference: OmkObject, event: OmkObject) -> Duration:
         """How long after the onset of `reference` the onset of `event` falls
         (negative if before), found by following NEXT edges through event
         durations, and branches, pins and groups through their anchors and
         displacements.
 
         There is no score origin; a position only ever means "relative to".
+        Either end may be any node of the timing graph, not only an event: a
+        `LineGroup` and a `SyncLine` are origins, and a `SyncPoint` is an
+        instant on one.
         An event with `duration=None` is opaque: nothing is known about what
         follows it or hangs from its offset. Where pins disagree with the
         lines' own durations, the first path found wins; see `check_alignment`.
+        A sync line is met but not crossed, so a distance through the music is
+        never answered in the timeline's units (`sync_event`).
 
         Raises GraphError if no timing path connects the two events.
 
@@ -650,54 +656,83 @@ class OmkGraph:
         return offset
 
     def _relative_onset(
-        self, reference: SequentialEvent, event: SequentialEvent, ignoring: OmkEdge | None
+        self, reference: OmkObject, event: OmkObject, ignoring: OmkEdge | None
     ) -> Duration | None:
         """Breadth-first search of the timing graph from `reference`, skipping
-        the edge `ignoring`; None if `event` is not reached."""
+        the edge `ignoring`; None if `event` is not reached.
+
+        Each node is queued with the type of edge the walk arrived by, which is
+        what lets `_timing_neighbours` refuse to continue through a sync point.
+        The first arrival at a node wins, as it does wherever pins disagree."""
         offsets: dict[UUID, Duration] = {reference.id: ZeroDuration()}
-        queue: deque[OmkObject] = deque([reference])
+        queue: deque[tuple[OmkObject, EdgeType | None]] = deque([(reference, None)])
         while queue:
-            node = queue.popleft()
+            node, arrived_by = queue.popleft()
             if node is event:
                 return offsets[node.id]
-            for neighbour, delta in self._timing_neighbours(node, ignoring):
+            for neighbour, delta, by in self._timing_neighbours(node, ignoring, arrived_by):
                 if neighbour.id in offsets:
                     continue
                 offsets[neighbour.id] = offsets[node.id] + delta
-                queue.append(neighbour)
+                queue.append((neighbour, by))
         return None
 
     def _timing_neighbours(
-        self, node: OmkObject, ignoring: OmkEdge | None
-    ) -> Iterator[tuple[OmkObject, Duration]]:
+        self, node: OmkObject, ignoring: OmkEdge | None, arrived_by: EdgeType | None
+    ) -> Iterator[tuple[OmkObject, Duration, EdgeType]]:
         """Every node whose onset is a known distance from the onset of
-        `node`, with that distance: the next and previous events in the line,
-        and the far ends of branches, pins and group memberships in either
-        direction. A `LineGroup` is a node of the timing graph too: its
-        origin is where its lines are measured from. A `Score`'s CONTAINS
-        edges are plain, not timed, and are passed over: a score is not a
-        timing origin."""
+        `node`, with that distance and the type of edge it is reached by: the
+        next and previous events in the line, and the far ends of branches,
+        pins and group memberships in either direction. A `LineGroup` is a
+        node of the timing graph too: its origin is where its lines are
+        measured from. A `Score`'s CONTAINS edges are plain, not timed, and
+        are passed over: a score is not a timing origin.
+
+        A `SyncLine` is a timing origin as well, but its points carry their
+        offsets themselves rather than on the edge, and a sync node offers
+        either its own line or the events pinned to it, never both in one
+        path. So a sync line relates its own points to each other, and relates
+        an event to the point it is pinned to, but is never a route from one
+        musical line to another: those keep their own temporal system, and the
+        answer never silently changes units. `arrived_by` is what enforces
+        that, in both directions."""
+        on_sync_line = isinstance(node, (SyncLine, SyncPoint))
         if isinstance(node, SequentialEvent):
             following = self.get_next(node)
             if following is not None and node.duration is not None:
-                yield following, node.duration
+                yield following, node.duration, EdgeType.NEXT
             previous = self.get_previous(node)
             if previous is not None and previous.duration is not None:
-                yield previous, -previous.duration
+                yield previous, -previous.duration, EdgeType.NEXT
         for edge_type in (EdgeType.BRANCHES, EdgeType.SIMULTANEOUS, EdgeType.CONTAINS):
+            if (
+                edge_type is EdgeType.SIMULTANEOUS
+                and on_sync_line
+                and arrived_by is EdgeType.CONTAINS
+            ):
+                continue  # reached from the sync line: the pins on its points are not offered
             for edge in self._graph.out_edges(node, edge_type):
                 if edge is ignoring or not isinstance(edge, TimedEdge):
                     continue
                 delta = self._timed_delta(edge, node)
                 if delta is not None:
-                    yield self._graph.get_target_of_edge(edge), delta
+                    yield self._graph.get_target_of_edge(edge), delta, edge_type
             for edge in self._graph.in_edges(node, edge_type):
                 if edge is ignoring or not isinstance(edge, TimedEdge):
                     continue
                 source = self._graph.get_source_of_edge(edge)
                 delta = self._timed_delta(edge, source)
                 if delta is not None:
-                    yield source, -delta
+                    yield source, -delta, edge_type
+        if arrived_by is EdgeType.SIMULTANEOUS:
+            return  # reached by a pin: the sync line beyond the point is not offered
+        if isinstance(node, SyncLine):
+            for point in self.sync_points(node):
+                yield point, point.offset, EdgeType.CONTAINS
+        elif isinstance(node, SyncPoint):
+            line = self.sync_line_of(node)
+            if line is not None:
+                yield line, -node.offset, EdgeType.CONTAINS
 
     @staticmethod
     def _timed_delta(edge: TimedEdge, source: OmkObject) -> Duration | None:
@@ -1176,6 +1211,259 @@ class OmkGraph:
         for head in self.score_lines(score):
             yield from self.walk_span(head)
 
+    # Sync lines: a named origin that music pins to
+
+    def add_sync_line(self, sync_line: SyncLine) -> None:
+        """Puts `sync_line` on the graph, with no points yet.
+
+        `create_sync_point` and `sync_event` add it for you, so this is only
+        needed for a timeline that has no points so far.
+
+        Removing a sync line is not the inverse of building one: unlike a
+        group, whose member heads exist before they join it, a sync line's
+        points are created by `create_sync_point`, so `remove_node(sync_line)`
+        leaves them behind. Undo a sync line by removing each pin, then each
+        point, then the line.
+
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME
+        >>> graph = OmkGraph(GraphMeta())
+        >>> film = SyncLine(temporal_system=CLOCK_TIME, name="Reel 1")
+        >>> graph.add_sync_line(film)
+        >>> graph.sync_points(film)
+        []
+        """
+        self.add_node(sync_line)
+
+    def add_sync_point(self, sync_line: SyncLine, point: SyncPoint) -> None:
+        """Puts `point` on `sync_line` at the point's own offset.
+
+        Use this for a point you have built yourself, to give it a name or a
+        description; `create_sync_point` is the usual way in.
+
+        The offset must be measurable, because the line's points are ordered by
+        it, and must belong to the line's temporal system (or be a
+        `ZeroDuration`, which belongs to every system). A point is on at most
+        one sync line, and no two points on one line share an offset.
+
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
+        >>> graph = OmkGraph(GraphMeta())
+        >>> film = SyncLine(temporal_system=CLOCK_TIME)
+        >>> slam = SyncPoint(offset=ClockDuration.from_seconds(5), name="door slams")
+        >>> graph.add_sync_point(film, slam)
+        >>> graph.sync_points(film) == [slam], graph.sync_line_of(slam) is film
+        (True, True)
+
+        Raises
+        ------
+        TypeError
+            if `point.offset` is not a `Measurable`.
+        TemporalCompatibilityError
+            if `point.offset` is not in `sync_line`'s temporal system.
+        GraphError
+            if `point` is already on another sync line, if another point of
+            `sync_line` has an equal offset, or if `point` is already on
+            `sync_line`.
+        """
+        offset = point.offset
+        if not isinstance(offset, Measurable):
+            raise TypeError(
+                f"A SyncPoint's offset must be a Measurable, not {type(offset).__name__}: "
+                "a sync line orders its points by their offsets."
+            )
+        if not sync_line.temporal_system.compatible_with(offset.temporal_system):
+            raise TemporalCompatibilityError(
+                f"Cannot place an offset in {offset.temporal_system.name} on a sync line "
+                f"in {sync_line.temporal_system.name}. "
+                "Convert the offset first with a TemporalRatio."
+            )
+        self.add_node(sync_line)
+        self.add_node(point)
+        held_by = self.sync_line_of(point)
+        if held_by is not None and held_by is not sync_line:
+            raise GraphError(f"{point!r} is already on another sync line.")
+        for other in self.sync_points(sync_line):
+            if other is not point and other.offset == offset:
+                raise GraphError(f"{sync_line!r} already has a point at {offset!r}.")
+        self.add_edge(sync_line, point, EdgeType.CONTAINS)
+
+    def create_sync_point(self, sync_line: SyncLine, offset: Duration) -> SyncPoint:
+        """The point of `sync_line` at `offset`, made if it is not there yet.
+
+        This may return a point it did not create: offsets are compared by
+        length, as durations always are, so `MetricalDuration(1, 2)` finds a
+        point built as `MetricalDuration(2, 4)`. A caller that needs to know
+        whether anything was added should consult `sync_points` first.
+
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
+        >>> graph = OmkGraph(GraphMeta())
+        >>> film = SyncLine(temporal_system=CLOCK_TIME)
+        >>> first = graph.create_sync_point(film, ClockDuration.from_seconds(5))
+        >>> graph.create_sync_point(film, ClockDuration.from_milliseconds(5000)) is first
+        True
+        >>> len(graph.sync_points(film))
+        1
+
+        Raises
+        ------
+        TypeError, TemporalCompatibilityError
+            as `add_sync_point` does, for an offset that cannot be placed.
+        """
+        self.add_node(sync_line)
+        if isinstance(offset, Measurable):
+            for point in self.sync_points(sync_line):
+                if point.offset == offset:
+                    return point
+        point = SyncPoint(offset=offset)
+        self.add_sync_point(sync_line, point)
+        return point
+
+    def sync_event(
+        self,
+        event: SequentialEvent,
+        sync_line: SyncLine,
+        offset: Duration,
+        anchor: TimingAnchor = TimingAnchor.ONSET,
+    ) -> SyncPoint:
+        """Says that `event` happens at `offset` on `sync_line`, and returns
+        that point.
+
+        The point is found or made (`create_sync_point`) and the event is
+        pinned to it with an ordinary SIMULTANEOUS edge. There is no
+        displacement: the point *is* where the event falls. With
+        `anchor=OFFSET` it is the event's *release* that lands on the point,
+        which is how "this note ends on the cue" is said; as with any
+        offset-anchored edge, that contributes nothing while the event's
+        duration is unknown.
+
+        Several events may share one point, and that is how they are asserted
+        simultaneous with each other.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
+        >>> from openmusickit.systems.wsmn.temporal.symbols import whole
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> line = [NoteEvent(tones={t}, duration=whole) for t in (C, D, E)]
+        >>> graph.add_line(line)
+        >>> film = SyncLine(temporal_system=CLOCK_TIME, name="Reel 1")
+        >>> start = graph.sync_event(line[0], film, ClockDuration.from_seconds(5))
+        >>> cue = graph.sync_event(line[2], film, ClockDuration.from_seconds(9))
+        >>> graph.relative_onset(start, cue)          # along the timeline
+        ClockDuration(microseconds=4000000)
+        >>> graph.relative_onset(line[0], line[2])    # and through the music, in its own units
+        MetricalDuration(2, 1)
+        >>> graph.relative_onset(line[0], start)
+        ZeroDuration()
+        """
+        point = self.create_sync_point(sync_line, offset)
+        self.add_simultaneous(event, point, anchor=anchor)
+        return point
+
+    def sync_points(self, sync_line: SyncLine) -> list[SyncPoint]:
+        """The points of `sync_line`, earliest offset first.
+
+        Unlike the graph's other readers this one is ordered and eager: a
+        timeline's points have a meaningful order, and sorting them means
+        holding them all.
+        """
+        points = self._graph.successors(sync_line, SyncPoint, EdgeType.CONTAINS)
+        return sorted(points, key=lambda point: point.offset)
+
+    def sync_line_of(self, point: SyncPoint) -> SyncLine | None:
+        """The sync line `point` is on, or None if it is on none."""
+        return next(self._graph.predecessors(point, SyncLine, EdgeType.CONTAINS), None)
+
+    def synced_events(self, point: SyncPoint) -> Iterator[SequentialEvent]:
+        """The events pinned to `point`, in no particular order.
+
+        Both directions of pin are read, so an event pinned by hand the other
+        way round is still found.
+        """
+        yield from self._graph.predecessors(point, SequentialEvent, EdgeType.SIMULTANEOUS)
+        yield from self._graph.successors(point, SequentialEvent, EdgeType.SIMULTANEOUS)
+
+    def check_sync_alignment(
+        self, sync_line: SyncLine | None = None
+    ) -> list[tuple[SyncPoint, SyncPoint]]:
+        """Checks that the points of a sync line run in the same order as the
+        music pinned to them.
+
+        For each neighbouring pair of points, the events pinned to them are
+        compared: whichever way round the offsets say they fall, the music must
+        agree, and events the music makes simultaneous must not be pinned to
+        two different points. Each disagreeing pair is returned, with an
+        `OmkWarning`; like `check_alignment` this reports rather than raises,
+        because a source that says two contradictory things is a fact about the
+        source.
+
+        Only the *order* is checked, never the distance. Comparing the interval
+        between two offsets against the elapsed music would need both to be
+        paced the same way, and a temporal system does not say that: two
+        stretches of metrical music at different tempos cover the same real
+        time in different numbers of quarter notes, so a metrical sync line's
+        offsets could only ever agree with one of them. Order survives any
+        tempo, which is why it is what can be checked -- across temporal
+        systems as much as within one.
+
+        Nothing is reported where nothing can be: a distance that does not
+        reduce to a number has no direction to compare, and two events on
+        different points that are not otherwise related have no relative onset at all
+        (the walk does not cross a sync line), so a freshly pinned timeline is
+        silent. What this catches is a timeline that contradicts music related
+        some other way -- one long line, a group, a chain of pins, a shared
+        point.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
+        >>> from openmusickit.systems.wsmn.temporal.symbols import whole
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> line = [NoteEvent(tones={t}, duration=whole) for t in (C, D, E)]
+        >>> graph.add_line(line)
+        >>> film = SyncLine(temporal_system=CLOCK_TIME)
+        >>> _ = graph.sync_event(line[0], film, ClockDuration.from_seconds(9))
+        >>> _ = graph.sync_event(line[2], film, ClockDuration.from_seconds(5))
+        >>> import warnings
+        >>> with warnings.catch_warnings(record=True) as caught:
+        ...     warnings.simplefilter("always")
+        ...     conflicts = graph.check_sync_alignment(film)
+        >>> len(conflicts), "runs the other way" in str(caught[0].message)
+        (1, True)
+        """
+        lines = [sync_line] if sync_line is not None else self._graph.nodes(SyncLine)
+        conflicts: list[tuple[SyncPoint, SyncPoint]] = []
+        for line in lines:
+            points = self.sync_points(line)
+            for earlier, later in zip(points, points[1:], strict=False):
+                if self._sync_pair_disagrees(earlier, later):
+                    conflicts.append((earlier, later))
+        return conflicts
+
+    def _sync_pair_disagrees(self, earlier: SyncPoint, later: SyncPoint) -> bool:
+        """Whether the music pinned to two points of one line contradicts the
+        order of their offsets, warning once for the first contradiction."""
+        # the offsets are Measurable (`add_sync_point` refuses any other), so
+        # their difference always has a sign; the music's need not
+        gap = later.offset - earlier.offset
+        expected = _sign(gap)
+        for before in self.synced_events(earlier):
+            for after in self.synced_events(later):
+                found = self._relative_onset(before, after, ignoring=None)
+                if found is None:
+                    continue
+                direction = _sign(found)
+                if direction is None or direction == expected:
+                    continue
+                warnings.warn(
+                    f"{later!r} is {gap!r} after {earlier!r} on their sync line, "
+                    f"but the music between the events pinned to them "
+                    f"runs the other way ({found!r}).",
+                    OmkWarning,
+                    stacklevel=3,
+                )
+                return True
+        return False
+
     # Annotations (articulations, memos, analysis)
 
     def add_articulation(self, articulation: Marking, obj: OmkObject) -> None:
@@ -1425,6 +1713,22 @@ class OmkGraph:
             for edge in list(self._graph.incident_edges(syllable, EdgeType.LYRIC)):
                 self.remove_edge(edge)
             syllable = next_syllable
+
+
+def _sign(duration: Duration) -> int | None:
+    """-1, 0 or 1: which way a signed duration points, or None if it does not
+    reduce to a number and so points nowhere in particular.
+
+    A measurable duration's length is a rational, so its sign is exact and says
+    nothing about the system it is measured in -- which is what lets a sync
+    line's order be checked against music in another system. A duration that is
+    not `Measurable` (a system whose elements do not reduce to one number) has
+    no sign to compare, and nothing can be concluded from it.
+    """
+    if not isinstance(duration, Measurable):
+        return None
+    length = duration.rational_length
+    return (length > 0) - (length < 0)
 
 
 def _fork[T: (OmkObject, OmkEdge)](original: T, memo: dict[int, object]) -> T:
