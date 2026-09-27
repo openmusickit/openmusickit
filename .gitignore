@@ -185,4 +185,4 @@ cython_debug/
 .vscode/
 
 # local research
-research/
+_research/
