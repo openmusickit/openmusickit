@@ -4,6 +4,12 @@
 Concrete systems (for example `systems.wsmn.tonal.TonalVector`) subclass these."""
 
 from . import interval, modal_context, silent_tone, tone, tone_collection, unpitched_tone
+from .interval import Interval, IntervalRepresentation
+from .modal_context import ModalContext
+from .silent_tone import SilentTone
+from .tone import ANY_TONAL_SYSTEM, PitchRepresentation, TonalSystem, Tone
+from .tone_collection import ToneCollection, apply_tone_operation
+from .unpitched_tone import UnpitchedTone
 
 __all__ = [
     "interval",
@@ -12,4 +18,15 @@ __all__ = [
     "tone",
     "tone_collection",
     "unpitched_tone",
+    "ANY_TONAL_SYSTEM",
+    "Interval",
+    "IntervalRepresentation",
+    "ModalContext",
+    "PitchRepresentation",
+    "SilentTone",
+    "TonalSystem",
+    "Tone",
+    "ToneCollection",
+    "UnpitchedTone",
+    "apply_tone_operation",
 ]

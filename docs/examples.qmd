@@ -6,23 +6,36 @@ This page is executable:
 every code block below is run when the documentation is built,
 and the output shown is the real output.
 
-There is no top-level convenience namespace yet,
-so everything is imported from its full module path.
+## Imports
+
+The top-level `openmusickit` namespace holds what any piece of music is built from,
+whatever its musical system:
+the graph, the objects placed in it,
+and the values that belong to no one system.
+A musical system is opted into separately.
+Western Standard Music Notation (WSMN) has its types in `wsmn`
+and its ready-made vocabulary
+(pitches, intervals, chord types, durations, time signatures, marks, clefs)
+in `wsmn.symbols`.
+
+```{python}
+import openmusickit as omk
+from openmusickit.systems import wsmn
+from openmusickit.systems.wsmn.symbols import *
+```
 
 ## Tones
 
-In Western Standard Music Notation (WSMN),
+In WSMN,
 a tone is a `TonalVector`:
 a tuple of (diatonic letter index, chromatic pitch class, octave).
 Middle C is octave 0 internally,
 but strings and display default to the usual middle C = C4 convention.
 
 ```{python}
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
-
-c4 = TonalVector.from_string("C4")
-fs5 = TonalVector.from_string("F#5")
-bb3 = TonalVector.from_string("Bb3")
+c4 = wsmn.TonalVector.from_string("C4")
+fs5 = wsmn.TonalVector.from_string("F#5")
+bb3 = wsmn.TonalVector.from_string("Bb3")
 
 print(repr(c4))
 print(repr(fs5))
@@ -30,12 +43,10 @@ print(f"{c4}  {fs5}  {bb3}")
 print(f"{fs5:ascii}")
 ```
 
-Pitch-class symbols with no octave are ready-made in the `symbols` module.
+Pitch-class symbols with no octave are ready-made in `wsmn.symbols`.
 An `x` is a sharp and a `b` is a flat.
 
 ```{python}
-from openmusickit.systems.wsmn.tonal.symbols import C, Cx, Eb, G
-
 print(f"{C}  {Cx}  {Eb}  {G}")
 print(f"{C.qualify_octave(0)}")
 ```
@@ -48,12 +59,9 @@ Transpose a tone by adding an interval to it,
 or by calling `transpose` with a direction.
 
 ```{python}
-from openmusickit.systems.wsmn.tonal.tonal_vector import TonalDirection
-from openmusickit.systems.wsmn.tonal.symbols import M3, P5, m7
-
 print(f"{c4 + M3}")
 print(f"{c4 + P5}")
-print(f"{c4.transpose(M3, TonalDirection.DOWN)}")
+print(f"{c4.transpose(M3, wsmn.TonalDirection.DOWN)}")
 print(f"{c4 - m7}")
 ```
 
@@ -68,14 +76,11 @@ print(gap.interval.unicode, "=", abs(gap), "half steps")
 ## Durations
 
 A `MetricalDuration` is a fraction of a whole note, with optional dots.
-The `symbols` module provides the common ones by name.
+`wsmn.symbols` provides the common ones by name.
 
 ```{python}
-from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
-from openmusickit.systems.wsmn.temporal.symbols import eighth, quarter, dotted_half
-
-print(repr(MetricalDuration(1, 4)))
-print(repr(MetricalDuration(3, 4)))
+print(repr(wsmn.MetricalDuration(1, 4)))
+print(repr(wsmn.MetricalDuration(3, 4)))
 print(dotted_half.rational_length)
 print(repr(quarter + eighth))
 ```
@@ -87,10 +92,8 @@ and a duration.
 A `Rest` is a `NoteEvent` holding a silent tone.
 
 ```{python}
-from openmusickit.objects.note_event import NoteEvent, Rest
-
-note = NoteEvent(tones={c4}, duration=quarter)
-rest = Rest(quarter)
+note = omk.NoteEvent(tones={c4}, duration=quarter)
+rest = omk.Rest(quarter)
 
 print(note)
 print(rest)
@@ -100,7 +103,7 @@ print(rest.is_rest)
 Transposing a note transforms its tones in place.
 
 ```{python}
-note.transform_tones(TonalVector.transpose, P5)
+note.transform_tones(wsmn.TonalVector.transpose, P5)
 print(f"{next(iter(note.tones))}")
 ```
 
@@ -110,8 +113,6 @@ A chord is a chord type realized at a root.
 Calling a root with a chord type, or a chord type with a root, does the same thing.
 
 ```{python}
-from openmusickit.systems.wsmn.tonal.symbols import D, E, F, dom7, maj, min_
-
 print(C(maj), G(dom7), D(min_))
 print(C(maj) / E)
 print([f"{t}" for t in C(maj)])
@@ -120,10 +121,7 @@ print([f"{t}" for t in C(maj)])
 A key is a tonic and a mode.
 
 ```{python}
-from openmusickit.systems.wsmn.tonal.key import Key
-from openmusickit.systems.wsmn.tonal.symbols import Major
-
-d_major = Key.of(D, Major)
+d_major = wsmn.Key.of(D, Major)
 print(d_major.name)
 print(d_major.signature)
 print([f"{t}" for t in d_major.tones])
@@ -135,9 +133,7 @@ print([f"{t}" for t in d_major.tones])
 Hyphens split a word into syllables and whitespace separates words.
 
 ```{python}
-from openmusickit.objects.lyrics import parse_lyrics
-
-for syllable in parse_lyrics("Twin-kle, twin-kle, lit-tle star"):
+for syllable in omk.parse_lyrics("Twin-kle, twin-kle, lit-tle star"):
     print(f"{str(syllable):10}  {syllable.placement.value:8}  {syllable.word}")
 ```
 
@@ -158,44 +154,36 @@ Here is the first phrase of *Twinkle, Twinkle, Little Star*:
 a melody under a treble clef, its lyrics, and a chord line above it.
 
 ```{python}
-from openmusickit.graph.graph import GraphMeta, OmkGraph
-from openmusickit.objects.chord_event import ChordEvent
-from openmusickit.objects.context_event import ClefEvent
-from openmusickit.objects.lyrics import LyricSection
-from openmusickit.objects.score import Score
-from openmusickit.systems.wsmn.scoring.symbols import treble_clef
-from openmusickit.systems.wsmn.temporal.symbols import half, whole
-
-graph = OmkGraph(GraphMeta())
-score = Score(title="Twinkle, Twinkle, Little Star", lyricist="Jane Taylor")
+graph = omk.OmkGraph(omk.GraphMeta())
+score = omk.Score(title="Twinkle, Twinkle, Little Star", lyricist="Jane Taylor")
 
 # The melody: a clef, then one line of NoteEvents.
 pitches = "C4 C4 G4 G4 A4 A4 G4  F4 F4 E4 E4 D4 D4 C4".split()
 rhythm = [quarter] * 6 + [half] + [quarter] * 6 + [half]
 melody = [
-    NoteEvent(tones={TonalVector.from_string(p)}, duration=d)
+    omk.NoteEvent(tones={wsmn.TonalVector.from_string(p)}, duration=d)
     for p, d in zip(pitches, rhythm, strict=True)
 ]
-clef = ClefEvent(clef=treble_clef)
+clef = omk.ClefEvent(clef=treble_clef)
 graph.add_line([clef, *melody])
 graph.add_line_to_score(score, clef)  # the clef is the head of the line
 
 # The harmony: its own line, pinned to the first note of the melody.
 chords = [
-    ChordEvent(chord=C(maj), duration=whole),
-    ChordEvent(chord=F(maj), duration=half),
-    ChordEvent(chord=C(maj), duration=half),
-    ChordEvent(chord=F(maj), duration=half),
-    ChordEvent(chord=C(maj), duration=half),
-    ChordEvent(chord=G(dom7), duration=half),
-    ChordEvent(chord=C(maj), duration=half),
+    omk.ChordEvent(chord=C(maj), duration=whole),
+    omk.ChordEvent(chord=F(maj), duration=half),
+    omk.ChordEvent(chord=C(maj), duration=half),
+    omk.ChordEvent(chord=F(maj), duration=half),
+    omk.ChordEvent(chord=C(maj), duration=half),
+    omk.ChordEvent(chord=G(dom7), duration=half),
+    omk.ChordEvent(chord=C(maj), duration=half),
 ]
 graph.add_line(chords)
 graph.add_simultaneous(melody[0], chords[0])
 graph.add_line_to_score(score, chords[0])
 
 # The lyrics: a line of syllables, zipped onto the notes one syllable per onset.
-verse = LyricSection(section_type="verse", section_number=1)
+verse = omk.LyricSection(section_type="verse", section_number=1)
 syllables = graph.add_lyrics(
     "Twin-kle, twin-kle, lit-tle star, how I won-der what you are",
     section=verse,
@@ -209,12 +197,10 @@ here the reference is the first note,
 and onsets are shown as fractions of a whole note.
 
 ```{python}
-from openmusickit.graph.edge import EdgeType
-
 def lyric_on(event):
     return " ".join(
         str(s) for s in syllables
-        if list(graph.edges_between(event, s, EdgeType.LYRIC))
+        if list(graph.edges_between(event, s, omk.EdgeType.LYRIC))
     )
 
 print(f"{'onset':<8}{'tone':<6}{'duration':<28}lyric")
@@ -247,7 +233,7 @@ print(graph.relative_onset(clef, melody[0]))
 Transposing a span of the graph transforms every tone in it.
 
 ```{python}
-graph.transform_tones(melody[0], melody[-1], TonalVector.transpose, P5)
+graph.transform_tones(melody[0], melody[-1], wsmn.TonalVector.transpose, P5)
 print(" ".join(format(next(iter(e.tones)), "ascii") for e in graph.walk_line(melody[0])))
 ```
 
@@ -264,35 +250,34 @@ A drum kit is one part per drum, each on its own line,
 held together by a `LineGroup`:
 the origin its lines are measured from,
 so they need no pins to be aligned.
+Percussion tones have their own symbols module,
+because some of their names (`heel`, `toe`) are also the names of marks.
 
 ```{python}
-from openmusickit.objects.note_event import Rest
-from openmusickit.objects.part import LineGroup, PercussionPart, Stint
 from openmusickit.systems.wsmn.percussion.symbols import (
     bass_drums, closed, hi_hats, hit, open_hat, snare_drums,
 )
-from openmusickit.systems.wsmn.temporal.symbols import eighth
 
 
 def line(*tones, duration):
     return [
-        Rest(duration) if tone is None else NoteEvent(tones={tone}, duration=duration)
+        omk.Rest(duration) if tone is None else omk.NoteEvent(tones={tone}, duration=duration)
         for tone in tones
     ]
 
 
-kit = OmkGraph(GraphMeta())
+kit = omk.OmkGraph(omk.GraphMeta())
 hi_hat = line(*[closed] * 7, open_hat, duration=eighth)
 snare = line(None, hit, None, hit, duration=quarter)
 kick = line(hit, None, hit, None, duration=quarter)
 for drum in (hi_hat, snare, kick):
     kit.add_line(drum)
 
-drums = LineGroup(name="Drum kit")
+drums = omk.LineGroup(name="Drum kit")
 kit.add_group(drums, [hi_hat[0], snare[0], kick[0]])
-kit.add_stint(PercussionPart(name="Hi-hat", palette=hi_hats), Stint(), hi_hat[0])
-kit.add_stint(PercussionPart(name="Snare", palette=snare_drums), Stint(), snare[0])
-kit.add_stint(PercussionPart(name="Kick", palette=bass_drums), Stint(), kick[0])
+kit.add_stint(omk.PercussionPart(name="Hi-hat", palette=hi_hats), omk.Stint(), hi_hat[0])
+kit.add_stint(omk.PercussionPart(name="Snare", palette=snare_drums), omk.Stint(), snare[0])
+kit.add_stint(omk.PercussionPart(name="Kick", palette=bass_drums), omk.Stint(), kick[0])
 ```
 
 Each line is walked on its own,

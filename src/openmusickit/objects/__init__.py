@@ -29,7 +29,25 @@ from . import (
     omk_object,
     part,
     score,
+    sync_line,
 )
+from .chord_event import ChordEvent
+from .context_event import (
+    ClefEvent,
+    ContextEvent,
+    MeterEvent,
+    ModalContextEvent,
+    TempoEvent,
+    TemporalContextEvent,
+)
+from .division_event import DivisionEvent
+from .lyrics import LyricSection, LyricSyllable, SyllablePlacement, parse_lyrics
+from .marking import Marked, Marking, MarkSpanner
+from .note_event import NoteEvent, Rest
+from .omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
+from .part import LineGroup, Part, PercussionPart, Stint
+from .score import Score
+from .sync_line import SyncLine, SyncPoint
 
 __all__ = [
     "chord_event",
@@ -41,4 +59,33 @@ __all__ = [
     "omk_object",
     "part",
     "score",
+    "sync_line",
+    "ChordEvent",
+    "ClefEvent",
+    "ContextEvent",
+    "DivisionEvent",
+    "LineGroup",
+    "LyricSection",
+    "LyricSyllable",
+    "MarkSpanner",
+    "Marked",
+    "Marking",
+    "MeterEvent",
+    "ModalContextEvent",
+    "NoteEvent",
+    "OmkObject",
+    "Part",
+    "PercussionPart",
+    "Rest",
+    "Score",
+    "SequentialEvent",
+    "Spanner",
+    "Stint",
+    "SyllablePlacement",
+    "SyncLine",
+    "SyncPoint",
+    "TempoEvent",
+    "TemporalContextEvent",
+    "TonalObject",
+    "parse_lyrics",
 ]
