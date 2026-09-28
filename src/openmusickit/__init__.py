@@ -13,7 +13,8 @@ Musical systems are opt-in, under `systems`;
 nothing here assumes one.
 Western Standard Music Notation is `openmusickit.systems.wsmn`.
 Abstract bases for implementing a system are in `values` and `objects`,
-graph internals in `graph`, and every error type in `errors`.
+graph internals in `graph`, every error type in `errors`,
+and pictures of a graph in `visualization`.
 
 Examples
 --------
@@ -24,7 +25,7 @@ Examples
 GraphMeta(name='Sketch', description=None, info={})
 """
 
-from . import errors, graph, objects, systems, utils, values
+from . import errors, graph, objects, systems, utils, values, visualization
 from .errors import OmkError, OmkWarning
 from .graph import EdgeType, GraphMeta, OmkGraph
 from .objects import (
@@ -68,6 +69,7 @@ __all__ = [
     "systems",
     "utils",
     "values",
+    "visualization",
     "AttachmentMode",
     "ChordEvent",
     "ClefEvent",

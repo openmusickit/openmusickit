@@ -1,0 +1,84 @@
+digraph {
+  rankdir="LR"; bgcolor="transparent"; nodesep="0.15"; ranksep="0.35"; splines="line"; fontname="Helvetica";
+  labelloc="t"; labeljust="r";
+  label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="#303030"><TR><TD ALIGN="LEFT"><B>Twinkle, Twinkle, Little Star</B></TD></TR><TR><TD ALIGN="LEFT"><FONT POINT-SIZE="8">lyrics: Jane Taylor</FONT></TD></TR></TABLE>>;
+  node [fontname="Helvetica", fontsize="10", margin="0.05,0.02", width="0", height="0", color="#303030", fontcolor="#303030"];
+  edge [color="#b0b0b0", style="dotted", arrowsize="0.6"];
+
+  // Part and stint: two and one columns before the head, in its row
+  voice [label="Voice", shape="plain", fontsize="8", fontcolor="#606060"];
+  stint [label="stint", shape="plain", fontsize="8", fontcolor="#606060"];
+  voice -> stint; stint -> clef;
+
+  // Melody: clef glyph, then notes: small superscript octave, large duration glyph
+  clef [label=<<FONT POINT-SIZE="16">𝄞</FONT>>, shape="plain", group="melody"];
+  n1 [label=<C<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♩</FONT>>, shape="box", style="rounded", group="melody"];
+  n2 [label=<C<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♩</FONT>>, shape="box", style="rounded", group="melody"];
+  n3 [label=<G<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♩</FONT>>, shape="box", style="rounded", group="melody"];
+  n4 [label=<G<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♩</FONT>>, shape="box", style="rounded", group="melody"];
+  n5 [label=<A<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♩</FONT>>, shape="box", style="rounded", group="melody"];
+  n6 [label=<A<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♩</FONT>>, shape="box", style="rounded", group="melody"];
+  n7 [label=<G<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">𝅗𝅥</FONT>>, shape="box", style="rounded", group="melody"];
+  clef -> n1 -> n2 -> n3 -> n4 -> n5 -> n6 -> n7 [style="solid", color="#303030", arrowsize="0.7"];
+
+  // Chords: pinned at C4; Fmaj and the last Cmaj align by timing (onsets 1 and 3/2)
+  ch1 [label=<Cmaj <FONT POINT-SIZE="14">𝅝</FONT>>, shape="plain", fontname="monospace", group="chords"];
+  ch2 [label=<Fmaj <FONT POINT-SIZE="14">𝅗𝅥</FONT>>, shape="plain", fontname="monospace", group="chords"];
+  ch3 [label=<Cmaj <FONT POINT-SIZE="14">𝅗𝅥</FONT>>, shape="plain", fontname="monospace", group="chords"];
+  ch1 -> ch2 -> ch3 [style="solid", color="#303030", arrowsize="0.7"];
+  n1 -> ch1 [constraint=false, arrowhead=none];
+
+  // A mark on the third note; a slur over the fifth and sixth as start and end markers
+  stac [label="staccato", shape="plain", fontsize="8", fontcolor="#606060"];
+  stac -> n3 [constraint=false];
+  slur_s [label="⌈slur", shape="plain", fontsize="8", fontcolor="#606060"];
+  slur_e [label="slur⌉", shape="plain", fontsize="8", fontcolor="#606060"];
+  slur_s -> n5 [constraint=false]; slur_e -> n6 [constraint=false];
+
+  // Second voice branched from the fifth note: E4 F4 eighths; F4 gets its own column (onset 9/8)
+  b1 [label=<E<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♪</FONT>>, shape="box", style="rounded", group="voice2"];
+  b2 [label=<F<SUP><FONT POINT-SIZE="6">4</FONT></SUP> <FONT POINT-SIZE="14">♪</FONT>>, shape="box", style="rounded", group="voice2"];
+  b1 -> b2 [style="solid", color="#303030", arrowsize="0.7"];
+  n5 -> b1 [constraint=false, style="solid", color="#303030", penwidth="0.7", arrowhead="empty", arrowsize="0.8"];
+
+  // Lyrics: syllables under their notes, NEXT invisible; the verse as start and end markers
+  l1 [label="Twin -", shape="plain", fontname="monospace", group="lyrics"];
+  l2 [label="- kle,", shape="plain", fontname="monospace", group="lyrics"];
+  l3 [label="twin -", shape="plain", fontname="monospace", group="lyrics"];
+  l4 [label="- kle,", shape="plain", fontname="monospace", group="lyrics"];
+  l5 [label="lit -", shape="plain", fontname="monospace", group="lyrics"];
+  l6 [label="- tle", shape="plain", fontname="monospace", group="lyrics"];
+  l7 [label="star,", shape="plain", fontname="monospace", group="lyrics"];
+  l1 -> l2 -> l3 -> l4 -> l5 -> l6 -> l7 [style="invis"];
+  n1 -> l1; n2 -> l2; n3 -> l3; n4 -> l4; n5 -> l5; n6 -> l6; n7 -> l7;
+  verse_s [label="⌊verse 1", shape="plain", fontsize="8", fontcolor="#606060"];
+  verse_e [label="verse 1⌋", shape="plain", fontsize="8", fontcolor="#606060"];
+  verse_s -> l1 [constraint=false]; verse_e -> l7 [constraint=false];
+
+  // Sync line: every bar node is a block of equal height with the bar port at its bottom
+  reel [shape="plain", group="reel", label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1"><TR><TD HEIGHT="12" WIDTH="8"></TD><TD ALIGN="LEFT" HEIGHT="12"><FONT POINT-SIZE="9"><FONT POINT-SIZE="9">Reel 1</FONT></FONT></TD></TR><TR><TD PORT="bar" COLSPAN="2" HEIGHT="4" BGCOLOR="#b0b0b0" CELLPADDING="0"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR></TABLE>>];
+  p5 [shape="plain", group="reel", label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1"><TR><TD VALIGN="BOTTOM" HEIGHT="12"><FONT POINT-SIZE="10">●</FONT></TD><TD ALIGN="LEFT" HEIGHT="12"><FONT POINT-SIZE="8">00:00:05.0000</FONT></TD></TR><TR><TD PORT="bar" COLSPAN="2" HEIGHT="4" BGCOLOR="#b0b0b0" CELLPADDING="0"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR></TABLE>>];
+  p9 [shape="plain", group="reel", label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1"><TR><TD VALIGN="BOTTOM" HEIGHT="12"><FONT POINT-SIZE="10">●</FONT></TD><TD ALIGN="LEFT" HEIGHT="12"><FONT POINT-SIZE="8">00:00:09.0000</FONT></TD></TR><TR><TD PORT="bar" COLSPAN="2" HEIGHT="4" BGCOLOR="#b0b0b0" CELLPADDING="0"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"><FONT POINT-SIZE="8">door slams</FONT></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"><FONT POINT-SIZE="7" COLOR="#606060">the front door, off screen</FONT></TD></TR></TABLE>>];
+  p12 [shape="plain", group="reel", label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1"><TR><TD VALIGN="BOTTOM" HEIGHT="12"><FONT POINT-SIZE="10">●</FONT></TD><TD ALIGN="LEFT" HEIGHT="12"><FONT POINT-SIZE="8">00:00:12.0000</FONT></TD></TR><TR><TD PORT="bar" COLSPAN="2" HEIGHT="4" BGCOLOR="#b0b0b0" CELLPADDING="0"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR></TABLE>>];
+  reel_end [shape="plain", group="reel", label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="1"><TR><TD HEIGHT="12" WIDTH="8"></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR><TR><TD PORT="bar" COLSPAN="2" HEIGHT="4" BGCOLOR="#b0b0b0" CELLPADDING="0"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR><TR><TD></TD><TD ALIGN="LEFT" HEIGHT="12"></TD></TR></TABLE>>];
+  reel:bar -> p5:bar -> p9:bar -> p12:bar -> reel_end:bar [penwidth="4", color="#b0b0b0", style="solid", arrowhead="none", tailclip=false, headclip=false];
+  n1 -> p5 [constraint=false, arrowhead=none]; n5 -> p9 [constraint=false, arrowhead=none];
+
+  // Ranks (from timing) with row-ordered chains: 0 voice/reel, 1 stint, 2 clef, 3 C(0), 4 C(1/4), 5 G(1/2), 6 G(3/4), 7 A(1)+Fmaj+E, 8 F(9/8), 9 A(5/4), 10 G(3/2)+Cmaj, 11 end
+  { rank=same; voice -> reel [style=invis]; }
+  { rank=same; stint; }
+  { rank=same; clef; }
+  { rank=same; ch1 -> n1 -> l1 -> verse_s -> p5 [style=invis]; }
+  { rank=same; n2 -> l2 [style=invis]; }
+  { rank=same; stac -> n3 -> l3 [style=invis]; }
+  { rank=same; n4 -> l4 [style=invis]; }
+  { rank=same; ch2 -> slur_s -> n5 -> b1 -> l5 -> p9 [style=invis]; }
+  { rank=same; b2; }
+  { rank=same; slur_e -> n6 -> l6 [style=invis]; }
+  { rank=same; ch3 -> n7 -> l7 -> verse_e [style=invis]; }
+  { rank=same; p12; }
+  { rank=same; reel_end; }
+  // onset order between columns that no NEXT edge joins
+  n6 -> p12 [style=invis];
+  b2 -> n6 [style=invis];
+}

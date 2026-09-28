@@ -34,3 +34,5 @@ uv sync
 ```
 
 OMK requires Python 3.12 or later.
+Drawing a graph as SVG or PNG needs [Graphviz](https://graphviz.org/download/) installed;
+generating DOT, and these docs, do not.

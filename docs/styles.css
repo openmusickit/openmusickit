@@ -1,0 +1,17 @@
+/* The graph drawings use duration and clef glyphs from the Unicode Musical
+   Symbols block, which few system fonts have. Noto Music is loaded for them
+   and appended to the font stacks that Graphviz writes into its SVG. */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Music&display=swap");
+
+svg text[font-family="Helvetica,sans-Serif"] {
+  font-family: Helvetica, Arial, sans-serif, "Noto Music";
+}
+
+svg text[font-family="monospace"] {
+  font-family: monospace, "Noto Music";
+}
+
+/* A graph drawing wider than the page scrolls sideways instead of shrinking. */
+.omk-drawing {
+  overflow-x: auto;
+}

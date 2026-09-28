@@ -31,6 +31,7 @@ format:
     theme: cosmo
     toc: true
     code-copy: true
+    css: styles.css
 
 execute:
   # Executable pages fail the build if a code cell raises,
@@ -122,6 +123,15 @@ quartodoc:
         - graph.edge
         - graph.graph_adapter
         - graph.rx_adapter
+    - title: Visualization
+      desc: Pictures of a graph, laid out by Graphviz.
+      contents:
+        - visualization.renderer
+        - visualization.config
+        - visualization.labels
+        - visualization.layout
+        - visualization.dot
+        - visualization.graphviz
     - title: Errors and Utilities
       contents:
         - errors

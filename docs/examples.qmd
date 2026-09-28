@@ -237,6 +237,33 @@ graph.transform_tones(melody[0], melody[-1], wsmn.TonalVector.transpose, P5)
 print(" ".join(format(next(iter(e.tones)), "ascii") for e in graph.walk_line(melody[0])))
 ```
 
+## Drawing the graph
+
+A graph can be drawn.
+`GraphRenderer` lays it out with Graphviz:
+NEXT advances along the page,
+everything that a timing walk places at one instant shares a column,
+chords sit above the line they are pinned to,
+lyrics below the line they are sung to,
+and a score is a title block.
+`to_dot()` needs nothing installed;
+`to_svg()` and `to_png()` run Graphviz's `dot`,
+which must be on the PATH.
+This page hands the DOT to Quarto,
+which renders it with its own copy of Graphviz.
+The melody is drawn as it now stands, a fifth up.
+
+```{python}
+#| output: asis
+from openmusickit.visualization import GraphRenderer
+
+# Quarto sizes a dot figure by these options (inches), else squeezes it into 7 by 5;
+# the values are the drawing's natural size, and the div lets a wide one scroll.
+print(":::: {.omk-drawing}")
+print("```{dot}\n//| fig-width: 12\n//| fig-height: 2.6\n" + GraphRenderer(graph).to_dot() + "\n```")
+print("::::")
+```
+
 ## A drum kit
 
 Unpitched percussion has no pitch to name,
@@ -302,4 +329,19 @@ print(f"{closed}", "/", f"{open_hat}", "/", f"{hit}")
 kit.transform_tones(hi_hat[0], None, lambda tone: open_hat if tone == closed else tone)
 print(" ".join(f"{next(iter(e.tones))}" for e in kit.walk_line(hi_hat[0])))
 print(len(list(kit.walk_group(drums))), "events in the kit")
+```
+
+Drawn top to bottom,
+the three lines run down the page in the order the group holds them,
+their heads on one row because the group is their common origin,
+and each part sits before the line it plays.
+
+```{python}
+#| output: asis
+from openmusickit.visualization import SequenceDirection, VisualizationConfig
+
+config = VisualizationConfig(direction=SequenceDirection.TOP_TO_BOTTOM)
+print(":::: {.omk-drawing}")
+print("```{dot}\n//| fig-width: 2.5\n//| fig-height: 6.2\n" + GraphRenderer(kit, config).to_dot() + "\n```")
+print("::::")
 ```
