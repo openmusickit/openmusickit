@@ -219,6 +219,48 @@ class OmkGraph:
         """
         return self._graph.edges(edge_type)
 
+    def nodes(
+        self,
+        node_type: type[OmkObject] | None = None,
+        predicate: Callable[[OmkObject], bool] | None = None,
+    ) -> Iterator[OmkObject]:
+        """Iterates over all nodes, optionally filtered by `node_type` and/or `predicate`,
+        in no particular order.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d = (NoteEvent(tones={t}) for t in (C, D))
+        >>> graph.add_line([c, d])
+        >>> graph.add_stint(Part(name="Flute"), Stint(), c)
+        >>> sorted(type(node).__name__ for node in graph.nodes())
+        ['NoteEvent', 'NoteEvent', 'Part', 'Stint']
+        >>> [part.name for part in graph.nodes(Part)]
+        ['Flute']
+        >>> [node is d for node in graph.nodes(NoteEvent, lambda n: D in n.tones)]
+        [True]
+        """
+        return self._graph.nodes(node_type, predicate)
+
+    def edge_endpoints(self, edge: OmkEdge) -> tuple[OmkObject, OmkObject]:
+        """The source and target of `edge`, as a tuple.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d = (NoteEvent(tones={t}) for t in (C, D))
+        >>> graph.add_line([c, d])
+        >>> source, target = graph.edge_endpoints(graph.get_edge(c, d, EdgeType.NEXT))
+        >>> source is c, target is d
+        (True, True)
+
+        Raises
+        ------
+        GraphError
+            if `edge` is not on the graph.
+        """
+        return self._graph.get_edge_endpoints(edge)
+
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
         """Adds a plain edge of `edge_type`; the semantic methods (`add_next`,
         `add_branch`, `add_articulation`, ...) build on this and are usually
@@ -654,6 +696,51 @@ class OmkGraph:
         if offset is None:
             raise GraphError(f"No timing path connects {reference!r} to {event!r}.")
         return offset
+
+    def onsets(self, reference: OmkObject) -> dict[UUID, Duration]:
+        """The onset of every node a timing walk reaches from `reference`,
+        keyed by node id: how long after the onset of `reference` each one
+        starts (negative if before), the reference itself at `ZeroDuration()`.
+
+        The walk is the one behind `relative_onset`, run to exhaustion: NEXT
+        edges through known durations; branches, pins and groups through
+        their anchors and displacements; a sync line met but not crossed.
+        A node that is not in the result has no known timing relation to the
+        reference: it lies beyond an event of unknown duration, or in an
+        unrelated part of the graph, or at a distance measured in another
+        temporal system.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph = OmkGraph(GraphMeta())
+        >>> c, d, e = (NoteEvent(tones={t}, duration=quarter) for t in (C, D, E))
+        >>> graph.add_line([c, d, e])
+        >>> onsets = graph.onsets(d)
+        >>> onsets[c.id], onsets[d.id], onsets[e.id]
+        (MetricalDuration(-1, 4), ZeroDuration(), MetricalDuration(1, 4))
+        >>> d.duration = None
+        >>> [node.id in graph.onsets(c) for node in (c, d, e)]  # e lies beyond the unknown duration
+        [True, True, False]
+
+        Raises
+        ------
+        GraphError
+            if `reference` is not on the graph.
+        """
+        offsets: dict[UUID, Duration] = {reference.id: ZeroDuration()}
+        queue: deque[tuple[OmkObject, EdgeType | None]] = deque([(reference, None)])
+        while queue:
+            node, arrived_by = queue.popleft()
+            for neighbour, delta, by in self._timing_neighbours(node, None, arrived_by):
+                if neighbour.id in offsets:
+                    continue
+                try:
+                    offsets[neighbour.id] = offsets[node.id] + delta
+                except TemporalCompatibilityError:
+                    continue  # a distance in another system says nothing in the reference's units
+                queue.append((neighbour, by))
+        return offsets
 
     def _relative_onset(
         self, reference: OmkObject, event: OmkObject, ignoring: OmkEdge | None
