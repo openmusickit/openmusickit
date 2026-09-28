@@ -62,3 +62,13 @@ class GraphError(OmkError):
     """Raised by the graph layer for a missing node or edge, or a relationship the
     graph cannot hold (for example a second NEXT edge out of one node). Backend
     exceptions never pass through the adapter boundary."""
+
+
+class RenderingError(OmkError, RuntimeError):
+    """Raised when rendering a visualization fails: Graphviz's `dot` is
+    missing, or it rejected the input. Generating DOT never raises this."""
+
+
+class GraphvizNotFoundError(RenderingError):
+    """Raised when the Graphviz `dot` executable is not on the PATH.
+    The message says how to install it; `GraphRenderer.to_dot` works without it."""

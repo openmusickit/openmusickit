@@ -6,6 +6,7 @@ from __future__ import annotations
 from openmusickit.graph.graph import OmkGraph
 from openmusickit.visualization.config import VisualizationConfig
 from openmusickit.visualization.dot import DotGraph
+from openmusickit.visualization.graphviz import render_dot
 from openmusickit.visualization.layout import build
 
 
@@ -42,3 +43,27 @@ class GraphRenderer:
     def to_dot(self) -> str:
         """The DOT source."""
         return self.dot_graph().to_text()
+
+    def to_svg(self) -> str:
+        """The picture as SVG, rendered by the local Graphviz.
+
+        Raises
+        ------
+        GraphvizNotFoundError
+            if `dot` is not on the PATH.
+        RenderingError
+            if Graphviz rejected the DOT.
+        """
+        return render_dot(self.to_dot(), "svg").decode("utf-8")
+
+    def to_png(self) -> bytes:
+        """The picture as PNG bytes, rendered by the local Graphviz.
+
+        Raises
+        ------
+        GraphvizNotFoundError
+            if `dot` is not on the PATH.
+        RenderingError
+            if Graphviz rejected the DOT.
+        """
+        return render_dot(self.to_dot(), "png")

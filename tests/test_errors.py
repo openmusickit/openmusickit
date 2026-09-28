@@ -11,9 +11,11 @@ import pytest
 from openmusickit import errors
 from openmusickit.errors import (
     GraphError,
+    GraphvizNotFoundError,
     LyricConsistencyError,
     OmkError,
     OmkWarning,
+    RenderingError,
     ScalingError,
     TemporalCompatibilityError,
     TemporalError,
@@ -34,6 +36,8 @@ def test_the_error_classes_in_the_module():
         "TemporalCompatibilityError",
         "LyricConsistencyError",
         "GraphError",
+        "RenderingError",
+        "GraphvizNotFoundError",
     }
 
 
@@ -52,6 +56,8 @@ def test_domain_errors_subclass_the_closest_builtin():
         raise LyricConsistencyError("inconsistent")
     assert issubclass(ScalingError, TemporalError)
     assert issubclass(TemporalCompatibilityError, TemporalError)
+    assert issubclass(RenderingError, RuntimeError)
+    assert issubclass(GraphvizNotFoundError, RenderingError)
     assert not issubclass(ScalingError, TemporalCompatibilityError)
     assert not issubclass(GraphError, TemporalError)
 

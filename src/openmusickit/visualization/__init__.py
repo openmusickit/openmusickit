@@ -24,15 +24,17 @@ SVG or PNG needs Graphviz's `dot` on the PATH.
 '  rankdir="TB";'
 """
 
-from . import config, dot, labels, layout, renderer
+from . import config, dot, graphviz, labels, layout, renderer
 from .config import EdgeStyle, NodeStyle, SequenceDirection, VisualizationConfig
 from .dot import DotEdge, DotGraph, DotNode
+from .graphviz import render_dot
 from .labels import default_label, duration_glyph
 from .renderer import GraphRenderer
 
 __all__ = [
     "config",
     "dot",
+    "graphviz",
     "labels",
     "layout",
     "renderer",
@@ -46,4 +48,5 @@ __all__ = [
     "VisualizationConfig",
     "default_label",
     "duration_glyph",
+    "render_dot",
 ]
