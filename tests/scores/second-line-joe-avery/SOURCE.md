@@ -37,3 +37,11 @@ One part with chord symbols (`<harmony>`), first and second endings,
 and a "Send-off" section written as slash noteheads with one-bar
 `<measure-repeat>` over the changes (rhythmic comping over an open vamp).
 There is no D.S./Coda and no labelled solo section.
+
+## Known quirks (kept as exported)
+
+- The four `<measure-repeat>` bars each hold a whole `<rest/>` with no `<voice>`
+  as their placeholder; the bar is not silent, it repeats the previous one,
+  so a reader must not turn that rest into a rest.
+- Every note and harmony carries `<staff>1</staff>` and `<instrument>`,
+  and `color="#000000"` is on nearly everything.

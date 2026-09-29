@@ -28,6 +28,9 @@ https://www.cpdl.org/wiki/index.php/ChoralWiki:CPDL
 - `AMNS_99_St_Anne_Harmony.mxl`: compressed MusicXML 2.0,
   exported from Capella by CapToMusic.py 2.10 (2020-12-06)
 - `AMNS_99_St_Anne_Harmony.pdf`: score, 1 page (created 2020-12-06)
+- `AMNS_99_St_Anne_Harmony.corrected.musicxml`: **an edited copy**, uncompressed,
+  made 2026-09-29 (see "Known flaws" below); the only edits are the
+  52 `<syllabic>` values set to match the hyphenation printed in the PDF
 
 Both are rendered from the same Capella file,
 kept byte-for-byte under their distributed names.
@@ -43,3 +46,19 @@ the mid-hymn line break splits a bar into a 3-beat and a 1-beat measure.
 A hidden, empty first part (P1) carries only rests.
 Breath marks are `<words>,</words>` directions, not `<breath-mark>`.
 The PDF sets stanzas 2, 4 and 6 in italics; the MusicXML does not.
+
+## Known flaws (kept in the original; fixed in the companion)
+
+- 52 of the 168 `<syllabic>` flags contradict the hyphenation on the page
+  (verse 1 marks "ter" of shel-ter as `single`;
+  verse 3's flags mostly belong to a different hyphenation).
+  The syllable texts are correct and in order, only the flags are wrong,
+  so this is a CapToMusic bug.
+  A reader must keep the syllables in order and treat the flags as advisory;
+  hyphenation itself is tested on the corrected companion.
+- The metadata (title, tune name, author, source, editor) is typed as
+  free `<words>` directions; there is no `<work>` or `<creator>`.
+- `<sound tempo="120">` is Capella's default playback tempo;
+  the page prints no tempo.
+- The hidden part `P1` (`<staff-details print-object="no">`)
+  holds ten rests and nothing else.

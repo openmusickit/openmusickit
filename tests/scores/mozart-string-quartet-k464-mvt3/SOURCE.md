@@ -29,3 +29,12 @@ the `.mscx` itself has not changed since the repository's initial commit (2023-0
 D major, 2/4, theme and variations (203 bars).
 Repeats with first and second endings, 32nd-note runs, triplets, grace notes, trills,
 dynamics p, f, fp, sf, and many slurs, ties and staccatos.
+The 16 partial bars after repeats are `implicit="yes"` and numbered X1–X16.
+
+## Known quirks (kept as exported)
+
+- Bar 143 writes `<words>♯</words>` over a trill
+  where `<accidental-mark>` was meant.
+- Bar 160 writes `<other-dynamics>calando</other-dynamics>`
+  inside the same `<dynamics>` as an `<f/>`.
+- `<sound dynamics>` accompanies every printed dynamic (222 of them).
