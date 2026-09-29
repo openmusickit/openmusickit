@@ -32,7 +32,7 @@ hold goes in `node.meta["musicxml"]`, a dict OMK core never reads. Its keys:
   (kit lines), `tuplet`, `measure_repeat`, `staff` (only where it differs).
 - `Marking` / `MarkSpanner`: `offset`, `tremolo`, `fingering`, `accidental_mark`,
   `ending`, `element` (a minted mark's source element), `fermata_type`, `text`.
-- `MeterEvent`: `symbol`; `TempoEvent`: `sound_tempo`, `per_minute`.
+- `MeterEvent`: `symbol`; `TempoEvent`: `sound_tempo`, `per_minute`, `tempo_hidden` (the figure is not printed), `term_hidden`.
 - `LyricSyllable`: `extend`, `humming`, `laughing`, `end_line`, `end_paragraph`.
 - `ChordEvent`: `kind`, `kind_text`, `frame`.
 """
@@ -985,9 +985,7 @@ class _PartReader:
             self.warn(f"a microtonal <alter> of {alter_text} is rounded to the nearest semitone")
             alter = Fraction(round(alter))
         octave = int(pitch.findtext("octave") or 4)
-        degree = tables.STEPS.index(step)
-        chromatic = (tables.STEP_CHROMATIC[degree] + int(alter)) % 12
-        tone = TonalVector((degree, chromatic, octave - 4))
+        tone = tables.tone_from_pitch(step, int(alter), octave)
         interval = self.transpose.get(staff)
         return tone.transpose(interval) if interval is not None else tone
 
@@ -1545,7 +1543,7 @@ class _PartReader:
                 if event.term is None:
                     event.term = term
                 if hidden:
-                    xml_meta(event)["hidden"] = True
+                    xml_meta(event)["term_hidden"] = True
             return
         if tables.is_gradual_tempo(text):
             self.count(f"gradual tempo word {text!r} recorded at a point (its span has no end)")
@@ -1605,7 +1603,7 @@ class _PartReader:
         if element.get("parentheses") == "yes":
             meta["parentheses"] = True
         if hidden:
-            meta["hidden"] = True
+            meta["tempo_hidden"] = True
         for event in self.tempo_events(position):
             if event.tempo is None:
                 event.tempo = tempo

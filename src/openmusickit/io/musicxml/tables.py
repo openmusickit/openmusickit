@@ -15,6 +15,7 @@ from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign
 from openmusickit.systems.wsmn.tonal import symbols as tonal
 from openmusickit.systems.wsmn.tonal.chords import ChordType
 from openmusickit.systems.wsmn.tonal.key import ModePattern
+from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.values.scoring.mark import Mark
 from openmusickit.values.scoring.tempo_term import TempoTerm
 
@@ -40,6 +41,38 @@ NOTE_TYPES: dict[str, tuple[int, int]] = {
     "long": (4, 1),
     "maxima": (8, 1),
 }
+
+
+def tone_from_pitch(step: str, alter: int, octave: int) -> TonalVector:
+    """The tone a `<pitch>` names: step letter, chromatic alteration, MusicXML octave.
+
+    >>> tone_from_pitch("B", -1, 3)
+    TonalVector((6, 10, -1))
+    """
+    degree = STEPS.index(step.strip().upper())
+    return TonalVector((degree, (STEP_CHROMATIC[degree] + alter) % 12, octave - 4))
+
+
+def pitch_of_tone(tone: TonalVector) -> tuple[str, int, int]:
+    """The `<pitch>` of an octave-qualified tone: step, alter, octave.
+    Alterations beyond the semitone window read modulo 12, so C♯ is (C, 1) and
+    C♭ is (C, -1), whatever octave arithmetic produced them.
+
+    >>> pitch_of_tone(TonalVector((6, 10, -1)))
+    ('B', -1, 3)
+    >>> pitch_of_tone(tone_from_pitch("C", -1, 4))
+    ('C', -1, 4)
+
+    Raises
+    ------
+    ValueError
+        if the tone has no octave.
+    """
+    if not tone.has_octave:
+        raise ValueError(f"{tone!r} has no octave; MusicXML pitches need one.")
+    alter = (tone.c - STEP_CHROMATIC[tone.d] + 6) % 12 - 6
+    return STEPS[tone.d], alter, tone.o + 4
+
 
 # --- attributes -------------------------------------------------------------------
 

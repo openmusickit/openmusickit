@@ -949,7 +949,65 @@ Stages 3 and 4 can begin as soon as stages 1–2 are in; stage 5 blocks 6–7.
   developer reviews the side-by-side pages before stage 8.
 - Heavy set at stage 0 and stage 8.
 
-## 12. Not doing (deliberately)
+## 12. Deviations and decisions during execution
+
+Recorded as the stages were built (2026-09-29), for the developer to revisit.
+
+Stage 2:
+
+- `remove_derivable_divisions` keeps a division that carries a mark,
+  annotation or spanner end rather than moving the attachment to the next
+  event (a fermata on a bar line is not a fermata on a note); only pins
+  move, since a pin names an instant and the next event starts at it.
+- `spanner_start` / `spanner_end` were added to `OmkGraph`, since open
+  spanners need a reader for the missing end. An open *binding* span (a
+  slur with no end) binds lyrics to the end of the line, consistent with
+  what "open" means.
+- `MusicXmlError` went in with the reader (stage 3) rather than in stage 2;
+  `UnexportableError` waits for the writer. Nothing unused was added.
+- The test file became `tests/graph/test_divisions.py`; pytest needs
+  unique test basenames across the tree.
+
+Stages 3–4 (the reader), choices the plan did not spell out:
+
+- A rest whose `<type>` and `<duration>` disagree takes the `<duration>`
+  (a whole rest in a half-length pickup); a note keeps the notated value
+  and warns. Counted per part rather than warned per note.
+- A tie stop at the start of a bar with no open tie uses the last tie
+  started on that pitch: the note before a repeat is tied into both
+  endings. Counted, not warned.
+- A `<chord/>` note's own `<type>`/`<time-modification>` is ignored; the
+  chord's first note gives the duration (Dorico omits the modification on
+  chord notes).
+- Slur starts and stops of one number pair innermost-first (a stack), since
+  Sibelius reuses numbers for nested slurs; a leftover start is an open
+  spanner, counted.
+- A blank or non-breaking-space `<lyric>` text (Sibelius's melisma
+  placeholder) begins no syllable; the note continues the previous one.
+- `<words>` that name a SPAN-only mark with no `<dashes>` become a point
+  `Marking` with a minted mark of the same name and kind (`cresc.` alone
+  lasts until the next dynamic, not to the end of the line); `una corda`
+  is the exception and opens a span that `tre corde` closes.
+- Tempo directions apply to the whole part, so a metronome or tempo word
+  makes one `TempoEvent` per staff line whatever `<staff>` it names; a
+  `print-object="no"` on the metronome sets `tempo_hidden`, on the words
+  `term_hidden`, so a printed "a tempo" beside a hidden figure stays printed.
+- `<sound>` is read for `tempo` only (to meta); its navigation attributes
+  duplicate the printed words and are ignored.
+- Rests in a drum-kit staff belong to a voice, not an instrument, and are
+  dropped; kit lines are created at an instrument's first stroke with the
+  bar lines and contexts of the earlier measures filled in.
+- A `<measure-repeat>` bar keeps none of its placeholder notes; the % bar is
+  one zero-tone event of the bar's length with a `simile` mark.
+- `Stint.transposition` is written − sounding (a clarinet in A: a minor
+  third up), the interval the reader adds to stored tones to print them.
+- The bar grid's `SyncLine` is named after the score's title.
+- `Part.meta["musicxml"]` also carries `instruments`, `midi` and `groups`
+  verbatim from the part list (P1/P5 stopgap).
+- Ending brackets are spanned on the part's first staff line, from the event
+  at the ending's start to the event ending at its stop.
+
+## 13. Not doing (deliberately)
 
 LilyPond output (its own plan; the writer's walk is reusable);
 JSON serialization (its own plan; `meta["musicxml"]` values are kept
