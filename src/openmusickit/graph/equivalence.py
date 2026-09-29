@@ -1,32 +1,32 @@
 """Whether two graphs hold the same music, whatever the ids of their objects.
 
-Two graphs are equivalent when their nodes pair off one to one, each with an
-equal node (`==`, which leaves out the id and `meta`), so that every ordered
-pair of nodes has equal edges in both graphs. That is a graph isomorphism
-respecting content; the pairing is the `correspondence`. `GraphMeta` is not
-compared: it describes the container, not the music.
+Two graphs are equivalent when their nodes pair off one to one, 
+each with an equal node (`==`, which leaves out the id and `meta`), 
+so that every ordered pair of nodes has equal edges in both graphs.
+That is a graph isomorphism respecting content; the pairing is the `correspondence`. 
+`GraphMeta` is not compared: it describes the container, not the music.
 
-The comparison reads only the public `OmkGraph` API, so the two graphs may
-sit on different adapters.
+The comparison reads only the public `OmkGraph` API,
+so the two graphs may sit on different adapters.
 
-How it is found: equal nodes are given one colour, and a pairing is searched
-for (VF2, from rustworkx) among nodes of equal colour. A short search
-nearly always finds one at once when there is one; a pairing found is proof.
+How it is found: 
+equal nodes are given one colour, and a pairing is searched for (VF2, from rustworkx) among nodes of equal colour.
+A short search nearly always finds one at once when there is one; a pairing found is proof.
 When the short search gives up, each round of colour refinement
-(one-dimensional Weisfeiler-Leman) recolours every node by its colour and
-the colours and edges around it, with one palette across both graphs. If the
-graphs ever differ in how many nodes have a colour, they are not equivalent;
+(one-dimensional Weisfeiler-Leman) recolours every node by its colour
+and the colours and edges around it, with one palette across both graphs. 
+If the graphs ever differ in how many nodes have a colour, they are not equivalent;
 otherwise the search runs to the end among nodes of equal final colour.
-Refinement is what keeps a *failed* comparison fast: on its own VF2 has to
-try every arrangement of symmetric material (a run of identical notes, a set
-of identical fragments) before it can say no. What remains slow is only
-material that refinement cannot tell apart, every node surrounded exactly as
-every other of its colour is, and still not arranged the same way (two
-cycles of three identical notes against one of six).
+Refinement is what keeps a *failed* comparison fast: 
+on its own VF2 has to try every arrangement of symmetric material
+(a run of identical notes, a set of identical fragments) before it can say no. 
+What remains slow is only material that refinement cannot tell apart,
+every node surrounded exactly as every other of its colour is,
+and still not arranged the same way (two cycles of three identical notes against one of six).
 
-`diff` says what one graph has that the other lacks, counted by content: a
-multiset difference of nodes, and of edges taken with the content of their
-ends. It never searches, so it is always cheap.
+`diff` says what one graph has that the other lacks, counted by content:
+a multiset difference of nodes, and of edges taken with the content of their ends.
+It never searches, so it is always cheap.
 """
 
 from __future__ import annotations
