@@ -1,9 +1,10 @@
 # MusicXML import and export
 
-Status: **drafted 2026-09-29; the decisions in §3 were confirmed with the
-developer the same day; nothing started.**
-Stage 5 (part order) is a gate that needs its own design session
-before the writer can be built.
+Status: **stages 0–4 done 2026-09-29** (plan, fixtures, model changes, the
+reader and its tests; decisions in §3 confirmed with the developer the same
+day; §12 records the choices made while building).
+**Stopped at the stage 5 gate:** part order and bracketing (P1) needs its
+own design session before the writer (stages 6–8) can be built.
 
 Written for two readers:
 the developer (to approve and to decide the pre-plans in §7),
@@ -465,7 +466,8 @@ offset exactly.
   every kind in the corpus is major, minor, dominant, minor-seventh,
   minor-sixth, diminished, dominant-ninth); `<degree>` adds/alters/subtracts
   → a `ChordType` built from the base type's intervals with the degree
-  applied and the MusicXML kind text as its name; `<bass>` →
+  applied, named `"<base name> (add 9)"` with the kind text as its suffix;
+  `<bass>` →
   `Chord(root, tones, bass=...)` (an inversion when the bass is a chord
   tone); `kind="none"` (N.C.) → warns and skips until P9;
   `<kind text>` and `<frame>` → meta.
@@ -487,10 +489,12 @@ plain Python (int, str, bool, `Fraction`, tuple), so JSON serialization can
 carry them later. Keys used, by node:
 
 - `Score`: `movement_number`, `movement_title`, `encoding`, `source`.
-- `Part`: `id`, `index`, `abbreviation`, `group`, `instruments`, `midi`.
+- `Part`: `id`, `index`, `abbreviation`, `groups`, `instruments`, `midi`.
 - line head event: `staff`, `voice`, `hidden`.
-- `DivisionEvent`: `number`, `implicit`, `width`, `ending`, `measure_repeat`,
-  `multiple_rest`, `time_symbol`.
+- `DivisionEvent`: `number`, `implicit`, `width`, `left`, `multiple_rest`
+  (on the division closing the first measure of the rest), `slash`.
+- `MeterEvent`: `symbol` (common, cut); `TempoEvent`: `sound_tempo`,
+  `per_minute`, `tempo_hidden`, `term_hidden`.
 - `NoteEvent`: `forward`, `hidden`, `cue`, `slash_pitch`, `display`
   (unpitched step/octave), `notehead`, `instrument`, `tuplet`, `staff`
   (only when it differs from the line's).
@@ -729,7 +733,7 @@ corrected one.
 ## 9. Tests
 
 Layout: `tests/io/musicxml/`. Small documents are inline strings built by a
-helper `doc(*measures, parts=...)` in `tests/io/musicxml/helpers.py` that
+helper `doc(*measures, parts=...)` in `tests/io/musicxml/documents.py` that
 wraps measure bodies in a valid partwise skeleton, so each test shows only
 the element under test.
 
