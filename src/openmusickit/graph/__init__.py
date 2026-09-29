@@ -65,9 +65,13 @@ may hold several, or fragments that are none (`GraphMeta` describes the
 graph, not a work). "Where is this event" only ever means "how far from that
 one" (`relative_onset`), and an event of unknown duration is opaque to the
 answer.
+
+Two graphs hold the same music when their nodes pair off with equal nodes,
+joined by equal edges, whatever their ids (`OmkGraph.is_equivalent`, `diff`;
+see `graph.equivalence`).
 """
 
-from . import edge, graph, graph_adapter, rx_adapter
+from . import edge, equivalence, graph, graph_adapter, rx_adapter
 from .edge import (
     Branch,
     Contains,
@@ -80,12 +84,14 @@ from .edge import (
     TimedEdge,
     TimingAnchor,
 )
+from .equivalence import GraphDiff
 from .graph import GraphMeta, OmkGraph
 from .graph_adapter import GraphAdapter
 from .rx_adapter import RustworkxAdapter
 
 __all__ = [
     "edge",
+    "equivalence",
     "graph",
     "graph_adapter",
     "rx_adapter",
@@ -94,6 +100,7 @@ __all__ = [
     "EdgeOrigin",
     "EdgeType",
     "GraphAdapter",
+    "GraphDiff",
     "GraphMeta",
     "Next",
     "NudgeDirection",

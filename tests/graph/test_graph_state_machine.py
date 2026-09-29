@@ -211,6 +211,7 @@ class GraphModel(RuleBasedStateMachine):
     def adapters_agree(self):
         assert snapshot(self.rx) == snapshot(self.ref)
         assert self.rx._graph.num_nodes() == len(self.events) + len(self.groups)
+        assert self.rx.is_equivalent(self.ref)
 
     @invariant()
     def next_is_one_in_one_out_and_matches_the_model(self):

@@ -121,6 +121,7 @@ quartodoc:
       contents:
         - graph.graph
         - graph.edge
+        - graph.equivalence
         - graph.graph_adapter
         - graph.rx_adapter
     - title: Visualization

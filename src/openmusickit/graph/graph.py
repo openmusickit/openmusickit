@@ -10,6 +10,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from openmusickit.errors import GraphError, OmkWarning, TemporalCompatibilityError
+from openmusickit.graph import equivalence
 from openmusickit.graph.edge import (
     Branch,
     Contains,
@@ -20,6 +21,7 @@ from openmusickit.graph.edge import (
     TimedEdge,
     TimingAnchor,
 )
+from openmusickit.graph.equivalence import GraphDiff
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyrics
@@ -260,6 +262,62 @@ class OmkGraph:
             if `edge` is not on the graph.
         """
         return self._graph.get_edge_endpoints(edge)
+
+    # Comparison
+
+    def is_equivalent(self, other: OmkGraph) -> bool:
+        """Whether `other` holds the same music as this graph: its nodes pair
+        off one to one with equal nodes here (`==`, so ids and `meta` aside),
+        joined by equal edges. `GraphMeta` is not compared, and the graphs
+        may sit on different adapters. See `graph.equivalence` for how.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
+        >>> graph, rebuilt = OmkGraph(GraphMeta()), OmkGraph(GraphMeta(name="copy"))
+        >>> graph.add_line([NoteEvent(tones={C}), NoteEvent(tones={D})])
+        >>> rebuilt.add_line([NoteEvent(tones={C}), NoteEvent(tones={D})])
+        >>> graph.is_equivalent(rebuilt)
+        True
+        >>> rebuilt.add_line([NoteEvent(tones={E})])
+        >>> graph.is_equivalent(rebuilt)
+        False
+        """
+        return equivalence.correspondence(self, other) is not None
+
+    def correspondence(self, other: OmkGraph) -> dict[UUID, UUID] | None:
+        """The id of each node here paired with the id of its counterpart in
+        `other`, or None if the graphs are not equivalent (`is_equivalent`).
+        Where the music repeats itself, several pairings may do, and this is
+        one of them.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D
+        >>> c, d, c2, d2 = (NoteEvent(tones={t}) for t in (C, D, C, D))
+        >>> graph, rebuilt = OmkGraph(GraphMeta()), OmkGraph(GraphMeta())
+        >>> graph.add_line([c, d])
+        >>> rebuilt.add_line([c2, d2])
+        >>> graph.correspondence(rebuilt) == {c.id: c2.id, d.id: d2.id}
+        True
+        """
+        return equivalence.correspondence(self, other)
+
+    def diff(self, other: OmkGraph) -> GraphDiff:
+        """What changes from this graph to `other`, counted by content: the
+        nodes, and the edges (with their ends), that one has more of than the
+        other. See `GraphDiff`.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, D
+        >>> graph, rebuilt = OmkGraph(GraphMeta()), OmkGraph(GraphMeta())
+        >>> graph.add_node(NoteEvent(tones={C}))
+        >>> rebuilt.add_node(NoteEvent(tones={D}))
+        >>> print(graph.diff(rebuilt))
+        - NoteEvent(tones=[TonalVector((0, 0))], duration=None)
+        + NoteEvent(tones=[TonalVector((1, 2))], duration=None)
+        >>> print(graph.diff(graph))
+        no differences
+        """
+        return equivalence.diff(self, other)
 
     def add_edge(self, from_obj: OmkObject, to_obj: OmkObject, edge_type: EdgeType) -> None:
         """Adds a plain edge of `edge_type`; the semantic methods (`add_next`,
