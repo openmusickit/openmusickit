@@ -830,7 +830,7 @@ the Mozart keeps every repeat). A third form, grid kept but divisions
 stripped, checks that the writer's grid-versus-onsets comparison passes on
 meter-derived bar lines.
 
-### 9.5a `remove_derivable_divisions` on its own (`tests/graph/test_division_event.py`)
+### 9.5a `remove_derivable_divisions` on its own (`tests/graph/test_divisions.py`)
 
 Small graphs, no MusicXML: a line in 4/4 with a division every bar loses
 all of them; a pickup keeps the first; a split bar keeps its extra division;

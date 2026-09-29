@@ -374,3 +374,51 @@ def test_music_of_unmeasurable_length_cannot_be_checked_for_order():
     with warnings.catch_warnings():
         warnings.simplefilter("error", OmkWarning)
         assert graph.check_sync_alignment(film) == []
+
+
+# A sync line on a Score, and taking one away
+
+
+def test_a_score_names_its_sync_line():
+    from openmusickit.objects.score import Score
+
+    graph = OmkGraph(GraphMeta())
+    score, bars = Score(title="Quartet"), SyncLine(temporal_system=WSMN_TEMPORAL, name="bars")
+    graph.add_sync_line_to_score(score, bars)
+    assert list(graph.score_sync_lines(score)) == [bars]
+    assert list(graph.scores_of(bars)) == [score]
+    assert list(graph.score_lines(score)) == [] and list(graph.score_parts(score)) == []
+    edge = graph.get_edge(score, bars, EdgeType.CONTAINS)
+    assert not isinstance(edge, TimedEdge)
+    with pytest.raises(GraphError):
+        graph.add_sync_line_to_score(score, bars)
+
+
+def test_removing_a_sync_line_puts_the_graph_back(cue):
+    from tests.graph.helpers import snapshot
+
+    graph, line, film, start, end = cue
+    bare = OmkGraph(GraphMeta())
+    bare.add_line(line)
+    graph.remove_sync_line(film)
+    assert snapshot(graph) == snapshot(bare)
+
+
+def test_removing_a_grid_leaves_the_score_and_its_music():
+    from openmusickit.objects.score import Score
+
+    graph = OmkGraph(GraphMeta())
+    line = notes(C, D, E, F, duration=whole)
+    graph.add_line(line)
+    score = Score(title="Grid")
+    graph.add_line_to_score(score, line[0])
+    bars = SyncLine(temporal_system=WSMN_TEMPORAL, name="bars")
+    graph.add_sync_line_to_score(score, bars)
+    for i, event in enumerate(line):
+        graph.sync_event(event, bars, whole.scale(i) if i else ZeroDuration())
+    assert len(graph.sync_points(bars)) == 4
+    graph.remove_sync_line(bars)
+    assert list(graph.score_sync_lines(score)) == []
+    assert list(graph.score_lines(score)) == [line[0]]
+    assert list(graph.edges(EdgeType.SIMULTANEOUS)) == []
+    assert graph.get_node(bars.id) is None

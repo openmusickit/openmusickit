@@ -54,7 +54,8 @@ Time in the graph is relative, and there is no score origin. The pieces:
 - A **Score** (`objects.score`; CONTAINS, `OmkGraph.add_line_to_score`,
   `add_part_to_score`) carries the work's metadata (title, composer, ...)
   and names one connected component: it points at the heads of the
-  component's top-level lines and at its Parts. Its CONTAINS edges are
+  component's top-level lines, at its Parts, and at any sync line of its
+  own (a bar grid, `add_sync_line_to_score`). Its CONTAINS edges are
   plain, not timed (a group's are timed because a group is a timing origin;
   a score is not), so a Score says nothing about when anything happens.
   `walk_score` walks every line; `scores_of` finds a head's or a Part's

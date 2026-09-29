@@ -9,10 +9,12 @@ class Score(OmkObject):
     the metadata a title page carries,
     and a name for one connected component.
 
-    A Score points at the heads of its top-level lines and at its Parts
+    A Score points at the heads of its top-level lines, at its Parts,
+    and at any sync line of its own (a bar grid, the film a cue is written to)
     with plain CONTAINS edges
-    (`OmkGraph.add_line_to_score`, `add_part_to_score`;
-    `score_lines`, `score_parts`, `scores_of` and `walk_score` read them back).
+    (`OmkGraph.add_line_to_score`, `add_part_to_score`, `add_sync_line_to_score`;
+    `score_lines`, `score_parts`, `score_sync_lines`, `scores_of` and `walk_score`
+    read them back).
     A line need not have a Part (a chord line, a sketch),
     and a Part need not have music yet (an orchestration sketch),
     so both memberships carry information.

@@ -5,6 +5,7 @@ import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
@@ -24,6 +25,8 @@ from openmusickit.graph.edge import (
 from openmusickit.graph.equivalence import GraphDiff
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.graph.rx_adapter import RustworkxAdapter
+from openmusickit.objects.context_event import MeterEvent
+from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyrics
 from openmusickit.objects.marking import Marked, Marking
 from openmusickit.objects.note_event import NoteEvent
@@ -608,6 +611,96 @@ class OmkGraph:
         for obj in self.walk_span(start, end):
             if isinstance(obj, TonalObject):
                 obj.transform_tones(operation, *args, **kwargs)
+
+    # Divisions
+
+    def remove_derivable_divisions(self, head: SequentialEvent) -> list[DivisionEvent]:
+        """Removes from the line starting at `head` every division that the
+        meter in force would put back, and returns them in line order.
+
+        A division is derivable when it falls exactly one meter after the
+        previous boundary (the previous division, or the head), has no
+        `shape`, carries nothing (no mark, annotation or spanner end), and
+        is not the last event of the line. A pickup arrives early, so it
+        stays and the count restarts from it; a split bar, a repeat, a
+        double or final bar, a bar line with a fermata, and every division
+        of a line with no meter stay too. Pins to a removed division move
+        to the event after it, which starts at the same instant.
+        Past an event of unknown duration nothing can be judged, so the
+        rest of the line is left as it is.
+
+        `insert_event` puts a returned division back where it was.
+
+        >>> from openmusickit.objects.context_event import MeterEvent
+        >>> from openmusickit.objects.division_event import DivisionEvent
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.scoring.symbols import final_bar
+        >>> from openmusickit.systems.wsmn.temporal.symbols import four_four, quarter
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C
+        >>> graph = OmkGraph(GraphMeta())
+        >>> meter = MeterEvent(meter=four_four)
+        >>> notes = [NoteEvent(tones={C}, duration=quarter) for _ in range(9)]
+        >>> pickup, bar, end = DivisionEvent(), DivisionEvent(), DivisionEvent(shape=final_bar)
+        >>> graph.add_line([meter, notes[0], pickup, *notes[1:5], bar, *notes[5:], end])
+        >>> removed = graph.remove_derivable_divisions(meter)
+        >>> removed[0] is bar, len(removed)
+        (True, 1)
+        >>> [n is pickup or n is end for n in graph.walk_line(meter) if isinstance(n, DivisionEvent)]
+        [True, True]
+        """
+        events = list(self.walk_line(head))
+        meter = None
+        position = boundary = Fraction(0)
+        removed: list[DivisionEvent] = []
+        for index, event in enumerate(events):
+            if isinstance(event, MeterEvent):
+                meter = event.meter if isinstance(event.meter, Measurable) else None
+            if isinstance(event, DivisionEvent):
+                if (
+                    meter is not None
+                    and event.shape is None
+                    and index + 1 < len(events)
+                    and position - boundary == meter.rational_length
+                    and not self._carries_anything(event)
+                ):
+                    removed.append(event)
+                boundary = position
+            duration = event.duration
+            if not isinstance(duration, Measurable):
+                break
+            position += duration.rational_length
+        for division in removed:
+            self._move_pins(division, self.get_next(division))
+            following = self.get_next(division)
+            previous = self.get_previous(division)
+            self.remove_node(division)
+            if previous is not None and following is not None:
+                self.add_next(previous, following)
+        return removed
+
+    def _carries_anything(self, node: OmkObject) -> bool:
+        """Whether a mark, annotation or spanner end is attached to `node`."""
+        return any(True for _ in self._attachers(node))
+
+    def _move_pins(self, node: OmkObject, target: OmkObject) -> None:
+        """Re-pins everything pinned to `node`, either way round, to `target`,
+        with the same displacement. `node` has zero duration, so its onset
+        and offset are one instant, which is `target`'s onset: a pin from
+        `node` anchored at its offset is anchored at `target`'s onset."""
+        for edge in list(self._graph.out_edges(node, EdgeType.SIMULTANEOUS)):
+            other = self._graph.get_target_of_edge(edge)
+            self.remove_edge(edge)
+            moved = Simultaneous(displacement=edge.displacement, origin=edge.origin)
+            moved.meta.update(edge.meta)
+            self._graph.add_edge(target, other, moved)
+        for edge in list(self._graph.in_edges(node, EdgeType.SIMULTANEOUS)):
+            other = self._graph.get_source_of_edge(edge)
+            self.remove_edge(edge)
+            moved = Simultaneous(
+                anchor=edge.anchor, displacement=edge.displacement, origin=edge.origin
+            )
+            moved.meta.update(edge.meta)
+            self._graph.add_edge(other, target, moved)
 
     # Compound lines: branches (same performer), pins (independent lines), timing
 
@@ -1329,8 +1422,35 @@ class OmkGraph:
         """The parts of `score`, in no particular order."""
         return self._graph.successors(score, Part, EdgeType.CONTAINS)
 
+    def add_sync_line_to_score(self, score: Score, sync_line: SyncLine) -> None:
+        """Records that `sync_line` is one of `score`'s: a timeline the work
+        is measured against, such as a bar grid that every part's bar lines
+        are pinned to, or the film a cue score is written to. The edge is a
+        plain CONTAINS, as for the score's lines and parts.
+
+        >>> from openmusickit.objects.score import Score
+        >>> from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
+        >>> graph = OmkGraph(GraphMeta())
+        >>> score, bars = Score(title="Quartet"), SyncLine(temporal_system=WSMN_TEMPORAL, name="bars")
+        >>> graph.add_sync_line_to_score(score, bars)
+        >>> list(graph.score_sync_lines(score)) == [bars], list(graph.scores_of(bars)) == [score]
+        (True, True)
+
+        Raises
+        ------
+        GraphError
+            if `sync_line` is already in `score`.
+        """
+        self.add_node(score)
+        self.add_node(sync_line)
+        self.add_edge(score, sync_line, EdgeType.CONTAINS)
+
+    def score_sync_lines(self, score: Score) -> Iterator[SyncLine]:
+        """The sync lines of `score`, in no particular order."""
+        return self._graph.successors(score, SyncLine, EdgeType.CONTAINS)
+
     def scores_of(self, node: OmkObject) -> Iterator[Score]:
-        """The scores that hold `node`, a line head or a Part."""
+        """The scores that hold `node`, a line head, a Part or a SyncLine."""
         return self._graph.predecessors(node, Score, EdgeType.CONTAINS)
 
     def walk_score(self, score: Score) -> Iterator[SequentialEvent]:
@@ -1518,6 +1638,28 @@ class OmkGraph:
         """The sync line `point` is on, or None if it is on none."""
         return next(self._graph.predecessors(point, SyncLine, EdgeType.CONTAINS), None)
 
+    def remove_sync_line(self, sync_line: SyncLine) -> None:
+        """Takes `sync_line` off the graph with its points and every pin to
+        them, and out of any Score that holds it: the undo of building one
+        (`add_sync_line` explains why `remove_node` alone is not).
+        The music the points were pinned to is untouched.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C
+        >>> graph = OmkGraph(GraphMeta())
+        >>> note = NoteEvent(tones={C})
+        >>> graph.add_line([note])
+        >>> film = SyncLine(temporal_system=CLOCK_TIME)
+        >>> _ = graph.sync_event(note, film, ClockDuration.from_seconds(5))
+        >>> graph.remove_sync_line(film)
+        >>> [type(n).__name__ for n in graph.nodes()], list(graph.edges())
+        (['NoteEvent'], [])
+        """
+        for point in self.sync_points(sync_line):
+            self.remove_node(point)
+        self.remove_node(sync_line)
+
     def synced_events(self, point: SyncPoint) -> Iterator[SequentialEvent]:
         """The events pinned to `point`, in no particular order.
 
@@ -1648,12 +1790,19 @@ class OmkGraph:
 
     # Spanners (slurs, crescendos, phrasing)
 
-    def add_spanner(self, spanner: Spanner, start: SequentialEvent, end: SequentialEvent) -> None:
+    def add_spanner(
+        self, spanner: Spanner, start: SequentialEvent, end: SequentialEvent | None = None
+    ) -> None:
         """Places a spanner over the events from `start` to `end`, with
         STARTS_AT and ENDS_AT edges from the spanner to them.
 
+        With `end=None` the spanner is open: it runs from `start` to the end
+        of the line, however long it grows, as a `Stint` with no end does.
+        That is how a pedal held to the last bar, a `rit.` with no `a tempo`,
+        or an `una corda` that is never lifted is recorded.
+
         >>> from openmusickit.objects.marking import MarkSpanner
-        >>> from openmusickit.systems.wsmn.scoring.symbols import slur
+        >>> from openmusickit.systems.wsmn.scoring.symbols import slur, una_corda
         >>> from openmusickit.objects.note_event import NoteEvent
         >>> from openmusickit.systems.wsmn.tonal.symbols import C, D, E
         >>> graph = OmkGraph(GraphMeta())
@@ -1663,10 +1812,33 @@ class OmkGraph:
         >>> graph.add_spanner(arc, c, d)
         >>> graph.get_edge(arc, c, EdgeType.STARTS_AT).type, graph.get_edge(arc, d, EdgeType.ENDS_AT).type
         (<EdgeType.STARTS_AT: 'starts_at'>, <EdgeType.ENDS_AT: 'ends_at'>)
+        >>> soft = MarkSpanner(mark=una_corda)
+        >>> graph.add_spanner(soft, d)
+        >>> graph.spanner_end(soft) is None, graph.spanner_end(arc) is d
+        (True, True)
         """
         self.add_node(spanner)
         self.add_edge(spanner, start, EdgeType.STARTS_AT)
-        self.add_edge(spanner, end, EdgeType.ENDS_AT)
+        if end is not None:
+            self.add_edge(spanner, end, EdgeType.ENDS_AT)
+
+    def spanner_start(self, spanner: Spanner) -> SequentialEvent:
+        """The event `spanner` starts at.
+
+        Raises
+        ------
+        GraphError
+            if `spanner` has no STARTS_AT edge.
+        """
+        start = next(self._graph.successors(spanner, SequentialEvent, EdgeType.STARTS_AT), None)
+        if start is None:
+            raise GraphError(f"{spanner!r} starts nowhere: it has no STARTS_AT edge.")
+        return start
+
+    def spanner_end(self, spanner: Spanner) -> SequentialEvent | None:
+        """The event `spanner` ends at, or None for an open spanner
+        (one that runs to the end of its line)."""
+        return next(self._graph.successors(spanner, SequentialEvent, EdgeType.ENDS_AT), None)
 
     # Lyrics
 
@@ -1801,13 +1973,16 @@ class OmkGraph:
 
     def _binding_span_end(self, obj: SequentialEvent) -> SequentialEvent | None:
         """The last event of a binding MarkSpanner (slur, tie) that starts at
-        `obj`, or None if no such span starts here."""
+        `obj`, or None if no such span starts here. An open span binds to
+        the end of the line."""
         for spanner in self._graph.predecessors(
             obj, Marked, EdgeType.STARTS_AT, predicate=lambda node: node.mark.binds
         ):
-            for end in self._graph.successors(spanner, edge_type=EdgeType.ENDS_AT):
-                if end is not obj:
-                    return end
+            end = self.spanner_end(spanner)
+            if end is None:
+                *_, end = self.walk_line(obj)
+            if end is not obj:
+                return end
         return None
 
     def unlink_lyric_from_object(self, lyric_syllable: LyricSyllable, obj: OmkObject) -> None:

@@ -151,3 +151,24 @@ contract and with group membership, but it means "fork the second oboe at bar
 notice. Also unenforced: `add_to_group(group, sync_point)` is typed
 `head: SequentialEvent` but is not refused at runtime, and a sync point reached
 by a group's timed CONTAINS would leak past the sync gate.
+
+## The timing walk returns notation-spelled `TiedDuration`s (2026-09-29)
+
+`relative_onset` and `onsets` sum event durations with `+`, so over a long
+line the answer is a `TiedDuration` whose spelling depends on the path
+(`[1/1, 1/4]` one way round, `[1/4, 1/1]` the other) and whose member count
+grows with every tuplet (25–32 members across a quartet movement, 160 over a
+synthetic 400-note line). The values are equal and `rational_length` is
+exact, so nothing is wrong, but a position is a number, not a spelling.
+Found while probing MusicXML import; the reader and writer keep their own
+`Fraction` cursors. Decide whether the walk should return a length, or a
+normalized spelling, when a second consumer wants positions.
+
+## `MeterEvent` equality is by length (2026-09-29)
+
+`MeterEvent(meter=four_four) == MeterEvent(meter=two_two)`, because
+`Measurable`s compare by length, so `OmkGraph.is_equivalent` cannot tell a
+round trip that wrote 2/2 for 4/4 from one that kept it. The MusicXML tests
+compare `TimeSignature.presentation` directly through `correspondence`.
+Whether a meter *event* should compare its presentation too is a small
+question for when the next consumer of meters appears.

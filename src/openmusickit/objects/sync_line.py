@@ -39,6 +39,19 @@ Subclasses are expected to be media timelines
 which differ from the base only in which temporal system they declare
 and in what resource they point at.
 Nothing here is specific to clock time.
+
+A second use is a **bar grid**:
+a sync line in the music's own temporal system,
+with a point at the start of a score and one at every bar line,
+to which each part pins its head and its divisions.
+It records, once and symmetrically, that bar *n* is bar *n* in every part
+(what a MusicXML file asserts by its measures),
+and it gives score-wide instants (a rehearsal letter, a coda) a place to sit,
+without making measures structural:
+every line still carries its own divisions, or none,
+and the grid can be taken away (`graph.OmkGraph.remove_sync_line`)
+leaving the music as it was.
+A `Score` names its grid with `graph.OmkGraph.add_sync_line_to_score`.
 """
 
 from dataclasses import dataclass

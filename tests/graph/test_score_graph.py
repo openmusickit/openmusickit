@@ -185,3 +185,18 @@ def test_a_graph_may_hold_two_scores():
     assert list(graph.scores_of(second[0])) == [two]
     with pytest.raises(GraphError):
         graph.relative_onset(first[0], second[0])
+
+
+def test_a_score_may_hold_a_sync_line_beside_its_lines_and_parts(twinkle):
+    from openmusickit.objects.sync_line import SyncLine
+    from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
+
+    graph, score, melody, voice, chords, singer, piano = twinkle
+    bars = SyncLine(temporal_system=WSMN_TEMPORAL, name="bars")
+    graph.add_sync_line_to_score(score, bars)
+    assert list(graph.score_sync_lines(score)) == [bars]
+    assert {n.id for n in graph.score_lines(score)} == {melody[0].id, chords[0].id}
+    assert {p.id for p in graph.score_parts(score)} == {singer.id, piano.id}
+    assert bars not in list(graph.walk_score(score))
+    graph.remove_node(score)
+    assert graph.get_node(bars.id) is bars and list(graph.scores_of(bars)) == []
