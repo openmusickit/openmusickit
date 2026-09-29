@@ -101,7 +101,13 @@ class OmkGraph:
 
     @classmethod
     def from_file(cls, f: Path, graph_engine: GraphAdapter | None = None) -> OmkGraph:
-        raise NotImplementedError
+        """Returns an OmkGraph read from a file, by its suffix: `.musicxml`,
+        `.xml` and `.mxl` through `io.musicxml.read`. JSON is not implemented yet.
+
+        Raises ValueError for a suffix no reader claims."""
+        graph = cls(GraphMeta(), graph_engine)
+        graph.import_file(f)
+        return graph
 
     def import_json_graph(self, js_graph) -> None:
         """Adds the contents of js_graph to the current graph.
@@ -109,7 +115,17 @@ class OmkGraph:
         raise NotImplementedError
 
     def import_file(self, f: Path) -> None:
-        raise NotImplementedError
+        """Adds the contents of a file to the current graph, by its suffix
+        (see `from_file`); a MusicXML file becomes a new Score on the graph."""
+        path = Path(f)
+        if path.suffix.lower() in (".musicxml", ".xml", ".mxl"):
+            from openmusickit.io.musicxml.reader import read_into
+
+            read_into(self, path)
+        elif path.suffix.lower() == ".json":
+            raise NotImplementedError
+        else:
+            raise ValueError(f"No reader for {path.suffix!r} files: {path}")
 
     def export_to_json(self):
         raise NotImplementedError

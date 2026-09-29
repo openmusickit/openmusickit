@@ -72,3 +72,9 @@ class RenderingError(OmkError, RuntimeError):
 class GraphvizNotFoundError(RenderingError):
     """Raised when the Graphviz `dot` executable is not on the PATH.
     The message says how to install it; `GraphRenderer.to_dot` works without it."""
+
+
+class MusicXmlError(OmkError, ValueError):
+    """Raised when a file cannot be read as MusicXML at all: not XML, not a
+    score, a timewise score, or a container that names no score. What a
+    readable file says but OMK cannot place is an `OmkWarning`, never this."""

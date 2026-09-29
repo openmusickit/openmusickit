@@ -25,7 +25,7 @@ Examples
 GraphMeta(name='Sketch', description=None, info={})
 """
 
-from . import errors, graph, objects, systems, utils, values, visualization
+from . import errors, graph, io, objects, systems, utils, values, visualization
 from .errors import OmkError, OmkWarning
 from .graph import EdgeType, GraphMeta, OmkGraph
 from .objects import (
@@ -65,6 +65,7 @@ from .values import (
 __all__ = [
     "errors",
     "graph",
+    "io",
     "objects",
     "systems",
     "utils",
