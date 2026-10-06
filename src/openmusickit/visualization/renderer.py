@@ -3,6 +3,7 @@ DOT text out, and SVG or PNG through the local Graphviz."""
 
 from __future__ import annotations
 
+from openmusickit.errors import GraphvizNotFoundError
 from openmusickit.graph.graph import OmkGraph
 from openmusickit.visualization.config import VisualizationConfig
 from openmusickit.visualization.dot import DotGraph
@@ -16,6 +17,9 @@ class GraphRenderer:
     `to_dot` needs nothing installed. `to_svg` and `to_png` run Graphviz's
     `dot`, which must be on the PATH, and raise `GraphvizNotFoundError` when
     it is not.
+
+    In Jupyter, a renderer left as a cell's value is drawn as SVG; without
+    Graphviz it falls back to its plain repr.
 
     The DOT model is built afresh on every call: the graph is mutable, and a
     renderer is cheap to keep around.
@@ -67,3 +71,11 @@ class GraphRenderer:
             if Graphviz rejected the DOT.
         """
         return render_dot(self.to_dot(), "png")
+
+    def _repr_svg_(self) -> str | None:
+        """The SVG for Jupyter's rich display; None, so the plain repr is shown
+        instead, when Graphviz is not installed."""
+        try:
+            return self.to_svg()
+        except GraphvizNotFoundError:
+            return None
