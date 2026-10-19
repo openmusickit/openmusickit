@@ -270,3 +270,23 @@ entry's other idea, printing the ready-made symbol's name, was not possible:
 `test_repr_round_trips` in `tests/objects/test_marking.py` over every
 ready-made mark. The other custom reprs in `src/` were checked; the ones that
 do not evaluate are a new entry in `revisit.md`.
+
+### Part order and bracketing have no home on a Score (2026-09-22, resolved 2026-10-19)
+
+A `Score` (`src/openmusickit/objects/score.py`) names its top-level lines
+and its Parts with plain CONTAINS edges, which are unordered. The order of
+parts down the page, the bracket or brace that groups a choir or a string
+section (MusicXML `<part-group>`, LilyPond `StaffGroup` / `PianoStaff`),
+and whether a `LineGroup` may be a member in place of its heads were left
+out of the clef-score-text plan. Decide when a renderer or the importer
+first needs staff order; an ordered list of ids on the Score is the
+registry smell AGENTS.md warns against, so look for an edge-based answer.
+
+Resolved by `_plans/completed/stack-order.md`: the order things are drawn in
+is its own edge set, STACKS_ABOVE, a chain like NEXT (one neighbour each way,
+no cycles, several chains for an order only partly known) over Parts,
+`LineGroup`s, line heads and sync lines. Order is not relative to a
+container, so a Part cannot sit differently in two Scores; that belongs to a
+layout object if it is ever needed. A bracket or brace is a `StackGroup`
+spanner over a run of the stack, its drawing a WSMN `BracketShape`. The
+MusicXML reader's `index` and `groups` meta are gone.

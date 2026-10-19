@@ -54,20 +54,6 @@ Rest reprs should continue to use the Rest factory spelling, as that does roundt
 
 
 
-## Part order and bracketing have no home on a Score (2026-09-22)
-
-A `Score` (`src/openmusickit/objects/score.py`) names its top-level lines
-and its Parts with plain CONTAINS edges, which are unordered. The order of
-parts down the page, the bracket or brace that groups a choir or a string
-section (MusicXML `<part-group>`, LilyPond `StaffGroup` / `PianoStaff`),
-and whether a `LineGroup` may be a member in place of its heads were left
-out of the clef-score-text plan. Decide when a renderer or the importer
-first needs staff order; an ordered list of ids on the Score is the
-registry smell AGENTS.md warns against, so look for an edge-based answer.
-
-
-
-
 ## Transposition Complications (added by DEV, 2026-09-23)
 
 On a Stint, transposition means these "notes sound differently than written."

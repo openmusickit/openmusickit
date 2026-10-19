@@ -3,7 +3,7 @@
 Status: **stages 0–4 done 2026-09-29** (plan, fixtures, model changes, the
 reader and its tests; decisions in §3 confirmed with the developer the same
 day; §12 records the choices made while building).
-**Stage 5 (P1) done 2026-10-19** (`_plans/stack-order.md`);
+**Stage 5 (P1) done 2026-10-19** (`_plans/completed/stack-order.md`);
 the writer (stages 6–8) is next.
 
 Written for two readers:
@@ -116,7 +116,7 @@ and §8 (fixture flaws).
 5. **Part order and `<part-group>` get their own pre-plan (§7, P1) before the
    writer.** The reader stored the `<part-list>` index and group in
    `Part.meta["musicxml"]` as a stopgap until P1 was built
-   (`_plans/stack-order.md`, 2026-10-19); the stopgap is gone.
+   (`_plans/completed/stack-order.md`, 2026-10-19); the stopgap is gone.
 6. **Control flow: record the page, defer the jumps.** Repeat dots are already
    in the bar-line shape. An `<ending>` becomes a `MarkSpanner` over the
    ending's events with a minted `Mark(name="ending 1", kind=NAVIGATION,
@@ -269,7 +269,7 @@ Counts in parentheses are occurrences in the corpus, to show what is common.
   its `LineGroup`), a multi-staff part's lines in staff order;
   `<part-group>` start/stop → a `StackGroup` from its first part to its last,
   with `group-name`, `group-abbreviation` and a `BracketShape` from
-  `group-symbol` and `group-barline` (`_plans/stack-order.md` §5).
+  `group-symbol` and `group-barline` (`_plans/completed/stack-order.md` §5).
 - One staff, one voice → one line; `add_stint(part, Stint(), head)`.
 - `<staves>` n (pre-scanned, since it follows `<key>` inside `<attributes>`) →
   `LineGroup(name=part-name)` of n lines (one per staff, `add_group`), and
@@ -574,7 +574,7 @@ not `Marked`) is ignored with a warning naming what was left out.
 
 ### 6.2 Algorithm
 
-1. Parts in their `STACKS_ABOVE` order (`_plans/stack-order.md` §6);
+1. Parts in their `STACKS_ABOVE` order (`_plans/completed/stack-order.md` §6);
    each Part's lines are its group's members, in their stack order,
    or its stint's line.
 2. Per line, the segments between `DivisionEvent`s are the measures
@@ -612,7 +612,7 @@ ordered id list. Candidates to weigh: an `index` on the Score's CONTAINS
 edge; a `PartGroup(Spanner)` over first and last Part with a symbol;
 letting a `LineGroup` be a Score member.
 **Done 2026-10-19:** `STACKS_ABOVE` edges and `StackGroup` spanners
-(`_plans/stack-order.md`).
+(`_plans/completed/stack-order.md`).
 
 **P2. Control flow.** Repeats (dots exist), `<ending>` (48 in Mozart, 216 in
 the big band), repeat counts, `D.C.`/`D.S.`/`fine`/`coda` jumps (marks
@@ -935,7 +935,7 @@ complete, 9.2 complete, 9.3 for all ten.
 
 Stage 5. **Gate: P1 (part order and bracketing)** designed and built in its
 own session. The reader's `index`/`group` meta is replaced by P1's objects.
-Done 2026-10-19 (`_plans/stack-order.md`).
+Done 2026-10-19 (`_plans/completed/stack-order.md`).
 
 Stage 6. Writer: §6, `export_file`, 9.4, 9.6's `exportable_scores`
 property, doctests.

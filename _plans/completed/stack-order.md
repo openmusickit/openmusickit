@@ -1,6 +1,6 @@
 # Stack order and stack groups (MusicXML pre-plan P1)
 
-Status: **approved 2026-10-19**.
+Status: **done 2026-10-19**.
 Gates stage 6 (the writer) of `_plans/musicxml.md`.
 
 Written for the developer (to approve)
