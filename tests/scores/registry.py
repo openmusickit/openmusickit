@@ -44,7 +44,7 @@ class ScoreFixture:
     pdf: Path | None = None
     extras: tuple[Path, ...] = ()
     expected_warnings: tuple[str, ...] = ()  # substrings; every warning matches one, each occurs
-    known_differences: tuple[str, ...] = ()
+    known_differences: Mapping[str, str] = field(default_factory=dict)  # kind -> why (9.5)
     shape: Mapping[str, int] = field(default_factory=dict)  # what the reader builds, pinned
 
     @property
@@ -145,6 +145,12 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "ties with one start and two ends",
                 "<ending> brackets",
             ),
+            known_differences={
+                "extend": (
+                    "the writer draws an extender wherever a word's last syllable is held "
+                    "over a melisma; MuseScore drew four fewer"
+                ),
+            },
             shape={
                 "lines": 5,
                 "chord_lines": 1,
@@ -184,6 +190,13 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "wrong-syllabic",
             },
             expected_warnings=("minted mark",),
+            known_differences={
+                "lyric": (
+                    "52 <syllabic> flags in the file contradict its own hyphenation; the "
+                    "writer writes the words' real syllables (the corrected companion has "
+                    "none)"
+                ),
+            },
             shape={
                 "lines": 3,
                 "chord_lines": 0,
@@ -248,6 +261,11 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "x-noteheads",
             },
             expected_warnings=("minted mark", "<ending> brackets"),
+            known_differences={
+                "tie": (
+                    "the reader does not read ties between drum-kit strokes (_plans/revisit.md)"
+                ),
+            },
             shape={
                 "lines": 26,
                 "chord_lines": 0,
@@ -293,6 +311,12 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "alto-clef",
             },
             expected_warnings=("minted mark", "<ending> brackets"),
+            known_differences={
+                "barline": (
+                    "a double bar line just before a forward repeat is read as one "
+                    "start-repeat bar line, which the writer writes as the repeat alone"
+                ),
+            },
             shape={
                 "lines": 4,
                 "chord_lines": 0,
@@ -338,6 +362,13 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "non-integer-lyric-numbers",
             },
             expected_warnings=("minted mark 'Prima pars'",),
+            known_differences={
+                "extend": (
+                    "Sibelius marks the held notes of a melisma with blank lyrics carrying "
+                    "<extend>, which the reader does not keep; the writer draws extenders "
+                    "on held word-final syllables instead"
+                ),
+            },
             shape={
                 "lines": 6,
                 "chord_lines": 0,

@@ -4,8 +4,10 @@ Status: **stages 0–4 done 2026-09-29** (plan, fixtures, model changes, the
 reader and its tests; decisions in §3 confirmed with the developer the same
 day; §12 records the choices made while building).
 **Stage 5 (P1) done 2026-10-19** (`_plans/completed/stack-order.md`);
-**stage 6 (the writer) done 2026-10-19**; stage 7 (comparison, render
-smoke test, review script) is next.
+**stage 6 (the writer) done 2026-10-19**; **stage 7 (comparison, render
+smoke test, review script) done 2026-10-19**, waiting on the developer's
+review of the rendered pages (`uv run python -m tests.scores.review`) before
+stage 8 (docs).
 
 Written for two readers:
 the developer (to approve and to decide the pre-plans in §7),
@@ -1081,6 +1083,41 @@ Stage 6 (the writer), choices the plan did not spell out:
   in `io.musicxml.__all__`.
 - Reader fix found by the table tests: `<tied type="let-ring"/>` appended
   its mark without its meta, so the mark was dropped.
+
+Stage 7 (comparison and review):
+
+- The canonical form is a flat list of items per measure at explicit
+  positions (`canonical.py`'s docstring lists the normalizations); a
+  `Difference`'s kind is the item's tag. Numbered spans lose their numbers
+  rather than being renumbered by nesting: positions carry the pairing that
+  matters for a diff.
+- Normalizations beyond §9.5's list, each the reader's own reading: a
+  direction or grace note at a measure's end is the next measure's start, a
+  stop at a measure's start ends the measure before; adjacent rests of a
+  voice are one silence; a chord-level mark repeated on each chord note, and
+  a unison note in a chord, count once; a hidden staff is part-wide; display
+  attributes in musical elements (a fermata's "normal", an accent's
+  up/down, a pedal's line/sign, a percussion clef's line, a redundant
+  `normal-type`) are dropped.
+- `known_differences` in the registry became a mapping, kind to reason.
+  Five remain: the hymn's wrong `<syllabic>` flags (raw file only),
+  extender lines (Charleston, Palestrina), drum-kit ties the reader drops
+  (big band; `_plans/revisit.md`), and a double bar before a forward
+  repeat read as one start-repeat bar line (Mozart). Bach, Schubert, the
+  lead sheet and Tchaikovsky compare clean; so do both corrected companions.
+- Reader changes the comparison asked for, all meta: every mark read from
+  `<words>` carries `element: words` (and `text` when it matched by an
+  alias, "dim." for decresc.), the `<words>,</words>` breath mark too, and a
+  tempo word printed otherwise than the term's name keeps `term_text`
+  ("Allegretto"); the writer writes each back as the file had it.
+- The render smoke test is `tests/io/musicxml/test_mscore.py` (a second
+  `test_render.py` would clash with the visualization tests' basename);
+  MuseScore 4.7 renders all nine exports headless (`QT_QPA_PLATFORM=offscreen`).
+- `review.py` reads the corrected companion when there is one (`--raw` for
+  the file as distributed) and writes to `_review/` (gitignored). Page n is
+  set beside page n; an original with a title page (Schubert) is one ahead.
+- 9.6's `musicxml_documents()` writes bracketed triplets, as exporters do;
+  without `<tuplet>` the writer derives brackets the file did not have.
 
 ## 13. Not doing (deliberately)
 

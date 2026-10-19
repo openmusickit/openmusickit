@@ -755,7 +755,11 @@ def test_words_naming_a_ready_made_mark_use_it():
     assert warned == []
     (marking,) = graph.nodes(Marking)
     assert marking.mark is scoring.dolce
-    assert xml_meta_of(marking) == {}
+    assert xml_meta_of(marking) == {"element": "words"}  # the writer writes words back
+    graph, warned = read_with_warnings(direction("<words>dim.</words>") + w("C"))
+    (marking,) = graph.nodes(Marking)
+    assert marking.mark is scoring.decresc  # by its alias, whose text is kept
+    assert xml_meta_of(marking) == {"element": "words", "text": "dim."}
 
 
 def test_una_corda_is_an_open_spanner():

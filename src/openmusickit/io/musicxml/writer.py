@@ -1219,7 +1219,15 @@ class _PartWriter:
             return
         if mark is scoring.simile and _meta(event).get("measure_repeat"):
             return  # the % bar says it
-        if isinstance(event, NoteEvent) and _notation_element(mark, meta) is not None:
+        if mark is scoring.breath_mark and meta.get("element") == "words":
+            words = self.direction([_element("words", ",")], voice.staff)
+            self.add_item(voice.staff, onset + _length(event), _DIRECTION, words, at_end=True)
+            return  # a comma after the note, as the file wrote it
+        if (
+            isinstance(event, NoteEvent)
+            and meta.get("element") != "words"
+            and _notation_element(mark, meta) is not None
+        ):
             # a dynamic under a note of the main line is a direction, as notation programs write it
             dynamic = _is_dynamic(mark) or meta.get("element") == "other-dynamics"
             if not (dynamic and voice.main and _length(event) > 0):
@@ -1646,7 +1654,9 @@ class _PartWriter:
 
     def tempo_elements(self, event: TempoEvent, staff: int) -> list[ET.Element]:
         meta = _meta(event)
-        words = _element("words", event.term.name) if event.term is not None else None
+        words = None
+        if event.term is not None:
+            words = _element("words", meta.get("term_text") or event.term.name)
         metronome = None
         if event.tempo is not None or meta.get("per_minute"):
             metronome = _metronome_element(event.tempo, meta)
@@ -2418,6 +2428,8 @@ def _notation_element(mark: Mark, meta: dict) -> tuple[str | None, ET.Element] |
 
 def _direction_types(mark: Mark, meta: dict) -> list[ET.Element]:
     """The `<direction-type>` contents that say `mark`."""
+    if meta.get("element") == "words":
+        return [_element("words", meta.get("text") or mark.name)]
     if meta.get("element") == "other-dynamics":
         dynamics = _element("dynamics")
         _sub(dynamics, "other-dynamics", mark.name)

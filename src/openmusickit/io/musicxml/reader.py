@@ -35,7 +35,7 @@ hold goes in `node.meta["musicxml"]`, a dict OMK core never reads. Its keys:
   (kit lines), `tuplet`, `measure_repeat`, `staff` (only where it differs).
 - `Marking` / `MarkSpanner`: `offset`, `tremolo`, `fingering`, `accidental_mark`,
   `ending`, `element` (a minted mark's source element), `fermata_type`, `text`.
-- `MeterEvent`: `symbol`; `TempoEvent`: `sound_tempo`, `per_minute`, `tempo_hidden` (the figure is not printed), `term_hidden`.
+- `MeterEvent`: `symbol`; `TempoEvent`: `sound_tempo`, `per_minute`, `tempo_hidden` (the figure is not printed), `term_hidden`, `term_text` (the word as printed, when it is not the term's name).
 - `LyricSyllable`: `extend`, `humming`, `laughing`, `end_line`, `end_paragraph`.
 - `ChordEvent`: `kind`, `kind_text`, `frame`.
 """
@@ -1600,7 +1600,10 @@ class _PartReader:
 
     def read_words(self, text: str, position: Fraction, staff: int, hidden: bool) -> None:
         if text == ",":
-            self.point_marks.append(_PointMark(position, staff, scoring.breath_mark, at_end=True))
+            meta = {"element": "words"}  # so the writer puts the comma back as words
+            self.point_marks.append(
+                _PointMark(position, staff, scoring.breath_mark, at_end=True, meta=meta)
+            )
             return
         normalized = tables.normalize_words(text)
         term = tables.TEMPO_TERMS.get(normalized) or tables.TEMPO_TERMS.get(normalized.rstrip("."))
@@ -1608,6 +1611,8 @@ class _PartReader:
             for event in self.tempo_events(position):
                 if event.term is None:
                     event.term = term
+                    if text != term.name:
+                        xml_meta(event)["term_text"] = text  # "Allegretto", as printed
                 if hidden:
                     xml_meta(event)["term_hidden"] = True
             return
@@ -1640,7 +1645,11 @@ class _PartReader:
                 )
             )
             return
-        meta = {"hidden": True} if hidden else {}
+        meta: dict = {"element": "words"}  # the writer writes it back as words, not a symbol
+        if normalized != mark.name.lower():
+            meta["text"] = text  # matched by an alias ("dim." for decresc.)
+        if hidden:
+            meta["hidden"] = True
         self.point_marks.append(_PointMark(position, staff, mark, meta=meta))
 
     def read_metronome(self, element: ET.Element, position: Fraction, hidden: bool) -> None:

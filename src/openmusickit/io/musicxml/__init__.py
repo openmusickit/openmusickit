@@ -24,12 +24,26 @@ It refuses only when there is no score to write,
 and warns for what it leaves out.
 `read`'s docstring shows a whole small document going in,
 `write`'s a small graph going out.
+Whether an export kept the music is `compare(canonicalize(a), canonicalize(b))`:
+`canonical` reduces two documents to what they say musically and lists the differences.
 The design, the mapping rule by rule, and what is deliberately left out
 are in `_plans/musicxml.md`.
 """
 
-from openmusickit.io.musicxml import container, reader, tables, writer
+from openmusickit.io.musicxml import canonical, container, reader, tables, writer
+from openmusickit.io.musicxml.canonical import Difference, canonicalize, compare
 from openmusickit.io.musicxml.reader import read
 from openmusickit.io.musicxml.writer import write
 
-__all__ = ["container", "read", "reader", "tables", "write", "writer"]
+__all__ = [
+    "Difference",
+    "canonical",
+    "canonicalize",
+    "compare",
+    "container",
+    "read",
+    "reader",
+    "tables",
+    "write",
+    "writer",
+]

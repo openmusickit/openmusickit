@@ -477,3 +477,135 @@ def _add_attachments(draw, graph, events: list, note_marks: list) -> None:
                      for _ in range(min(count, 2))]  # fmt: skip
             graph.add_line(voice)
             graph.add_branch(parent, voice[0])
+
+
+# --- MusicXML documents ---------------------------------------------------------------------
+
+_DIVISIONS = 12  # per quarter: room for sixteenths (3) and eighth-note triplets (4)
+_DOCUMENT_VALUES = [
+    ("half", 24, 0),
+    ("quarter", 12, 0),
+    ("quarter", 18, 1),
+    ("eighth", 6, 0),
+    ("16th", 3, 0),
+]
+
+
+def _pitch_xml(step: str, alter: int, octave: int) -> str:
+    alter_xml = f"<alter>{alter}</alter>" if alter else ""
+    return f"<pitch><step>{step}</step>{alter_xml}<octave>{octave}</octave></pitch>"
+
+
+@st.composite
+def musicxml_documents(draw) -> bytes:
+    """A small `<score-partwise>` in the subset the reader reads without loss
+    and the writer writes back as it was: one or two parts of one to three
+    measures in 3/4 or 4/4, a first voice filling every measure with notes,
+    chords, rests and eighth-note triplets (bracketed, as exporters write
+    them), ties between repeated notes, dynamics before notes, and sometimes
+    a second voice in a measure."""
+    beats = draw(st.sampled_from([3, 4]))
+    bar = beats * _DIVISIONS
+    pitches = st.tuples(
+        st.sampled_from("CDEFGAB"), st.sampled_from([-1, 0, 0, 1]), st.integers(3, 5)
+    )
+
+    def note_xml(pitch, duration, type_name, dots, voice, chord=False, extra="", tie=None, tm=""):
+        parts = [
+            "<note>",
+            "<chord/>" if chord else "",
+            _pitch_xml(*pitch),
+            f"<duration>{duration}</duration>",
+        ]
+        if tie:
+            parts.append("".join(f'<tie type="{t}"/>' for t in tie))
+        parts += [f"<voice>{voice}</voice><type>{type_name}</type>", "<dot/>" * dots, tm]
+        notations = "".join(f'<tied type="{t}"/>' for t in tie or ()) + extra
+        if notations:
+            parts.append(f"<notations>{notations}</notations>")
+        parts.append("</note>")
+        return "".join(parts)
+
+    def voice_xml(length: int, voice: int, ties: bool) -> str:
+        out: list[str] = []
+        remaining = length
+        last = None  # (index in `out`, pitch) of the last single note, which a tie may start from
+        while remaining > 0:
+            choice = draw(st.integers(0, 9))
+            if choice == 0 and remaining >= _DIVISIONS:  # a bracketed eighth-note triplet
+                tm = (
+                    "<time-modification><actual-notes>3</actual-notes>"
+                    "<normal-notes>2</normal-notes></time-modification>"
+                )
+                for bracket in ['<tuplet type="start"/>', "", '<tuplet type="stop"/>']:
+                    out.append(note_xml(draw(pitches), 4, "eighth", 0, voice, extra=bracket, tm=tm))
+                remaining -= _DIVISIONS
+                last = None
+                continue
+            type_name, duration, dots = draw(
+                st.sampled_from([v for v in _DOCUMENT_VALUES if v[1] <= remaining])
+            )
+            remaining -= duration
+            if choice == 1:
+                out.append(
+                    f"<note><rest/><duration>{duration}</duration><voice>{voice}</voice>"
+                    f"<type>{type_name}</type>{'<dot/>' * dots}</note>"
+                )
+                last = None
+                continue
+            tied = ties and last is not None and draw(st.booleans())
+            if tied:
+                index, pitch = last
+                out[index] = (
+                    out[index]
+                    .replace("<voice>", '<tie type="start"/><voice>', 1)
+                    .replace("</note>", '<notations><tied type="start"/></notations></note>', 1)
+                )
+            else:
+                pitch = draw(pitches)
+            if voice == 1 and draw(st.integers(0, 4)) == 0:
+                dynamic = draw(st.sampled_from(["p", "f", "mf", "sfz"]))
+                out.append(
+                    f"<direction><direction-type><dynamics><{dynamic}/></dynamics></direction-type></direction>"
+                )
+            out.append(
+                note_xml(pitch, duration, type_name, dots, voice, tie=("stop",) if tied else None)
+            )
+            chord = (
+                []
+                if tied
+                else [p for p in draw(st.lists(pitches, max_size=2, unique=True)) if p != pitch]
+            )
+            for other in chord:
+                out.append(note_xml(other, duration, type_name, dots, voice, chord=True))
+            last = None if chord or tied else (len(out) - 1, pitch)
+        return "".join(out)
+
+    parts = draw(st.integers(1, 2))
+    measures = draw(st.integers(1, 3))
+    part_list = "".join(
+        f'<score-part id="P{i}"><part-name>Part {i}</part-name></score-part>'
+        for i in range(1, parts + 1)
+    )
+    bodies = []
+    for i in range(1, parts + 1):
+        body = []
+        for m in range(1, measures + 1):
+            attributes = (
+                f"<attributes><divisions>{_DIVISIONS}</divisions><key><fifths>0</fifths></key>"
+                f"<time><beats>{beats}</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>"
+                if m == 1
+                else ""
+            )
+            content = voice_xml(bar, 1, ties=True)
+            if draw(st.integers(0, 3)) == 0:
+                content += f"<backup><duration>{bar}</duration></backup>" + voice_xml(
+                    bar, 2, ties=False
+                )
+            body.append(f'<measure number="{m}">{attributes}{content}</measure>')
+        bodies.append(f'<part id="P{i}">{"".join(body)}</part>')
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="4.0">'
+        f"<part-list>{part_list}</part-list>{''.join(bodies)}</score-partwise>"
+    )
+    return xml.encode("utf-8")
