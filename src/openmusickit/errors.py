@@ -78,3 +78,9 @@ class MusicXmlError(OmkError, ValueError):
     """Raised when a file cannot be read as MusicXML at all: not XML, not a
     score, a timewise score, or a container that names no score. What a
     readable file says but OMK cannot place is an `OmkWarning`, never this."""
+
+
+class UnexportableError(OmkError, ValueError):
+    """Raised when a graph cannot be written in a format at all: there is no
+    score to write, several and none chosen, or a score with no parts. What a
+    writable score holds but the format cannot carry is an `OmkWarning`."""

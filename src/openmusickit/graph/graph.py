@@ -136,6 +136,24 @@ class OmkGraph:
     def export_json_to_file(self, f: Path) -> None:
         raise NotImplementedError
 
+    def export_file(self, f: Path, score: Score | None = None) -> None:
+        """Writes a file, by its suffix: `.musicxml`, `.xml` and `.mxl` through
+        `io.musicxml.write`, which writes one Score (the graph's only one when
+        `score` is None). JSON is not implemented yet.
+
+        Raises ValueError for a suffix no writer claims, and
+        `UnexportableError` (from `io.musicxml.write`) when there is no
+        score to write."""
+        path = Path(f)
+        if path.suffix.lower() in (".musicxml", ".xml", ".mxl"):
+            from openmusickit.io.musicxml.writer import write
+
+            write(self, path, score)
+        elif path.suffix.lower() == ".json":
+            raise NotImplementedError
+        else:
+            raise ValueError(f"No writer for {path.suffix!r} files: {path}")
+
     # Basic Add, Connect, Remove
 
     def get_node(self, node_id: UUID | str) -> OmkObject | None:

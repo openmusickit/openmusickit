@@ -20,6 +20,7 @@ from openmusickit.errors import (
     ScalingError,
     TemporalCompatibilityError,
     TemporalError,
+    UnexportableError,
 )
 
 OMK_ERRORS = {
@@ -40,6 +41,7 @@ def test_the_error_classes_in_the_module():
         "RenderingError",
         "GraphvizNotFoundError",
         "MusicXmlError",
+        "UnexportableError",
     }
 
 
@@ -61,6 +63,7 @@ def test_domain_errors_subclass_the_closest_builtin():
     assert issubclass(RenderingError, RuntimeError)
     assert issubclass(GraphvizNotFoundError, RenderingError)
     assert issubclass(MusicXmlError, ValueError)
+    assert issubclass(UnexportableError, ValueError)
     assert not issubclass(ScalingError, TemporalCompatibilityError)
     assert not issubclass(GraphError, TemporalError)
 

@@ -4,7 +4,8 @@ Status: **stages 0–4 done 2026-09-29** (plan, fixtures, model changes, the
 reader and its tests; decisions in §3 confirmed with the developer the same
 day; §12 records the choices made while building).
 **Stage 5 (P1) done 2026-10-19** (`_plans/completed/stack-order.md`);
-the writer (stages 6–8) is next.
+**stage 6 (the writer) done 2026-10-19**; stage 7 (comparison, render
+smoke test, review script) is next.
 
 Written for two readers:
 the developer (to approve and to decide the pre-plans in §7),
@@ -1038,6 +1039,48 @@ Writer decisions (developer, 2026-10-19, before stage 6):
   line), so material MusicXML could carry but the caller does not want,
   such as a future analysis layer, is excluded without editing the graph.
   An omitted node's attachments go with it.
+
+Stage 6 (the writer), choices the plan did not spell out:
+
+- Per the developer's decision above, nothing in §6.1 raises any more: an
+  event of unknown or clock-time duration ends what is written of its line,
+  a tone with no octave is left out, a zero-tone event with no reader meta
+  is written as a rest, each with a warning. `UnexportableError` is only
+  for no Score, several with none chosen, and a Score with no parts.
+- Every part is cut at the bars of the first part whose first staff has
+  bar lines (else the first with a meter); another part's disagreeing bar
+  lines warn, and a note that crosses a bar line it is cut at is split and
+  tied. The bar grid is checked, not used: every pinned event's onset must
+  match its point's offset from its part's head (so a grid survives
+  `remove_derivable_divisions`, which moves pins to the next event); a
+  mismatch warns.
+- The voices of a measure are written staff by staff, main voice first,
+  except that a voice holding a slur or tie start goes before the voice
+  holding its stop: Tchaikovsky's harp has a voice crossing staves, and the
+  reader pairs starts and stops in file order.
+- The reader puts a tempo on every staff of a part, and on a staff where it
+  falls inside a held note, at that note's end; the writer writes a tempo
+  once, from the first staff, recognising the displaced copies.
+- A dynamic on a sounding main-line note is a `<direction>`; elsewhere (a
+  grace, a second voice) it goes in `<notations>`, where the reader puts it
+  back on the same event. A ready-made dynamic word ("cresc.", "sff") is
+  written as `<words>`, a minted one as its element; a mark minted from
+  `<other-dynamics>` text now carries `element: other-dynamics` (a reader
+  change; §5.11 already listed `element` for minted marks).
+- The writer adds `<sound tempo>` beside a metronome mark that has none,
+  writes rests for the gaps in a drum kit's voices, puts an extender on a
+  word's last syllable held over a melisma (§5.8's inverse) unless the
+  reader recorded one, and says in `<encoding>` that it writes no
+  accidentals, beams or stems.
+- `tuplet` brackets come from the reader's meta where a part has any,
+  else from runs of notes of one ratio that fill its span.
+- An open slur keeps its number to the end of the part, so Bach's two open
+  slurs, both numbered 2 in the file, are written as 2 and 3.
+- `writer.document` (the element) and `writer.to_bytes` are public in the
+  module beside `write`, for tests and for `canonicalize`; only `write` is
+  in `io.musicxml.__all__`.
+- Reader fix found by the table tests: `<tied type="let-ring"/>` appended
+  its mark without its meta, so the mark was dropped.
 
 ## 13. Not doing (deliberately)
 

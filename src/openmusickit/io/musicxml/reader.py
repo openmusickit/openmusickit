@@ -1056,6 +1056,7 @@ class _PartReader:
                 case "tied":
                     if child.get("type") == "let-ring":
                         data.marks.append(scoring.laissez_vibrer)
+                        data.mark_meta.append({})
                     else:
                         self.read_tie(child.get("type"), tone)
                 case "slur" | "glissando" | "slide":
@@ -1092,7 +1093,7 @@ class _PartReader:
                         mark = self.dynamic_mark(item)
                         if mark is not None:
                             data.marks.append(mark)
-                            data.mark_meta.append({})
+                            data.mark_meta.append(self.minted_from(item, mark))
                 case "fermata":
                     shape = (child.text or "").strip()
                     mark = tables.FERMATAS.get(shape)
@@ -1229,6 +1230,17 @@ class _PartReader:
                 text, MarkType.EXPRESSION, "other-dynamics"
             )
         return tables.DYNAMICS.get(item.tag) or self.minted(item.tag, MarkType.DYNAMIC, item.tag)
+
+    @staticmethod
+    def minted_from(item: ET.Element, mark: Mark) -> dict:
+        """`element` meta for a mark minted from `<other-dynamics>` text, which
+        the writer needs to tell from one minted from `<words>`."""
+        if (
+            item.tag == "other-dynamics"
+            and tables.WORDS.get(tables.normalize_words(mark.name)) != mark
+        ):
+            return {"element": "other-dynamics"}
+        return {}
 
     def minted(self, name: str, kind: MarkType, element: str) -> Mark:
         """A mark for a name the tables do not know: the file's word, kept."""
@@ -1483,7 +1495,8 @@ class _PartReader:
                 for item in element:
                     mark = self.dynamic_mark(item)
                     if mark is not None:
-                        self.point_marks.append(_PointMark(position, staff, mark))
+                        meta = self.minted_from(item, mark)
+                        self.point_marks.append(_PointMark(position, staff, mark, meta=meta))
             case "wedge":
                 if kind == "stop":
                     self.direction_spans.append(

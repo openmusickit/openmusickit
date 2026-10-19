@@ -13,13 +13,31 @@ from fractions import Fraction
 
 from hypothesis import strategies as st
 
-from openmusickit.objects.note_event import NoteEvent
+from openmusickit.graph.graph import GraphMeta, OmkGraph
+from openmusickit.io.musicxml import tables
+from openmusickit.objects.chord_event import ChordEvent
+from openmusickit.objects.context_event import ClefEvent, MeterEvent, ModalContextEvent, TempoEvent
+from openmusickit.objects.division_event import DivisionEvent
+from openmusickit.objects.lyrics import LyricSection, LyricSyllable
+from openmusickit.objects.marking import Marking, MarkSpanner
+from openmusickit.objects.note_event import NoteEvent, Rest
+from openmusickit.objects.part import LineGroup, Part, StackGroup, Stint
+from openmusickit.objects.score import Score
+from openmusickit.objects.sync_line import SyncLine
 from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
+from openmusickit.systems.wsmn.scoring import symbols as scoring
+from openmusickit.systems.wsmn.scoring.bracket_shape import BracketShape, BracketSymbol
+from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
+from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
 from openmusickit.systems.wsmn.tonal.constants import ACCIDENTALS, DIATONES, QualityType
+from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.utils.number_names import ORDINALS
+from openmusickit.values.text.word import Word
+from openmusickit.values.time.clock_time import Tempo
+from openmusickit.values.time.duration import GraceDuration, ZeroDuration
 from tests.domains import (
     ABSTRACT_VECTORS,
     ALL_VECTORS,
@@ -231,3 +249,231 @@ def lyric_texts() -> st.SearchStrategy[str]:
     return st.lists(st.tuples(word(), separator), max_size=6).map(
         lambda pairs: "".join(w + sep for w, sep in pairs).strip()
     )
+
+
+# --- scores the MusicXML reader could have built --------------------------------------------
+
+_BAR_VALUES = (
+    temporal_symbols.whole,
+    temporal_symbols.dotted_half,
+    temporal_symbols.half,
+    temporal_symbols.dotted_quarter,
+    temporal_symbols.quarter,
+    temporal_symbols.eighth,
+    temporal_symbols.sixteenth,
+    "triplets",  # three eighths of an eighth-note triplet, a quarter's time
+)
+_METERS = (
+    temporal_symbols.two_four,
+    temporal_symbols.three_four,
+    temporal_symbols.four_four,
+    temporal_symbols.six_eight,
+    temporal_symbols.two_two,
+)
+_PLAIN_TONES = [
+    t for t in QUALIFIED_VECTORS if -1 <= (t.c - (0, 2, 4, 5, 7, 9, 11)[t.d] + 6) % 12 - 6 <= 1
+]
+_ROOTS = [
+    t for t in ABSTRACT_VECTORS if -1 <= (t.c - (0, 2, 4, 5, 7, 9, 11)[t.d] + 6) % 12 - 6 <= 1
+]
+# Transpositions (written minus sounding) of real instruments: clarinets in B♭
+# and A, horn in F, alto and baritone saxophones, guitar, piccolo.
+_TRANSPOSITIONS = [(1, 2, 0), (2, 3, 0), (4, 7, 0), (5, 9, 0), (5, 9, 1), (0, 0, 1), (0, 0, -1)]
+
+
+@st.composite
+def exportable_scores(draw) -> OmkGraph:
+    """A graph holding one Score in the form the MusicXML reader builds,
+    so that writing and reading it back gives an equivalent graph.
+
+    One to three Parts, each a single line or a two-staff group, all cut
+    into the same bars (a pickup sometimes) and filled exactly: notes of one
+    to three tones, rests, triplets and grace notes; a division at every bar
+    line, the last a final bar; key, meter and clef at the head of every
+    line, sometimes a tempo; a second voice under one note, marks from the
+    writer's tables, a slur, ties between repeated notes, a verse of whole
+    words, a chord line pinned to the first part, and sometimes a
+    transposing Stint. Two or more Parts get the reader's bar grid and,
+    sometimes, a bracket over them all.
+    """
+    meter = draw(st.sampled_from(_METERS))
+    bar = meter.rational_length
+    bars = [bar] * draw(st.integers(1, 3))
+    if draw(st.booleans()):
+        bars.insert(0, Fraction(1, 4))  # a pickup
+    key = Key.from_signature(KeySignature.from_alts(draw(st.integers(-7, 7))))
+    tempo = draw(
+        st.sampled_from([None, TempoEvent(tempo=Tempo(96, temporal_symbols.quarter)),
+                         TempoEvent(term=scoring.allegro)])
+    )  # fmt: skip
+    note_marks = [scoring.staccato, scoring.accent, scoring.tenuto, scoring.marcato,
+                  scoring.fermata, scoring.trill, scoring.mordent, scoring.up_bow,
+                  scoring.piano, scoring.forte, scoring.sforzando]  # fmt: skip
+
+    def tone_set() -> set:
+        return set(
+            draw(st.lists(st.sampled_from(_PLAIN_TONES), min_size=1, max_size=3, unique=True))
+        )
+
+    def fill(length: Fraction) -> list:
+        """Events filling `length` exactly: notes, rests, triplets, graces."""
+        events: list = []
+        remaining = length
+        while remaining > 0:
+            value = draw(st.sampled_from([v for v in _BAR_VALUES if v == "triplets" and remaining >= Fraction(1, 4)
+                                          or v != "triplets" and v.rational_length <= remaining]))  # fmt: skip
+            if draw(st.integers(0, 9)) == 0:
+                events.append(NoteEvent(tones={draw(st.sampled_from(_PLAIN_TONES))},
+                                        duration=GraceDuration(temporal_symbols.eighth)))  # fmt: skip
+            if value == "triplets":
+                events.extend(NoteEvent(tones=tone_set(), duration=temporal_symbols.eighth_in_triplet)
+                              for _ in range(3))  # fmt: skip
+                remaining -= Fraction(1, 4)
+                continue
+            rest = draw(st.integers(0, 6)) == 0
+            events.append(Rest(value) if rest else NoteEvent(tones=tone_set(), duration=value))
+            remaining -= value.rational_length
+        return events
+
+    def line(clef: StaffClef) -> list:
+        events: list = [
+            ModalContextEvent(modal_context=key),
+            MeterEvent(meter=meter),
+            ClefEvent(clef=clef),
+        ]
+        if tempo is not None:
+            events.append(TempoEvent(tempo=tempo.tempo, term=tempo.term))
+        for index, length in enumerate(bars):
+            events.extend(fill(length))
+            last = index == len(bars) - 1
+            events.append(DivisionEvent(shape=scoring.final_bar if last else None))
+        return events
+
+    graph = OmkGraph(GraphMeta())
+    score = Score(
+        title=draw(st.sampled_from([None, "Sketch"])),
+        composer=draw(st.sampled_from([None, "Anon."])),
+    )
+    graph.add_node(score)
+    parts: list[Part] = []
+    first_lines: list[list] = []
+    treble, bass = StaffClef(ClefSign.G, 2), StaffClef(ClefSign.F, 4)
+    for number in range(draw(st.integers(1, 3))):
+        part = Part(name=f"Part {number + 1}")
+        parts.append(part)
+        staves = [line(treble), line(bass)] if draw(st.booleans()) else [line(treble)]
+        for events in staves:
+            graph.add_line(events)
+            graph.add_line_to_score(score, events[0])
+        graph.add_part_to_score(score, part)
+        if len(staves) == 2:
+            group = LineGroup(name=part.name)
+            graph.add_group(group, [events[0] for events in staves])
+            graph.add_stack(events[0] for events in staves)
+            graph.add_performs(part, group)
+        else:
+            transposition = draw(st.sampled_from([None, *_TRANSPOSITIONS]))
+            stint = Stint(transposition=TonalVector(transposition) if transposition else None)
+            graph.add_stint(part, stint, staves[0][0])
+        first_lines.append(staves[0])
+        for events in staves:
+            _add_attachments(draw, graph, events, note_marks)
+    graph.add_stack(parts)
+    if len(parts) >= 2 and draw(st.booleans()):
+        graph.add_stack_group(
+            StackGroup(shape=BracketShape(symbol=BracketSymbol.BRACKET)), parts[0], parts[-1]
+        )
+    sounding = [e for e in first_lines[0] if isinstance(e, NoteEvent) and e.tones and not e.is_rest
+                and not isinstance(e.duration, GraceDuration)]  # fmt: skip
+    syllables: list[LyricSyllable] = []
+    for text in draw(st.lists(st.lists(st.text("abcdefgh", min_size=1, max_size=4), min_size=1, max_size=3),
+                              max_size=3)):  # fmt: skip
+        if len(syllables) + len(text) > len(sounding):
+            break  # whole words only: the reader closes a word the lyrics leave open
+        word = Word(text)
+        syllables.extend(LyricSyllable(word=word, index=i) for i in range(len(word)))
+    if syllables:
+        graph.add_lyrics(syllables, section=LyricSection(section_type="verse", section_number=1))
+        for syllable, event in zip(syllables, sounding, strict=False):
+            graph.connect_lyric_to_object(syllable, event)
+    anchors = (
+        sorted(set(draw(st.lists(st.integers(0, max(0, len(sounding) - 1)), max_size=3))))
+        if sounding
+        else []
+    )
+    if anchors:
+        kinds = list(tables.KINDS.values())
+        chords = [
+            ChordEvent(chord=draw(st.sampled_from(_ROOTS))(draw(st.sampled_from(kinds))))
+            for _ in anchors
+        ]
+        graph.add_line(chords)
+        graph.add_line_to_score(score, chords[0])
+        for index, chord in zip(anchors, chords, strict=True):
+            graph.add_simultaneous(sounding[index], chord)
+    if len(parts) >= 2:
+        grid = SyncLine(temporal_system=WSMN_TEMPORAL, name=score.title or "bars")
+        graph.add_sync_line_to_score(score, grid)
+        for events in first_lines:
+            graph.sync_event(events[0], grid, ZeroDuration())
+            position = Fraction(0)
+            for event in events:
+                if isinstance(event, DivisionEvent):
+                    graph.sync_event(event, grid, MetricalDuration.from_length(position))
+                if isinstance(event.duration, MetricalDuration):
+                    position += event.duration.rational_length
+    return graph
+
+
+def _add_attachments(draw, graph, events: list, note_marks: list) -> None:
+    """Marks, a slur, ties and a second voice on one line of `exportable_scores`."""
+    notes = [(i, e) for i, e in enumerate(events) if isinstance(e, NoteEvent)
+             and not isinstance(e.duration, GraceDuration)]  # fmt: skip
+    pitched = [(i, e) for i, e in notes if not e.is_rest]
+    for _, event in (
+        draw(st.lists(st.sampled_from(notes), max_size=3, unique_by=lambda n: n[0]))
+        if notes
+        else []
+    ):
+        choices = [scoring.fermata] if event.is_rest else note_marks
+        for mark in draw(st.lists(st.sampled_from(choices), min_size=1, max_size=2, unique=True)):
+            graph.add_articulation(Marking(mark=mark), event)
+    if len(pitched) >= 2 and draw(st.booleans()):
+        first, last = sorted(draw(st.lists(st.sampled_from(pitched), min_size=2, max_size=2,
+                                           unique_by=lambda n: n[0])), key=lambda n: n[0])  # fmt: skip
+        graph.add_spanner(MarkSpanner(mark=scoring.slur), first[1], last[1])
+    # ties: a single-tone note followed directly (across a bar line, perhaps) by a note of its pitch
+    for (i, event), (j, following) in zip(pitched, pitched[1:], strict=False):
+        between = events[i + 1 : j]
+        if (
+            all(isinstance(e, DivisionEvent) for e in between)
+            and len(event.tones) == 1
+            and draw(st.integers(0, 3)) == 0
+        ):
+            following.tones = set(event.tones)
+            graph.add_spanner(MarkSpanner(mark=scoring.tie), event, following)
+    # a second voice under one note, within its bar
+    if notes and draw(st.booleans()):
+        index, parent = draw(st.sampled_from(notes))
+        position, room = Fraction(0), Fraction(0)
+        for k, e in enumerate(events):
+            if k == index:
+                start = position
+            if isinstance(e.duration, MetricalDuration):
+                position += e.duration.rational_length
+            if isinstance(e, DivisionEvent) and k > index:
+                room = position - start
+                break
+        values = [
+            v
+            for v in (temporal_symbols.quarter, temporal_symbols.eighth)
+            if v.rational_length <= room
+        ]
+        if values:
+            value = draw(st.sampled_from(values))
+            count = draw(st.integers(1, int(room / value.rational_length)))
+            voice = [Rest(value) if draw(st.integers(0, 4)) == 0
+                     else NoteEvent(tones={draw(st.sampled_from(_PLAIN_TONES))}, duration=value)
+                     for _ in range(min(count, 2))]  # fmt: skip
+            graph.add_line(voice)
+            graph.add_branch(parent, voice[0])

@@ -17,7 +17,7 @@ from openmusickit.systems.wsmn.tonal import symbols as tonal
 from openmusickit.systems.wsmn.tonal.chords import ChordType
 from openmusickit.systems.wsmn.tonal.key import ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
-from openmusickit.values.scoring.mark import Mark
+from openmusickit.values.scoring.mark import Mark, MarkType
 from openmusickit.values.scoring.tempo_term import TempoTerm
 
 # --- pitch and duration ---------------------------------------------------------
@@ -439,3 +439,89 @@ def is_gradual_tempo(text: str) -> bool:
         if words.startswith(prefix):
             words = words[len(prefix) :]
     return words in GRADUAL_TEMPO_WORDS
+
+
+# --- the tables backwards, for the writer ------------------------------------------------
+
+
+def inverse[K, V](table: dict[K, V]) -> dict[V, K]:
+    """`table` the other way round; where several names share a symbol, the first is kept.
+
+    >>> inverse(FERMATAS)[scoring.fermata]
+    ''
+    """
+    backwards: dict[V, K] = {}
+    for key, value in table.items():
+        backwards.setdefault(value, key)
+    return backwards
+
+
+NOTE_TYPE_NAMES = inverse(NOTE_TYPES)  # (numerator, denominator) -> <type>
+CLEF_SIGN_NAMES = inverse(CLEF_SIGNS)
+BAR_STYLE_NAMES = inverse(BAR_STYLES)
+GROUP_SYMBOL_NAMES = inverse(GROUP_SYMBOLS)
+GROUP_BARLINE_NAMES = inverse(GROUP_BARLINES)
+KIND_NAMES = inverse(KINDS)
+MODE_NAMES = inverse(MODES)
+
+# A mark's element inside <notations>: (the wrapping element or None, the element, its text).
+NOTATION_ELEMENTS: dict[Mark, tuple[str | None, str, str | None]] = {}
+for _wrapper, _table in (
+    ("articulations", ARTICULATIONS),
+    ("ornaments", ORNAMENTS),
+    ("technical", TECHNICAL),
+):
+    for _name, _mark in _table.items():
+        NOTATION_ELEMENTS.setdefault(_mark, (_wrapper, _name, None))
+for _text, _mark in BREATH_MARKS.items():
+    if _mark is not scoring.breath_mark:
+        NOTATION_ELEMENTS.setdefault(_mark, ("articulations", "breath-mark", _text))
+for _element, _table in (
+    ("fingering", FINGERINGS),
+    ("string", STRINGS),
+    ("pluck", PLUCKS),
+    ("handbell", HANDBELLS),
+):
+    for _text, _mark in _table.items():
+        NOTATION_ELEMENTS.setdefault(_mark, ("technical", _element, _text))
+for _text, _mark in FERMATAS.items():
+    NOTATION_ELEMENTS.setdefault(_mark, (None, "fermata", _text or None))
+NOTATION_ELEMENTS[scoring.non_arpeggio] = (None, "non-arpeggiate", None)
+
+# <harmon-mute> and <hole> say which mark they are by a child element.
+HARMON_MUTE_STATES = inverse(HARMON_MUTES)
+HOLE_STATES = inverse(HOLES)
+ARPEGGIO_DIRECTIONS = inverse(ARPEGGIOS)
+DYNAMIC_NAMES = inverse(DYNAMICS)
+WEDGE_TYPES = inverse(WEDGES)
+OCTAVE_SHIFT_TYPES = inverse(OCTAVE_SHIFTS)
+NOTATION_SPAN_NAMES = inverse(NOTATION_SPANS)
+
+# The marks the reader takes from a <technical> child that belongs to one tone
+# (PER_TONE_TECHNICAL), so that the writer puts them back on that tone's <note>.
+PER_TONE_MARKS = frozenset(
+    [
+        *FINGERINGS.values(),
+        *STRINGS.values(),
+        *PLUCKS.values(),
+        *HOLES.values(),
+        *(TECHNICAL[name] for name in PER_TONE_TECHNICAL if name in TECHNICAL),
+    ]
+)
+# A mark the reader mints for an unlisted fingering, string, fret or pluck is
+# named for its element: "fret 3", "string 7".
+MINTED_PER_TONE_PREFIXES = ("fingering", "string", "fret", "pluck")
+
+
+def is_per_tone(mark: Mark) -> bool:
+    """Whether `mark` belongs to one tone of a chord, as a fingering does,
+    rather than to the chord, as a staccato does.
+
+    >>> is_per_tone(scoring.fingering_2), is_per_tone(scoring.staccato)
+    (True, False)
+    >>> is_per_tone(Mark(name="fret 3", kind=MarkType.FINGERING))
+    True
+    """
+    if mark in PER_TONE_MARKS:
+        return True
+    return mark.kind is MarkType.FINGERING and mark.name.split(" ")[0] in MINTED_PER_TONE_PREFIXES

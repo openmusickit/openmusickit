@@ -1,4 +1,5 @@
-"""MusicXML in and out: `read` a file into an `OmkGraph` holding one `Score`.
+"""MusicXML in and out: `read` a file into an `OmkGraph` holding one `Score`,
+and `write` a Score of a graph back out.
 
 The reader records what the file asserts and nothing more
 (no derived chord durations, no bar lines the file does not have),
@@ -11,15 +12,24 @@ What the writer will need back and the model cannot hold
 goes in `node.meta["musicxml"]`, which OMK itself never reads;
 `reader` documents the keys.
 
-    from openmusickit.io.musicxml import read
+    from openmusickit.io.musicxml import read, write
     graph = read("score.mxl")
+    write(graph, "copy.musicxml")
 
-`read`'s docstring shows a whole small document going in.
+The writer is the reader's inverse, rule by rule:
+`read(write(read(f)))` is equivalent (`OmkGraph.is_equivalent`) to `read(f)`,
+and a graph stripped of its bar grid and of the bar lines its meters imply
+writes the same document.
+It refuses only when there is no score to write,
+and warns for what it leaves out.
+`read`'s docstring shows a whole small document going in,
+`write`'s a small graph going out.
 The design, the mapping rule by rule, and what is deliberately left out
 are in `_plans/musicxml.md`.
 """
 
-from openmusickit.io.musicxml import container, reader, tables
+from openmusickit.io.musicxml import container, reader, tables, writer
 from openmusickit.io.musicxml.reader import read
+from openmusickit.io.musicxml.writer import write
 
-__all__ = ["container", "read", "reader", "tables"]
+__all__ = ["container", "read", "reader", "tables", "write", "writer"]
