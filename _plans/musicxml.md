@@ -3,8 +3,8 @@
 Status: **stages 0–4 done 2026-09-29** (plan, fixtures, model changes, the
 reader and its tests; decisions in §3 confirmed with the developer the same
 day; §12 records the choices made while building).
-**Stage 5 (P1) designed 2026-10-19** in `_plans/stack-order.md`;
-the writer (stages 6–8) follows it.
+**Stage 5 (P1) done 2026-10-19** (`_plans/stack-order.md`);
+the writer (stages 6–8) is next.
 
 Written for two readers:
 the developer (to approve and to decide the pre-plans in §7),
@@ -114,9 +114,9 @@ and §8 (fixture flaws).
    event at its onset (an `<offset>` becomes the pin's displacement).
    No duration is derived.
 5. **Part order and `<part-group>` get their own pre-plan (§7, P1) before the
-   writer.** The reader stores the `<part-list>` index and group in
-   `Part.meta["musicxml"]` as a stopgap; the writer stage does not start until
-   P1 is built, and the stopgap is removed then.
+   writer.** The reader stored the `<part-list>` index and group in
+   `Part.meta["musicxml"]` as a stopgap until P1 was built
+   (`_plans/stack-order.md`, 2026-10-19); the stopgap is gone.
 6. **Control flow: record the page, defer the jumps.** Repeat dots are already
    in the bar-line shape. An `<ending>` becomes a `MarkSpanner` over the
    ending's events with a minted `Mark(name="ending 1", kind=NAVIGATION,
@@ -264,8 +264,12 @@ Counts in parentheses are occurrences in the corpus, to show what is common.
 - `<score-part>` → `Part(name=part-name)` (`PercussionPart` when the part's
   first clef is `percussion` or any note is `<unpitched>`).
   `<part-abbreviation>`, `<score-instrument>`, `<midi-*>`, `<instrument-sound>`
-  and the `<part-list>` index → `Part.meta["musicxml"]` (stopgap for P1, P5).
-  `<part-group>` start/stop → the same meta on each member Part.
+  → `Part.meta["musicxml"]` (stopgap for P5).
+  The parts are stacked in `<part-list>` order (`add_stack`; a drum kit by
+  its `LineGroup`), a multi-staff part's lines in staff order;
+  `<part-group>` start/stop → a `StackGroup` from its first part to its last,
+  with `group-name`, `group-abbreviation` and a `BracketShape` from
+  `group-symbol` and `group-barline` (`_plans/stack-order.md` §5).
 - One staff, one voice → one line; `add_stint(part, Stint(), head)`.
 - `<staves>` n (pre-scanned, since it follows `<key>` inside `<attributes>`) →
   `LineGroup(name=part-name)` of n lines (one per staff, `add_group`), and
@@ -297,7 +301,7 @@ Counts in parentheses are occurrences in the corpus, to show what is common.
   their parents. Points thus number measures + 1, pins parts × (measures +
   1). A one-Part score gets no grid and no pins.
   `check_sync_alignment` on the result must be empty (§9.3).
-- Inverse: parts in P1's order; staves from group membership; voices from
+- Inverse: parts in stack order; staves in their group's stack order; voices from
   branches, numbered per staff by overlap (a branch overlapping voice 1 gets
   2, and so on); `<transpose>` from `Stint.transposition` with pitches written
   back up.
@@ -495,7 +499,7 @@ plain Python (int, str, bool, `Fraction`, tuple), so JSON serialization can
 carry them later. Keys used, by node:
 
 - `Score`: `movement_number`, `movement_title`, `encoding`, `source`.
-- `Part`: `id`, `index`, `abbreviation`, `groups`, `instruments`, `midi`.
+- `Part`: `id`, `abbreviation`, `instruments`, `midi`.
 - line head event: `staff`, `voice`, `hidden`.
 - `DivisionEvent`: `number`, `implicit`, `width`, `left`, `multiple_rest`
   (on the division closing the first measure of the rest), `slash`.
@@ -606,8 +610,9 @@ a piano `LineGroup` cannot be a Score member, so its lines are named
 individually. `_plans/revisit.md` asks for an edge-based answer rather than an
 ordered id list. Candidates to weigh: an `index` on the Score's CONTAINS
 edge; a `PartGroup(Spanner)` over first and last Part with a symbol;
-letting a `LineGroup` be a Score member. v1: `Part.meta["musicxml"]`
-`index` and `group`.
+letting a `LineGroup` be a Score member.
+**Done 2026-10-19:** `STACKS_ABOVE` edges and `StackGroup` spanners
+(`_plans/stack-order.md`).
 
 **P2. Control flow.** Repeats (dots exist), `<ending>` (48 in Mozart, 216 in
 the big band), repeat counts, `D.C.`/`D.S.`/`fine`/`coda` jumps (marks
@@ -930,6 +935,7 @@ complete, 9.2 complete, 9.3 for all ten.
 
 Stage 5. **Gate: P1 (part order and bracketing)** designed and built in its
 own session. The reader's `index`/`group` meta is replaced by P1's objects.
+Done 2026-10-19 (`_plans/stack-order.md`).
 
 Stage 6. Writer: §6, `export_file`, 9.4, 9.6's `exportable_scores`
 property, doctests.
@@ -1013,8 +1019,8 @@ Stages 3–4 (the reader), choices the plan did not spell out:
 - `Stint.transposition` is written − sounding (a clarinet in A: a minor
   third up), the interval the reader adds to stored tones to print them.
 - The bar grid's `SyncLine` is named after the score's title.
-- `Part.meta["musicxml"]` also carries `instruments`, `midi` and `groups`
-  verbatim from the part list (P1/P5 stopgap).
+- `Part.meta["musicxml"]` also carries `instruments` and `midi`
+  verbatim from the part list (P5 stopgap; `groups` went with P1).
 - Ending brackets are spanned on the part's first staff line, from the event
   at the ending's start to the event ending at its stop.
 

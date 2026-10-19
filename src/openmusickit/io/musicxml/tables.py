@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from openmusickit.systems.wsmn.scoring import symbols as scoring
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineShape
+from openmusickit.systems.wsmn.scoring.bracket_shape import BracketSymbol, GroupBarLines
 from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign
 from openmusickit.systems.wsmn.tonal import symbols as tonal
 from openmusickit.systems.wsmn.tonal.chords import ChordType
@@ -124,6 +125,22 @@ BAR_STYLES: dict[str, BarLineShape] = {
     "tick": scoring.tick_bar,
     "short": scoring.short_bar,
     "none": scoring.invisible_bar,
+}
+
+# --- part groups ---------------------------------------------------------------------
+
+GROUP_SYMBOLS: dict[str, BracketSymbol | None] = {
+    "bracket": BracketSymbol.BRACKET,
+    "brace": BracketSymbol.BRACE,
+    "line": BracketSymbol.LINE,
+    "square": BracketSymbol.SQUARE,
+    "none": None,
+}
+
+GROUP_BARLINES: dict[str, GroupBarLines] = {
+    "yes": GroupBarLines.JOINED,
+    "no": GroupBarLines.SEPARATE,
+    "Mensurstrich": GroupBarLines.MENSURSTRICH,
 }
 
 # --- chord symbols ------------------------------------------------------------------------

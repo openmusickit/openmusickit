@@ -25,11 +25,16 @@ from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.note_event import NoteEvent
-from openmusickit.objects.part import LineGroup, Part, PercussionPart
+from openmusickit.objects.part import LineGroup, Part, PercussionPart, StackGroup
 from openmusickit.objects.score import Score
 from openmusickit.objects.sync_line import SyncLine
 from openmusickit.systems.wsmn.percussion.symbols import hit
 from openmusickit.systems.wsmn.scoring import symbols as scoring
+from openmusickit.systems.wsmn.scoring.bracket_shape import (
+    BracketShape,
+    BracketSymbol,
+    GroupBarLines,
+)
 from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.symbols import (
@@ -1216,7 +1221,7 @@ def test_a_blank_part_name_is_an_empty_string():
     assert part.name == "" and xml_meta_of(part)["id"] == "P1"
 
 
-def test_part_abbreviation_and_index_go_to_meta():
+def test_part_abbreviation_goes_to_meta_and_the_order_to_the_stack():
     graph, warned = read_with_warnings(
         [w("C")],
         [w("E", 3)],
@@ -1227,8 +1232,151 @@ def test_part_abbreviation_and_index_go_to_meta():
     assert warned == []
     flute, cello = parts_of(graph)
     assert (flute.name, cello.name) == ("Flute", "Cello")
-    assert xml_meta_of(flute) == {"id": "P1", "index": 0}
-    assert xml_meta_of(cello) == {"id": "P2", "index": 1, "abbreviation": "Vc."}
+    assert xml_meta_of(flute) == {"id": "P1"}
+    assert xml_meta_of(cello) == {"id": "P2", "abbreviation": "Vc."}
+    assert graph.stacked_above(flute) is None and graph.stacked_below(flute) is cello
+
+
+# --- part order and part groups --------------------------------------------------------
+
+
+def score_part(part_id: str) -> str:
+    return f'<score-part id="{part_id}"><part-name>{part_id}</part-name></score-part>'
+
+
+def group_start(number: int, *details: str) -> str:
+    return f'<part-group type="start" number="{number}">{"".join(details)}</part-group>'
+
+
+def group_stop(number: int) -> str:
+    return f'<part-group type="stop" number="{number}"/>'
+
+
+def four_parts(part_list: str):
+    return read_with_warnings(
+        [w("C")], [w("D")], [w("E")], [w("F")], parts=("P1", "P2", "P3", "P4"), part_list=part_list
+    )
+
+
+def test_parts_are_stacked_in_part_list_order_whatever_their_ids():
+    graph, warned = read_with_warnings([w("C")], [w("D")], [w("E")], parts=("P3", "P1", "P2"))
+    assert warned == []
+    top = parts_of(graph)[0]
+    assert graph.stacked_above(top) is None
+    assert [xml_meta_of(part)["id"] for part in graph.walk_stack(top)] == ["P3", "P1", "P2"]
+
+
+def test_nested_part_groups_are_nested_stack_groups_with_their_shapes():
+    part_list = (
+        score_part("P1")
+        + group_start(
+            1,
+            "<group-name>Strings</group-name>",
+            "<group-abbreviation>Str.</group-abbreviation>",
+            "<group-symbol>bracket</group-symbol>",
+            "<group-barline>Mensurstrich</group-barline>",
+        )
+        + group_start(2, "<group-symbol>brace</group-symbol>", "<group-barline>yes</group-barline>")
+        + score_part("P2")
+        + score_part("P3")
+        + group_stop(2)
+        + score_part("P4")
+        + group_stop(1)
+    )
+    graph, warned = four_parts(part_list)
+    assert warned == []
+    p1, p2, p3, p4 = parts_of(graph)
+    strings, violins = sorted(graph.nodes(StackGroup), key=lambda g: g.name is None)
+    assert (strings.name, strings.abbreviation) == ("Strings", "Str.")
+    assert strings.shape == BracketShape(
+        symbol=BracketSymbol.BRACKET, bar_lines=GroupBarLines.MENSURSTRICH
+    )
+    assert list(graph.stack_group_members(strings)) == [p2, p3, p4]
+    assert (violins.name, violins.shape) == (None, scoring.brace_joined)
+    assert list(graph.stack_group_members(violins)) == [p2, p3]
+    assert list(graph.stack_groups_of(p1)) == []
+
+
+def test_a_part_group_with_no_symbol_or_bar_line_has_no_shape():
+    part_list = group_start(1) + "".join(score_part(p) for p in ("P1", "P2", "P3", "P4"))
+    graph, warned = four_parts(part_list + group_stop(1))
+    assert warned == []
+    (group,) = graph.nodes(StackGroup)
+    assert group.shape is None and list(graph.stack_group_members(group)) == parts_of(graph)
+
+
+def test_unclosed_and_empty_part_groups_warn_and_are_dropped():
+    part_list = (
+        group_start(1, "<group-symbol>bracket</group-symbol>")
+        + score_part("P1")
+        + score_part("P2")
+        + group_stop(1)
+        + group_start(2)
+        + group_stop(2)
+        + group_start(3)
+        + score_part("P3")
+        + score_part("P4")
+    )
+    graph, warned = four_parts(part_list)
+    assert warned == [
+        "part group 3 starts and never stops; dropped",
+        "part group 2 holds no part; dropped",
+    ]
+    (group,) = graph.nodes(StackGroup)
+    assert list(graph.stack_group_members(group)) == parts_of(graph)[:2]
+
+
+def test_group_time_and_unknown_group_values_warn():
+    part_list = (
+        group_start(
+            1,
+            "<group-symbol>curly</group-symbol>",
+            "<group-barline>sometimes</group-barline>",
+            "<group-time/>",
+        )
+        + "".join(score_part(p) for p in ("P1", "P2", "P3", "P4"))
+        + group_stop(1)
+    )
+    graph, warned = four_parts(part_list)
+    assert warned == [
+        "part group 1: <group-time> is not kept",
+        "part group 1: unknown group-symbol 'curly'; none kept",
+        "part group 1: unknown group-barline 'sometimes'; none kept",
+    ]
+    (group,) = graph.nodes(StackGroup)
+    assert group.shape == BracketShape()
+
+
+def test_a_part_s_staves_are_stacked_in_staff_order():
+    body = (
+        h("C", 3, voice=2, staff=2) + h("G", 2, voice=2, staff=2) + BACKUP
+        + q("C", staff=1) + q("D", staff=1) + h("E", staff=1)
+    )  # fmt: skip
+    graph, warned = read_with_warnings(body, attributes=TWO_STAVES)
+    assert warned == []
+    upper, lower = main_line(graph, staff=1), main_line(graph, staff=2)
+    assert list(graph.walk_stack(upper)) == [upper, lower]
+    assert graph.stacked_above(upper) is None
+
+
+def test_a_drum_kit_is_stacked_by_its_group_and_its_lines_are_not():
+    graph, warned = read_with_warnings(
+        [
+            stroke("F", 4, "P1-I36")
+            + stroke("C", 5, "P1-I38")
+            + stroke("F", 4, "P1-I36", 2 * Q, "half")
+        ],
+        [w("C")],
+        parts=("P1", "P2"),
+        attributes={"P1": KIT_ATTRIBUTES, "P2": DEFAULT_ATTRIBUTES},
+        part_list_extra=KIT_INSTRUMENTS,
+    )
+    assert warned == []
+    (kit,) = graph.nodes(LineGroup)
+    (pitched,) = parts_of(graph)
+    assert list(graph.walk_stack(kit)) == [kit, pitched]
+    for head in graph.group_members(kit):
+        assert graph.stacked_above(head) is None and graph.stacked_below(head) is None
 
 
 # --- container -----------------------------------------------------------------------

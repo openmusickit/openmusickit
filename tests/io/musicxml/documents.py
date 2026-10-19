@@ -23,7 +23,7 @@ from openmusickit.io.musicxml import read
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import SequentialEvent
-from openmusickit.objects.part import LineGroup, Part, Stint
+from openmusickit.objects.part import LineGroup, Part, PercussionPart, Stint
 from openmusickit.objects.score import Score
 
 DEFAULT_ATTRIBUTES = (
@@ -51,6 +51,7 @@ def doc(
     attributes: str | None | Mapping[str, str | None] = DEFAULT_ATTRIBUTES,
     header: str = "",
     part_list_extra: Mapping[str, str] | None = None,
+    part_list: str | None = None,
 ) -> bytes:
     """A `<score-partwise>` document around measure bodies.
 
@@ -59,7 +60,8 @@ def doc(
     The first measure of each part gets `<attributes>` with `divisions` and
     `attributes` (a string for every part or a mapping by part id) unless
     `attributes` is None. `header` goes before `<part-list>`;
-    `part_list_extra` adds XML inside a part's `<score-part>`.
+    `part_list_extra` adds XML inside a part's `<score-part>`;
+    `part_list`, if given, is the whole content of `<part-list>`, written by hand.
     """
     if len(measures) == 1 and isinstance(measures[0], Mapping):
         bodies: dict[str, Sequence[MeasureSpec]] = dict(measures[0])
@@ -75,11 +77,12 @@ def doc(
     else:
         names = dict(zip(parts, part_names, strict=True))
     extra = dict(part_list_extra or {})
-    part_list = "".join(
-        f'<score-part id="{part}"><part-name>{names[part]}</part-name>{extra.get(part, "")}'
-        "</score-part>"
-        for part in parts
-    )
+    if part_list is None:
+        part_list = "".join(
+            f'<score-part id="{part}"><part-name>{names[part]}</part-name>{extra.get(part, "")}'
+            "</score-part>"
+            for part in parts
+        )
     part_elements = []
     for part in parts:
         part_attributes = attributes.get(part) if isinstance(attributes, Mapping) else attributes
@@ -239,10 +242,20 @@ def score_of(graph: OmkGraph) -> Score:
     return score
 
 
+def stack_of(graph: OmkGraph) -> list[Part | LineGroup]:
+    """The Score's stack, top to bottom: each `<score-part>`'s Part, or a drum kit's group."""
+    member = next(iter(graph.score_parts(score_of(graph))))
+    if isinstance(member, PercussionPart):
+        (head,) = lines_of_part(graph, member)
+        (member,) = graph.groups_of(head)
+    while (above := graph.stacked_above(member)) is not None:
+        member = above
+    return list(graph.walk_stack(member))
+
+
 def parts_of(graph: OmkGraph) -> list[Part]:
-    """The Score's Parts in part-list order (by `meta["musicxml"]["index"]`)."""
-    parts = list(graph.score_parts(score_of(graph)))
-    return sorted(parts, key=lambda part: part.meta["musicxml"]["index"])
+    """The Score's Parts in part-list order (its stack), drum kits left out."""
+    return [member for member in stack_of(graph) if isinstance(member, Part)]
 
 
 def lines_of_part(graph: OmkGraph, part: Part) -> list[SequentialEvent]:

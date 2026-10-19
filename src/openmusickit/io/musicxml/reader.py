@@ -18,13 +18,16 @@ The mapping, rule by rule, is `_plans/musicxml.md` §5; in short:
   `<harmony>` is a `ChordEvent` on a chord line, pinned to the event at its
   position, with no duration;
 - with two or more parts, a bar grid (`SyncLine`) pins every part's head and
-  divisions to one instant per bar line.
+  divisions to one instant per bar line;
+- the parts are stacked (`OmkGraph.add_stack`) in part-list order, a drum kit
+  by its `LineGroup`, and a part's staves in staff order; a `<part-group>` is
+  a `StackGroup` over its parts, drawn as a WSMN `BracketShape`.
 
 Presentation is dropped. What the writer needs back and the model cannot
 hold goes in `node.meta["musicxml"]`, a dict OMK core never reads. Its keys:
 
 - `Score`: `movement_number`, `movement_title`, `encoding`, `source`.
-- `Part`: `id`, `index`, `abbreviation`, `groups`, `instruments`, `midi`.
+- `Part`: `id`, `abbreviation`, `instruments`, `midi`.
 - a line's head event: `staff`, `voice`, `hidden`.
 - `DivisionEvent`: `number`, `implicit`, `width`, `left`, `multiple_rest`, `slash`.
 - `NoteEvent`: `forward` (a gap the file left), `hidden`, `cue`, `slash_pitch`,
@@ -50,7 +53,7 @@ from pathlib import Path
 from typing import IO
 
 from openmusickit.errors import MusicXmlError, OmkWarning
-from openmusickit.graph.graph import GraphMeta, OmkGraph
+from openmusickit.graph.graph import GraphMeta, OmkGraph, Stackable
 from openmusickit.graph.graph_adapter import GraphAdapter
 from openmusickit.io.musicxml import container, tables
 from openmusickit.objects.chord_event import ChordEvent
@@ -66,11 +69,12 @@ from openmusickit.objects.lyrics import LyricSection, LyricSyllable
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.note_event import NoteEvent, Rest
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent
-from openmusickit.objects.part import LineGroup, Part, PercussionPart, Stint
+from openmusickit.objects.part import LineGroup, Part, PercussionPart, StackGroup, Stint
 from openmusickit.objects.score import Score
 from openmusickit.objects.sync_line import SyncLine
 from openmusickit.systems.wsmn.percussion.symbols import hit
 from openmusickit.systems.wsmn.scoring import symbols as scoring
+from openmusickit.systems.wsmn.scoring.bracket_shape import BracketShape, GroupBarLines
 from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
@@ -156,12 +160,22 @@ def xml_meta(node: OmkObject) -> dict:
 @dataclass
 class _PartInfo:
     id: str
-    index: int
     name: str
     abbreviation: str | None
     instruments: dict[str, str]  # instrument id -> name, in part-list order
     midi: dict[str, dict[str, str]]
-    groups: list[dict[str, str | None]]
+
+
+@dataclass
+class _GroupInfo:
+    """A `<part-group>` from its start to its stop, with the parts listed between."""
+
+    number: str
+    name: str | None
+    abbreviation: str | None
+    symbol: str | None
+    barline: str | None
+    part_ids: list[str] = field(default_factory=list)
 
 
 class _Reader:
@@ -176,11 +190,12 @@ class _Reader:
 
     def build(self) -> Score:
         self._read_header()
-        infos = self._read_part_list()
+        infos, groups = self._read_part_list()
         parts = {part.get("id"): part for part in self.root.findall("part")}
         lengths = self._measure_lengths(infos, parts)
         self.graph.add_node(self.score)
         grid_lines: list[tuple[SequentialEvent, list[tuple[Fraction, DivisionEvent]]]] = []
+        members: dict[str, Stackable] = {}
         for info in infos:
             element = parts.get(info.id)
             if element is None:
@@ -188,9 +203,40 @@ class _Reader:
                 continue
             reader = _PartReader(self, info, element, lengths)
             grid_lines.extend(reader.build())
+            if reader.stack_member is not None:
+                members[info.id] = reader.stack_member
         if len(grid_lines) >= 2:
             self._build_grid(grid_lines)
+        self.graph.add_stack(members.values())
+        for group in groups:
+            self._add_stack_group(group, members)
         return self.score
+
+    def _add_stack_group(self, group: _GroupInfo, members: dict[str, Stackable]) -> None:
+        placed = [members[part_id] for part_id in group.part_ids if part_id in members]
+        if not placed:
+            self.warn(f"part group {group.number} holds no part; dropped")
+            return
+        stack_group = StackGroup(
+            name=group.name, abbreviation=group.abbreviation, shape=self._bracket_shape(group)
+        )
+        self.graph.add_stack_group(stack_group, placed[0], placed[-1])
+
+    def _bracket_shape(self, group: _GroupInfo) -> BracketShape | None:
+        if group.symbol is None and group.barline is None:
+            return None
+        if group.symbol is not None and group.symbol not in tables.GROUP_SYMBOLS:
+            self.warn(
+                f"part group {group.number}: unknown group-symbol {group.symbol!r}; none kept"
+            )
+        if group.barline is not None and group.barline not in tables.GROUP_BARLINES:
+            self.warn(
+                f"part group {group.number}: unknown group-barline {group.barline!r}; none kept"
+            )
+        return BracketShape(
+            symbol=tables.GROUP_SYMBOLS.get(group.symbol or "none"),
+            bar_lines=tables.GROUP_BARLINES.get(group.barline or "no", GroupBarLines.SEPARATE),
+        )
 
     # header
 
@@ -230,9 +276,10 @@ class _Reader:
             if _text(identification, "source"):
                 xml_meta(score)["source"] = _text(identification, "source")
 
-    def _read_part_list(self) -> list[_PartInfo]:
+    def _read_part_list(self) -> tuple[list[_PartInfo], list[_GroupInfo]]:
         infos: list[_PartInfo] = []
-        open_groups: dict[str, dict[str, str | None]] = {}
+        open_groups: dict[str, _GroupInfo] = {}
+        groups: list[_GroupInfo] = []
         part_list = self.root.find("part-list")
         if part_list is None:
             raise MusicXmlError("The score has no <part-list>.")
@@ -240,14 +287,17 @@ class _Reader:
             if child.tag == "part-group":
                 number = child.get("number", "1")
                 if child.get("type") == "start":
-                    open_groups[number] = {
-                        "number": number,
-                        "symbol": _text(child, "group-symbol"),
-                        "name": _text(child, "group-name"),
-                        "barline": _text(child, "group-barline"),
-                    }
-                else:
-                    open_groups.pop(number, None)
+                    if child.find("group-time") is not None:
+                        self.warn(f"part group {number}: <group-time> is not kept")
+                    open_groups[number] = _GroupInfo(
+                        number=number,
+                        name=_text(child, "group-name"),
+                        abbreviation=_text(child, "group-abbreviation"),
+                        symbol=_text(child, "group-symbol"),
+                        barline=_text(child, "group-barline"),
+                    )
+                elif number in open_groups:
+                    groups.append(open_groups.pop(number))
             elif child.tag == "score-part":
                 instruments = {
                     inst.get("id"): _text(inst, "instrument-name") or ""
@@ -259,15 +309,17 @@ class _Reader:
                 infos.append(
                     _PartInfo(
                         id=child.get("id"),
-                        index=len(infos),
                         name=child.findtext("part-name") or "",
                         abbreviation=child.findtext("part-abbreviation"),
                         instruments=instruments,
                         midi=midi,
-                        groups=[dict(group) for group in open_groups.values()],
                     )
                 )
-        return infos
+                for group in open_groups.values():
+                    group.part_ids.append(child.get("id"))
+        for group in open_groups.values():
+            self.warn(f"part group {group.number} starts and never stops; dropped")
+        return infos, groups
 
     def _measure_lengths(
         self, infos: list[_PartInfo], parts: dict[str, ET.Element]
@@ -618,6 +670,7 @@ class _PartReader:
         self.right_marks: list[Mark] = []
         self.measure_meta: dict = {}
         self.counts: Counter[str] = Counter()
+        self.stack_member: Stackable | None = None  # what this part is in the score's stack
 
     # -- helpers
 
@@ -2011,18 +2064,17 @@ class _PartReader:
         info = self.info
         part_meta = {
             "id": info.id,
-            "index": info.index,
             "abbreviation": info.abbreviation,
             "instruments": dict(info.instruments),
             "midi": dict(info.midi),
-            "groups": [dict(g) for g in info.groups],
         }
         part_meta = {k: v for k, v in part_meta.items() if v not in (None, {}, [])}
         heads = [line.head for line in lines]
         transposition = self.stint_transposition()
-        if self.kit:
+        if self.kit:  # the instruments share one staff, so their lines are not stacked
             group = LineGroup(name=info.name)
             self.graph.add_group(group, heads)
+            self.stack_member = group
             for instrument, line in self.kit_lines.items():
                 part = PercussionPart(name=line.name or info.name)
                 xml_meta(part).update(part_meta)
@@ -2034,9 +2086,11 @@ class _PartReader:
             return
         part = Part(name=info.name)
         xml_meta(part).update(part_meta)
+        self.stack_member = part
         if len(lines) > 1:
             group = LineGroup(name=info.name)
             self.graph.add_group(group, heads)
+            self.graph.add_stack(line.head for line in sorted(lines, key=lambda line: line.staff))
             self.graph.add_performs(part, group)
             if transposition is not None:
                 self.warn(

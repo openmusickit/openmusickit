@@ -7,6 +7,7 @@ import pytest
 from openmusickit.io.musicxml import tables
 from openmusickit.systems.wsmn.scoring import symbols as scoring
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineShape
+from openmusickit.systems.wsmn.scoring.bracket_shape import BracketSymbol, GroupBarLines
 from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.tonal.chords import ChordType
@@ -78,6 +79,13 @@ def test_bar_styles_cover_the_musicxml_vocabulary_with_ready_made_shapes(bar_lin
     assert tables.BAR_STYLES["regular"] is scoring.single_bar
     assert tables.BAR_STYLES["light-heavy"] is scoring.final_bar
     assert tables.BAR_STYLES["none"] is scoring.invisible_bar
+
+
+def test_group_tables_cover_the_musicxml_vocabulary_and_every_wsmn_value():
+    assert set(tables.GROUP_SYMBOLS) == {"bracket", "brace", "line", "square", "none"}
+    assert set(tables.GROUP_SYMBOLS.values()) == set(BracketSymbol) | {None}
+    assert set(tables.GROUP_BARLINES) == {"yes", "no", "Mensurstrich"}
+    assert set(tables.GROUP_BARLINES.values()) == set(GroupBarLines)
 
 
 def test_clef_signs_cover_every_clef_sign():

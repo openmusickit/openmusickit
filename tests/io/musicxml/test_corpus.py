@@ -8,7 +8,6 @@ change must update in the same commit.
 from __future__ import annotations
 
 import warnings
-from collections import defaultdict
 from fractions import Fraction
 from functools import cache
 
@@ -22,10 +21,11 @@ from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.lyrics import LyricSection
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.note_event import NoteEvent
-from openmusickit.objects.part import LineGroup, PercussionPart
+from openmusickit.objects.part import LineGroup, PercussionPart, StackGroup
 from openmusickit.objects.score import Score
 from openmusickit.systems.wsmn.scoring import symbols as scoring
 from openmusickit.values.time.duration import Measurable
+from tests.io.musicxml.documents import stack_of
 from tests.scores.registry import FIXTURES, ScoreFixture
 
 WITH_MUSICXML = [fixture for fixture in FIXTURES.values() if fixture.musicxml is not None]
@@ -65,13 +65,6 @@ def score_of(graph) -> Score:
     return scores[0]
 
 
-def parts_by_index(graph, score):
-    by_index = defaultdict(list)
-    for part in graph.score_parts(score):
-        by_index[part.meta["musicxml"]["index"]].append(part)
-    return by_index
-
-
 def lines_of_part(graph, part):
     """The top-level line heads a Part plays: its stints' lines or its group's members."""
     heads = [
@@ -101,25 +94,40 @@ def test_reads_with_only_the_expected_kinds_of_warning(fixture: ScoreFixture):
 
 
 @pytest.mark.parametrize("fixture", fixtures())
-def test_the_parts_are_the_part_list(fixture: ScoreFixture):
+def test_the_stack_is_the_part_list(fixture: ScoreFixture):
     graph, _ = graph_and_warnings(fixture.slug)
-    by_index = parts_by_index(graph, score_of(graph))
-    assert sorted(by_index) == list(range(len(fixture.parts)))
-    for index, name in enumerate(fixture.parts):
-        parts = by_index[index]
-        if len(parts) == 1:
-            assert parts[0].name == name
-            assert parts[0].meta["musicxml"]["id"] is not None
-        else:  # a drum kit: one PercussionPart per instrument of that <score-part>
+    stack = stack_of(graph)
+    assert len(stack) == len(fixture.parts)
+    for member, name in zip(stack, fixture.parts, strict=True):
+        assert member.name == name
+        if isinstance(member, LineGroup):  # a drum kit: one PercussionPart per instrument
             assert "unpitched" in fixture.features
-            assert all(isinstance(part, PercussionPart) for part in parts)
+            for head in graph.group_members(member):
+                (stint,) = graph._graph.predecessors(head, edge_type=EdgeType.STARTS_AT)
+                (part,) = graph._graph.predecessors(stint, edge_type=EdgeType.PERFORMS)
+                assert isinstance(part, PercussionPart)
+        else:
+            assert member.meta["musicxml"]["id"] is not None
+
+
+def test_the_quartet_is_one_bracket_over_its_four_parts():
+    graph, _ = graph_and_warnings("mozart-string-quartet-k464-mvt3")
+    stack = stack_of(graph)
+    assert [part.name for part in stack] == ["Violin 1", "Violin 2", "Viola", "Violoncello"]
+    (group,) = graph.nodes(StackGroup)
+    assert list(graph.stack_group_members(group)) == stack
+    assert group.shape == scoring.bracket and group.name is None
 
 
 @pytest.mark.parametrize("fixture", fixtures())
 def test_the_first_part_has_the_measures_of_the_file(fixture: ScoreFixture):
     graph, _ = graph_and_warnings(fixture.slug)
-    first = parts_by_index(graph, score_of(graph))[0][0]
-    head = lines_of_part(graph, first)[0]
+    first = stack_of(graph)[0]
+    head = (
+        next(iter(graph.group_members(first)))
+        if isinstance(first, LineGroup)
+        else lines_of_part(graph, first)[0]
+    )
     numbered = [
         event
         for event in graph.walk_line(head)
@@ -133,8 +141,7 @@ def test_every_line_of_every_part_has_the_length_of_the_score(fixture: ScoreFixt
     graph, _ = graph_and_warnings(fixture.slug)
     lengths = {
         length_of(graph, head)
-        for parts in parts_by_index(graph, score_of(graph)).values()
-        for part in parts
+        for part in graph.score_parts(score_of(graph))
         for head in lines_of_part(graph, part)
     }
     assert len(lengths) == 1 and next(iter(lengths)) > 0
