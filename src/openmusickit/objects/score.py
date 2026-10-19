@@ -18,6 +18,8 @@ class Score(OmkObject):
     A line need not have a Part (a chord line, a sketch),
     and a Part need not have music yet (an orchestration sketch),
     so both memberships carry information.
+    The order its parts are drawn in is a stack (`OmkGraph.add_stack`),
+    not something the Score holds.
     A Score is not a timing origin:
     where its lines fall relative to each other is said by pins and groups, as ever,
     and two lines of one Score with no pin between them have no relative onset.

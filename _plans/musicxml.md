@@ -3,8 +3,8 @@
 Status: **stages 0–4 done 2026-09-29** (plan, fixtures, model changes, the
 reader and its tests; decisions in §3 confirmed with the developer the same
 day; §12 records the choices made while building).
-**Stopped at the stage 5 gate:** part order and bracketing (P1) needs its
-own design session before the writer (stages 6–8) can be built.
+**Stage 5 (P1) designed 2026-10-19** in `_plans/stack-order.md`;
+the writer (stages 6–8) follows it.
 
 Written for two readers:
 the developer (to approve and to decide the pre-plans in §7),
@@ -218,10 +218,16 @@ def read(source: str | Path | IO[bytes], graph_engine: GraphAdapter | None = Non
     holding one Score. Raises MusicXmlError for a file that is not partwise MusicXML;
     warns (OmkWarning) for every musical fact it cannot place."""
 
-def write(graph: OmkGraph, target: str | Path | IO[bytes], score: Score | None = None) -> None:
+def write(
+    graph: OmkGraph,
+    target: str | Path | IO[bytes],
+    score: Score | None = None,
+    omit: Iterable[type[OmkObject]] = (),
+) -> None:
     """Writes `score` (the graph's only Score if None) as MusicXML 4.0 partwise;
-    .mxl when the target name ends in .mxl. Raises UnexportableError, naming the node,
-    for a graph outside the exportable subset (§6.1)."""
+    .mxl when the target name ends in .mxl. Nodes of the `omit` types are left
+    out. Raises UnexportableError, naming the node, only where no document
+    can be written (§6.1); everything else it cannot place warns."""
 ```
 
 `errors.py` gains `MusicXmlError(OmkError, ValueError)` and
@@ -564,8 +570,9 @@ not `Marked`) is ignored with a warning naming what was left out.
 
 ### 6.2 Algorithm
 
-1. Parts in P1's order (until then, `meta.index`); each Part's lines are
-   its group's members (staves, in `meta.staff` order) or its stint's line.
+1. Parts in their `STACKS_ABOVE` order (`_plans/stack-order.md` §6);
+   each Part's lines are its group's members, in their stack order,
+   or its stint's line.
 2. Per line, the segments between `DivisionEvent`s are the measures
    (derived from the `MeterEvent` when a line has none, with a warning);
    measures of the lines of one part are aligned by `onsets(head)`
@@ -1010,6 +1017,21 @@ Stages 3–4 (the reader), choices the plan did not spell out:
   verbatim from the part list (P1/P5 stopgap).
 - Ending brackets are spanned on the part's first staff line, from the event
   at the ending's start to the event ending at its stop.
+
+Writer decisions (developer, 2026-10-19, before stage 6):
+
+- The writer writes one `Score`, not a graph: a graph may hold sketches
+  that belong to no score, and several scores, each written separately.
+  `score=None` means the graph's only Score and raises if there are several.
+- It refuses only when no document can be written. Everything reachable
+  from the Score that can be written is, and what cannot be placed warns.
+  In particular, parts that are not one `STACKS_ABOVE` chain are written
+  chain by chain (chains ordered by their top member's name, an unchained
+  part being a chain of one) with an `OmkWarning` naming them.
+- `omit` leaves out nodes by type (`omit=[ChordEvent]` drops the chord
+  line), so material MusicXML could carry but the caller does not want,
+  such as a future analysis layer, is excluded without editing the graph.
+  An omitted node's attachments go with it.
 
 ## 13. Not doing (deliberately)
 

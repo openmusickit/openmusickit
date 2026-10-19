@@ -31,11 +31,14 @@ from openmusickit.objects.lyrics import LyricSection, LyricSyllable, parse_lyric
 from openmusickit.objects.marking import Marked, Marking
 from openmusickit.objects.note_event import NoteEvent
 from openmusickit.objects.omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
-from openmusickit.objects.part import LineGroup, Part, Stint
+from openmusickit.objects.part import LineGroup, Part, StackGroup, Stint
 from openmusickit.objects.score import Score
 from openmusickit.objects.sync_line import SyncLine, SyncPoint
 from openmusickit.values.time.duration import Duration, Measurable, ZeroDuration
 from openmusickit.values.tone.tone import Tone
+
+# What a STACKS_ABOVE edge may join (see `OmkGraph.add_stacked`).
+Stackable = Part | LineGroup | SequentialEvent | SyncLine
 
 
 @dataclass(kw_only=True, slots=True)
@@ -1328,14 +1331,14 @@ class OmkGraph:
         """`events` plus everything attached to them that defines the music
         there: marks, annotations, spanners, lyric syllables, and in turn
         whatever is attached to those (a lyric section over the syllables).
-        Stints are not content, and a spanner with an end outside the set is
+        Stints and stack groups are not content, and a spanner with an end outside the set is
         dropped with a warning."""
         content: dict[UUID, OmkObject] = {event.id: event for event in events}
         queue = deque(events)
         while queue:
             node = queue.popleft()
             for attacher in self._attachers(node):
-                if attacher.id not in content and not isinstance(attacher, Stint):
+                if attacher.id not in content and not isinstance(attacher, Stint | StackGroup):
                     content[attacher.id] = attacher
                     queue.append(attacher)
         for node in list(content.values()):
@@ -1491,6 +1494,230 @@ class OmkGraph:
         """
         for head in self.score_lines(score):
             yield from self.walk_span(head)
+
+    # Stacks: the order in which things are drawn one above another
+
+    def add_stacked(self, upper: Stackable, lower: Stackable) -> None:
+        """Places `lower` directly below `upper`: one STACKS_ABOVE edge.
+
+        A stack is a chain, as a line is: a node has at most one thing
+        directly above it and one directly below. What stacks is a Part, a
+        `LineGroup`, the head of a line (not branched: a branched line is
+        stacked through its parent) or a `SyncLine`. A stack says only the
+        order in which things are drawn; it says nothing about time, who
+        plays what, or which lines share a staff. Several unconnected stacks
+        are allowed: an order that is only partly known.
+
+        >>> graph = OmkGraph(GraphMeta())
+        >>> violin, viola, cello = (Part(name=n) for n in ("Violin", "Viola", "Cello"))
+        >>> graph.add_stacked(violin, viola)
+        >>> graph.stacked_below(violin) is viola, graph.stacked_above(violin)
+        (True, None)
+        >>> graph.add_stacked(cello, viola)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: Part(name='Viola') already has something stacked above it.
+        >>> graph.add_stacked(viola, violin)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: Stacking Part(name='Violin') below Part(name='Viola') would close a cycle.
+
+        Raises
+        ------
+        GraphError
+            if `upper` already has something below it, `lower` already has
+            something above it, the edge would close a cycle, or either node
+            is not something that stacks.
+        """
+        self.add_node(upper)
+        self.add_node(lower)
+        self._check_stackable(upper)
+        self._check_stackable(lower)
+        if self.stacked_below(upper) is not None:
+            raise GraphError(f"{upper!r} already has something stacked below it.")
+        if self.stacked_above(lower) is not None:
+            raise GraphError(f"{lower!r} already has something stacked above it.")
+        if any(node is upper for node in self.walk_stack(lower)):
+            raise GraphError(f"Stacking {lower!r} below {upper!r} would close a cycle.")
+        self.add_edge(upper, lower, EdgeType.STACKS_ABOVE)
+
+    def _check_stackable(self, node: OmkObject) -> None:
+        if not isinstance(node, Stackable):
+            raise GraphError(
+                f"{node!r} does not stack: only a Part, a LineGroup, a line head or a SyncLine does."
+            )
+        if isinstance(node, SequentialEvent):
+            if self.get_previous(node) is not None:
+                raise GraphError(f"{node!r} is not the head of a line.")
+            if any(self._graph.in_edges(node, EdgeType.BRANCHES)):
+                raise GraphError(
+                    f"{node!r} is branched from another line; it is stacked through its parent."
+                )
+
+    def add_stack(self, members: Iterable[Stackable]) -> None:
+        """Stacks `members` from the top down, each directly below the one
+        before (see `add_stacked`).
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> from openmusickit.systems.wsmn.tonal.symbols import C, G
+        >>> graph = OmkGraph(GraphMeta())
+        >>> rh, lh = NoteEvent(tones={C}), NoteEvent(tones={G})
+        >>> graph.add_stack([rh, lh])   # the right hand's line above the left's
+        >>> list(graph.walk_stack(rh)) == [rh, lh]
+        True
+        """
+        members = list(members)
+        for member in members:
+            self.add_node(member)
+        for upper, lower in zip(members, members[1:], strict=False):
+            self.add_stacked(upper, lower)
+
+    def insert_stacked(self, node: Stackable, upper: Stackable, lower: Stackable) -> None:
+        """Puts `node` between `upper` and `lower`, which are directly stacked.
+
+        >>> graph = OmkGraph(GraphMeta())
+        >>> flute, oboe, clarinet = (Part(name=n) for n in ("Flute", "Oboe", "Clarinet"))
+        >>> graph.add_stack([flute, clarinet])
+        >>> graph.insert_stacked(oboe, flute, clarinet)
+        >>> [part.name for part in graph.walk_stack(flute)]
+        ['Flute', 'Oboe', 'Clarinet']
+
+        Raises
+        ------
+        GraphError
+            if `lower` is not directly below `upper`, `node` is already in a
+            stack, or `node` is not something that stacks.
+        """
+        edge = self.get_edge(upper, lower, EdgeType.STACKS_ABOVE)
+        self.add_node(node)
+        self._check_stackable(node)
+        if self.stacked_above(node) is not None or self.stacked_below(node) is not None:
+            raise GraphError(f"{node!r} is already in a stack; take it out first.")
+        self.remove_edge(edge)
+        self.add_stacked(upper, node)
+        self.add_stacked(node, lower)
+
+    def stacked_below(self, node: Stackable) -> Stackable | None:
+        """What is directly below `node` in its stack, or None at the bottom."""
+        return next(self._graph.successors(node, edge_type=EdgeType.STACKS_ABOVE), None)
+
+    def stacked_above(self, node: Stackable) -> Stackable | None:
+        """What is directly above `node` in its stack, or None at the top."""
+        return next(self._graph.predecessors(node, edge_type=EdgeType.STACKS_ABOVE), None)
+
+    def walk_stack(self, node: Stackable) -> Iterator[Stackable]:
+        """`node` and everything stacked below it, top to bottom."""
+        current: Stackable | None = node
+        while current is not None:
+            yield current
+            current = self.stacked_below(current)
+
+    def _walk_stack_up(self, node: Stackable) -> Iterator[Stackable]:
+        current: Stackable | None = node
+        while current is not None:
+            yield current
+            current = self.stacked_above(current)
+
+    def remove_from_stack(self, node: Stackable) -> None:
+        """Takes `node` out of its stack, joining what was above it to what
+        was below. A `StackGroup` that started or ended at `node` now starts
+        or ends at its neighbour inside the group; a group of `node` alone is
+        removed. `node` stays on the graph.
+
+        >>> from openmusickit.systems.wsmn.scoring.symbols import bracket
+        >>> graph = OmkGraph(GraphMeta())
+        >>> flute, oboe, violin, viola = (Part(name=n) for n in ("Flute", "Oboe", "Violin", "Viola"))
+        >>> graph.add_stack([flute, oboe, violin, viola])
+        >>> strings = StackGroup(name="Strings", shape=bracket)
+        >>> graph.add_stack_group(strings, violin, viola)
+        >>> graph.remove_from_stack(violin)
+        >>> [part.name for part in graph.walk_stack(flute)]
+        ['Flute', 'Oboe', 'Viola']
+        >>> [part.name for part in graph.stack_group_members(strings)]
+        ['Viola']
+        """
+        upper, lower = self.stacked_above(node), self.stacked_below(node)
+        for group in list(self._graph.predecessors(node, StackGroup, EdgeType.STARTS_AT)):
+            first, last = self._stack_group_bounds(group)
+            if last is node:
+                self.remove_node(group)
+                continue
+            self.remove_edge(self.get_edge(group, node, EdgeType.STARTS_AT))
+            self.add_edge(group, lower, EdgeType.STARTS_AT)
+        for group in list(self._graph.predecessors(node, StackGroup, EdgeType.ENDS_AT)):
+            self.remove_edge(self.get_edge(group, node, EdgeType.ENDS_AT))
+            self.add_edge(group, upper, EdgeType.ENDS_AT)
+        if upper is not None:
+            self.remove_edge(self.get_edge(upper, node, EdgeType.STACKS_ABOVE))
+        if lower is not None:
+            self.remove_edge(self.get_edge(node, lower, EdgeType.STACKS_ABOVE))
+        if upper is not None and lower is not None:
+            self.add_edge(upper, lower, EdgeType.STACKS_ABOVE)
+
+    def add_stack_group(self, group: StackGroup, first: Stackable, last: Stackable) -> None:
+        """Places `group` over a run of a stack, from `first` down to `last`
+        (inclusive), with STARTS_AT and ENDS_AT edges.
+
+        >>> from openmusickit.systems.wsmn.scoring.symbols import brace, bracket
+        >>> graph = OmkGraph(GraphMeta())
+        >>> oboe, violin_1, violin_2, viola = (
+        ...     Part(name=n) for n in ("Oboe", "Violin 1", "Violin 2", "Viola"))
+        >>> graph.add_stack([oboe, violin_1, violin_2, viola])
+        >>> strings, violins = StackGroup(name="Strings", shape=bracket), StackGroup(shape=brace)
+        >>> graph.add_stack_group(strings, violin_1, viola)
+        >>> graph.add_stack_group(violins, violin_1, violin_2)   # nested
+        >>> [part.name for part in graph.stack_group_members(violins)]
+        ['Violin 1', 'Violin 2']
+        >>> graph.add_stack_group(StackGroup(), viola, violin_1)
+        Traceback (most recent call last):
+        ...
+        openmusickit.errors.GraphError: Part(name='Violin 1') is not at or below Part(name='Viola') in a stack.
+
+        Raises
+        ------
+        GraphError
+            if `last` is neither `first` nor stacked somewhere below it, or
+            `first` is not something that stacks.
+        """
+        self.add_node(first)
+        self.add_node(last)
+        self._check_stackable(first)
+        if not any(member is last for member in self.walk_stack(first)):
+            raise GraphError(f"{last!r} is not at or below {first!r} in a stack.")
+        self.add_node(group)
+        self.add_edge(group, first, EdgeType.STARTS_AT)
+        self.add_edge(group, last, EdgeType.ENDS_AT)
+
+    def _stack_group_bounds(self, group: StackGroup) -> tuple[Stackable, Stackable]:
+        first = next(self._graph.successors(group, edge_type=EdgeType.STARTS_AT))
+        last = next(self._graph.successors(group, edge_type=EdgeType.ENDS_AT))
+        return first, last
+
+    def stack_group_members(self, group: StackGroup) -> Iterator[Stackable]:
+        """The members of `group`, from first to last."""
+        first, last = self._stack_group_bounds(group)
+        for member in self.walk_stack(first):
+            yield member
+            if member is last:
+                return
+
+    def stack_groups_of(self, node: Stackable) -> Iterator[StackGroup]:
+        """The groups whose run includes `node`, in no particular order.
+
+        >>> from openmusickit.systems.wsmn.scoring.symbols import bracket
+        >>> graph = OmkGraph(GraphMeta())
+        >>> oboe, violin, viola = (Part(name=n) for n in ("Oboe", "Violin", "Viola"))
+        >>> graph.add_stack([oboe, violin, viola])
+        >>> strings = StackGroup(name="Strings", shape=bracket)
+        >>> graph.add_stack_group(strings, violin, viola)
+        >>> list(graph.stack_groups_of(viola)) == [strings], list(graph.stack_groups_of(oboe))
+        (True, [])
+        """
+        at_or_below = {member.id for member in self.walk_stack(node)}
+        for member in self._walk_stack_up(node):
+            for group in self._graph.predecessors(member, StackGroup, EdgeType.STARTS_AT):
+                if self._stack_group_bounds(group)[1].id in at_or_below:
+                    yield group
 
     # Sync lines: a named origin that music pins to
 

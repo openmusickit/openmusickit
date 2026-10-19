@@ -26,6 +26,7 @@ class EdgeType(StrEnum):
     USER_DEFINED = auto()
     STARTS_AT = auto()
     ENDS_AT = auto()
+    STACKS_ABOVE = auto()
 
 
 class EdgeOrigin(StrEnum):

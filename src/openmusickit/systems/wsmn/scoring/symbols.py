@@ -1,5 +1,6 @@
 """Ready-to-go marks (articulations, dynamics, ornaments, techniques,
-expression and navigation words, and the like), tempo terms, bar lines, and clefs.
+expression and navigation words, and the like), tempo terms, bar lines,
+brackets, and clefs.
 Percussion has its marks here (`ghost`, `buzz_roll`, `choke`,
 sticking, beaters, snares) and its tones in `systems.wsmn.percussion.symbols`.
 
@@ -49,6 +50,11 @@ StaffClef(ClefSign.G, 2)
 """
 
 from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineComponent, BarLineShape
+from openmusickit.systems.wsmn.scoring.bracket_shape import (
+    BracketShape,
+    BracketSymbol,
+    GroupBarLines,
+)
 from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
 from openmusickit.values.scoring.mark import AttachmentMode, Mark, MarkType
 from openmusickit.values.scoring.tempo_term import TempoTerm
@@ -2147,6 +2153,19 @@ double_repeat = BarLineShape(
     BarLineComponent.THIN,
     BarLineComponent.DOTS,
 )  # ":|.|:"
+
+# =============================================================================
+# BRACKETS
+# =============================================================================
+# A BracketShape is drawn at the left of a group of staves (a `StackGroup`):
+# a bracket over a family of instruments, a brace over one player's staves.
+# `_joined` draws the bar lines through the whole group (MusicXML
+# group-barline "yes"), as for strings or a piano.
+
+bracket = BracketShape(symbol=BracketSymbol.BRACKET)
+brace = BracketShape(symbol=BracketSymbol.BRACE)
+bracket_joined = BracketShape(symbol=BracketSymbol.BRACKET, bar_lines=GroupBarLines.JOINED)
+brace_joined = BracketShape(symbol=BracketSymbol.BRACE, bar_lines=GroupBarLines.JOINED)
 
 # =============================================================================
 # CLEFS

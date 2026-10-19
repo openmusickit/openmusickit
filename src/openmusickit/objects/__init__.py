@@ -45,7 +45,7 @@ from .lyrics import LyricSection, LyricSyllable, SyllablePlacement, parse_lyrics
 from .marking import Marked, Marking, MarkSpanner
 from .note_event import NoteEvent, Rest
 from .omk_object import OmkObject, SequentialEvent, Spanner, TonalObject
-from .part import LineGroup, Part, PercussionPart, Stint
+from .part import LineGroup, Part, PercussionPart, StackGroup, Stint
 from .score import Score
 from .sync_line import SyncLine, SyncPoint
 
@@ -80,6 +80,7 @@ __all__ = [
     "Score",
     "SequentialEvent",
     "Spanner",
+    "StackGroup",
     "Stint",
     "SyllablePlacement",
     "SyncLine",

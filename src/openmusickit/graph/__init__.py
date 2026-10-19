@@ -61,6 +61,14 @@ Time in the graph is relative, and there is no score origin. The pieces:
   `walk_score` walks every line; `scores_of` finds a head's or a Part's
   score.
 
+- A **stack** (STACKS_ABOVE, `OmkGraph.add_stack`) is the order in which
+  things are drawn one above another: the Parts of a score, a piano's two
+  lines, a chord line over a melody. It is a chain, as a line is, but says
+  nothing about time; an order only partly known is several stacks. A
+  **StackGroup** (`add_stack_group`) spans a run of a stack, as a slur
+  spans a run of a line: the bracket over the strings, the brace over two
+  violin parts.
+
 A connected component is a score, whether or not a `Score` names it; a graph
 may hold several, or fragments that are none (`GraphMeta` describes the
 graph, not a work). "Where is this event" only ever means "how far from that

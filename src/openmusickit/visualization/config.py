@@ -187,6 +187,7 @@ DEFAULT_EDGE_STYLES: dict[EdgeType, EdgeStyle] = {
     EdgeType.IMPLEMENTS: _RELATIONAL,
     EdgeType.REALIZES: _RELATIONAL,
     EdgeType.USER_DEFINED: _RELATIONAL,
+    EdgeType.STACKS_ABOVE: _DOTTED,
 }
 
 SYNC_BAR_STYLE = EdgeStyle(style="solid", color=LIGHT, pen_width=4, arrowhead="none")

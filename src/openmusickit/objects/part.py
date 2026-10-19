@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from openmusickit.objects.omk_object import OmkObject, Spanner
+from openmusickit.values.scoring.stack_group_shape import StackGroupShape
 from openmusickit.values.tone.interval import Interval
 from openmusickit.values.tone.tone_collection import ToneCollection
 
@@ -72,9 +73,35 @@ class LineGroup(OmkObject):
     so the lines of a kit or a piano need no pins to be aligned.
     A Part points at the group when one instrument plays all of its lines,
     or at a line head (through a Stint) when each line is its own instrument.
+    A bracket or brace drawn over several things is a `StackGroup`, not this.
 
     >>> LineGroup(name="Drum kit")
     LineGroup(name='Drum kit')
     """
 
     name: str | None = None
+
+
+@dataclass(kw_only=True, slots=True)
+class StackGroup(Spanner):
+    """A run of a stack drawn as one unit:
+    the strings of an orchestra, a choir, the two violin parts.
+
+    Things that are drawn one above another (Parts, line heads, `LineGroup`s,
+    sync lines) are ordered by STACKS_ABOVE edges (`OmkGraph.add_stack`);
+    a StackGroup spans that order from its first member (STARTS_AT)
+    to its last (ENDS_AT), as a slur spans a line,
+    so its members are always contiguous, and groups nest.
+    `shape` is how a notation system draws it
+    (WSMN's `BracketShape`: a bracket, a brace), if that has been said.
+    Unlike a `LineGroup`, a StackGroup is not a timing origin
+    and says nothing about who plays what.
+
+    >>> from openmusickit.systems.wsmn.scoring.symbols import bracket
+    >>> StackGroup(name="Strings", shape=bracket)
+    StackGroup(name='Strings', abbreviation=None, shape=BracketShape(symbol=BracketSymbol.BRACKET, bar_lines=GroupBarLines.SEPARATE))
+    """
+
+    name: str | None = None
+    abbreviation: str | None = None
+    shape: StackGroupShape | None = None

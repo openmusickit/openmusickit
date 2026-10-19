@@ -94,7 +94,9 @@ class TonalObject(ABC):
 @dataclass(kw_only=True, slots=True)
 class Spanner(OmkObject):
     """Used with edges of type STARTS_AT and ENDS_AT
-    to group a sequence of SequentialEvents together.
+    to group a run of a chain together:
+    a sequence of SequentialEvents (a slur, a stint, a lyric section),
+    or a run of a stack (a `StackGroup`).
 
     Articulations (such as slurs and crescendos) and other objects
     which normally attach to a single OmkObject can attach to a Spanner
