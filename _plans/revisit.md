@@ -186,3 +186,23 @@ the writer could put it back. Come back to recording it in
 credits on the Score, stems, beams and placement on the events) and writing
 it out again, so that a round trip keeps the engraving as well as the music.
 The canonical comparison would keep ignoring it.
+
+## Test MusicXML output against the schema and a second renderer (2026-10-21; not a release blocker)
+
+The only check that another program accepts what the writer writes is the
+MuseScore smoke test (`tests/io/musicxml/test_mscore.py`, MuseScore 4.7
+through `mscore`, headless). MusicXML is cross-platform, and one reader
+agreeing is not much evidence. Two cheap additions:
+
+- **Schema validation.** Validate the writer's output for every fixture (and
+  the Hypothesis-generated scores) against the official MusicXML 4.0 XSD.
+  Catches structural mistakes any program might trip on. Needs `lxml` as a
+  dev dependency or `xmllint` on the path (skip-if-missing, like `mscore`).
+  `_plans/musicxml.md` §13 left validation out deliberately; this reverses
+  that for the writer's output only, not the reader's input.
+- **A second renderer.** Verovio (open source, pip-installable) renders
+  MusicXML to SVG; an optional, skip-if-missing test like the MuseScore one
+  would show whether an independent reader agrees. A new dev dependency, so
+  the developer's call.
+
+Sibelius, Dorico and Finale can only be checked by hand on a machine that has them.
