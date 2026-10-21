@@ -76,7 +76,9 @@ The Western Standard Music Notation (WSMN) implementation includes:
 - just about anything else you would need to represent and vectorize
   nearly any piece "Western" music from any style (classical, jazz, folk, pop, sacred)
   in any standard (and many non-standard) score/notation format.
-- Output to MusicXML and Lilypond for rendering and printing scores, charts, and leadsheets.
+- Reading and writing MusicXML, the interchange format of notation programs
+  (see [MusicXML](musicxml.qmd)).
+- Output to Lilypond for rendering and printing scores, charts, and leadsheets.
 - Output to MIDI for use in a DAW.
 
 ### MIDI

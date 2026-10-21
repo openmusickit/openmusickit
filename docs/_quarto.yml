@@ -19,6 +19,8 @@ website:
         text: Home
       - href: examples.qmd
         text: Examples
+      - href: musicxml.qmd
+        text: MusicXML
       - href: overview.md
         text: Overview
       - href: goals.md
@@ -124,6 +126,15 @@ quartodoc:
         - graph.equivalence
         - graph.graph_adapter
         - graph.rx_adapter
+    - title: Input and Output
+      desc: Reading and writing interchange formats.
+      contents:
+        - io.musicxml
+        - io.musicxml.reader
+        - io.musicxml.writer
+        - io.musicxml.canonical
+        - io.musicxml.tables
+        - io.musicxml.container
     - title: Visualization
       desc: Pictures of a graph, laid out by Graphviz.
       contents:

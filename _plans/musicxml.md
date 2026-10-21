@@ -5,9 +5,10 @@ reader and its tests; decisions in §3 confirmed with the developer the same
 day; §12 records the choices made while building).
 **Stage 5 (P1) done 2026-10-19** (`_plans/completed/stack-order.md`);
 **stage 6 (the writer) done 2026-10-19**; **stage 7 (comparison, render
-smoke test, review script) done 2026-10-19**, waiting on the developer's
-review of the rendered pages (`uv run python -m tests.scores.review`) before
-stage 8 (docs).
+smoke test, review script) done 2026-10-19**; **stage 8 (docs) done
+2026-10-20**: `docs/musicxml.qmd`, the "Input and Output" reference section,
+the overview line, a README example. Keeping layout in `meta["musicxml"]`
+is left for later (`_plans/revisit.md`; not a release blocker).
 
 Written for two readers:
 the developer (to approve and to decide the pre-plans in §7),

@@ -1,0 +1,235 @@
+---
+title: "MusicXML"
+---
+
+This page is executable:
+every code block below runs when the documentation is built.
+
+`openmusickit.io.musicxml` reads a MusicXML file into an `OmkGraph`
+and writes a `Score` of a graph back out.
+It reads `.musicxml`, `.xml` and compressed `.mxl` files,
+partwise (what notation programs export),
+and writes MusicXML 4.0.
+It needs nothing beyond the standard library.
+
+```{python}
+import io
+import tempfile
+import warnings
+from pathlib import Path
+
+import openmusickit as omk
+from openmusickit.io.musicxml import canonicalize, compare, read, write
+from openmusickit.io.musicxml.container import load
+from openmusickit.systems import wsmn
+from openmusickit.systems.wsmn.symbols import *
+```
+
+## Reading a file
+
+`read` takes a path or a binary stream and returns a new graph holding one `Score`.
+Here is a lead sheet from the test fixtures,
+a Sibelius export of the New Orleans tune *Second Line*.
+
+```{python}
+lead_sheet = Path("../tests/scores/second-line-joe-avery/SECOND LINE, (THE ORIGINAL) (JOE AVERY BLUES).xml")
+
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always", omk.OmkWarning)
+    graph = read(lead_sheet)
+
+score = next(graph.nodes(omk.Score))
+print(score.title)
+print(score.composer)
+print([part.name for part in graph.score_parts(score)])
+```
+
+The reader records what the file says and nothing more.
+Each part is a `Part` performing a line
+(a part on two staves performs a `LineGroup` of two lines).
+Key, meter and clef are context events at the head of the line,
+every bar line is a `DivisionEvent`,
+ties and slurs are `MarkSpanner`s,
+and a second voice is a line branched from the note it starts under.
+
+```{python}
+(part,) = graph.score_parts(score)
+(stint,) = graph.stints(part)
+melody = graph.spanner_start(stint)
+for event in list(graph.walk_line(melody))[:9]:
+    print(event if isinstance(event, (omk.NoteEvent, omk.DivisionEvent)) else type(event).__name__)
+```
+
+Chord symbols become a line of `ChordEvent`s with no duration,
+each pinned to the note it stands over;
+a timing walk from the melody finds them.
+
+```{python}
+(chord_head,) = (h for h in graph.score_lines(score) if isinstance(h, omk.ChordEvent))
+onsets = graph.onsets(melody)
+for chord in list(graph.walk_line(chord_head))[:5]:
+    print(onsets[chord.id].rational_length, chord.chord)
+```
+
+Anything the reader cannot place
+(an element with no home in the model yet, a word it does not know)
+is not dropped silently:
+it is an `OmkWarning`, counted by kind.
+Presentation (layout, stems, beams, fonts, positions) is dropped without a warning:
+that is not loss of music.
+
+```{python}
+for warning in caught:
+    print(warning.message)
+```
+
+## Writing a file
+
+`write` writes the graph's only Score
+(pass `score=` when a graph holds several);
+a target ending in `.mxl` is compressed.
+`OmkGraph.from_file` and `export_file` do the same by suffix.
+
+```{python}
+out = Path(tempfile.mkdtemp())
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", omk.OmkWarning)
+    write(graph, out / "second-line.musicxml")
+    graph.export_file(out / "second-line.mxl")
+    again = omk.OmkGraph.from_file(out / "second-line.mxl")
+
+print(sorted(p.name for p in out.iterdir()))
+print(again.is_equivalent(graph))
+```
+
+The writer is the reader's inverse:
+what the reader built, written and read back, is the same music
+(`is_equivalent` compares the graphs node for node, ids and metadata aside).
+
+## Writing a graph built by hand
+
+A graph does not need to come from a file.
+A line needs no bar lines:
+the meter in force places them,
+and a note that crosses one is split and tied.
+Here a melody in 3/4 is written with only a final bar line,
+and its third note, a half note on the third beat, crosses the first.
+
+```{python}
+tune = omk.OmkGraph(omk.GraphMeta())
+pitches = "E4 D4 C4 D4 E4 E4 E4".split()
+rhythm = [quarter, quarter, half, quarter, quarter, quarter, half]
+line = [
+    omk.ModalContextEvent(modal_context=wsmn.Key.of(C, Major)),
+    omk.MeterEvent(meter=three_four),
+    omk.ClefEvent(clef=treble_clef),
+    *(omk.NoteEvent(tones={wsmn.TonalVector.from_string(p)}, duration=d) for p, d in zip(pitches, rhythm)),
+    omk.DivisionEvent(shape=final_bar),
+]
+tune.add_line(line)
+title = omk.Score(title="Three bars", composer="Anon.")
+flute = omk.Part(name="Flute")
+tune.add_line_to_score(title, line[0])
+tune.add_part_to_score(title, flute)
+tune.add_stint(flute, omk.Stint(), line[0])
+
+buffer = io.BytesIO()
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always", omk.OmkWarning)
+    write(tune, buffer)
+print([str(w.message) for w in caught])
+
+from xml.etree import ElementTree as ET
+
+for measure in ET.fromstring(buffer.getvalue()).iter("measure"):
+    notes = [
+        n.findtext("pitch/step") + n.findtext("pitch/octave") + " " + n.findtext("type")
+        + "".join(f" (tie {t.get('type')})" for t in n.findall("tie"))
+        for n in measure.iter("note")
+    ]
+    print(measure.get("number"), ", ".join(notes))
+```
+
+Read back, the line has a bar line wherever the meter put one,
+and the half note that crossed the first is two notes joined by a tie.
+
+```{python}
+back = read(io.BytesIO(buffer.getvalue()))
+head = next(back.score_lines(next(back.nodes(omk.Score))))
+print([type(e).__name__ for e in back.walk_line(head) if not isinstance(e, omk.NoteEvent)])
+print(sum(s.mark is tie for s in back.nodes(omk.MarkSpanner)), "tie")
+```
+
+The writer refuses only when there is nothing to write
+(no Score, several and none chosen, a Score with no parts);
+everything else it cannot write it leaves out with a warning:
+an event of unknown or clock-time duration and the rest of its line,
+a tone with no octave, an annotation, a line no part performs.
+
+`omit` leaves out nodes by type, with whatever hangs from them,
+without changing the graph: here, the chord symbols of the lead sheet.
+
+```{python}
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", omk.OmkWarning)
+    buffer = io.BytesIO()
+    write(graph, buffer, omit=[omk.ChordEvent])
+print(b"<harmony" in buffer.getvalue())
+```
+
+## Comparing documents
+
+Did an export keep the music?
+`canonicalize` reduces a MusicXML document to what it says musically:
+every measure a list of items at explicit positions,
+with presentation, `<divisions>`, voice and span numbers
+and the order of voices in a measure normalized away.
+`compare` lists the differences between two canonical forms by kind.
+The lead sheet as Sibelius wrote it and as OMK writes it are the same music:
+
+```{python}
+original = canonicalize(load(lead_sheet))
+written = canonicalize(load(out / "second-line.musicxml"))
+print(compare(original, written))
+```
+
+A change to the music is a difference of its kind,
+with the measure and part where it is.
+
+```{python}
+changed = (out / "second-line.musicxml").read_text().replace("<step>F</step>", "<step>G</step>", 1)
+for difference in compare(written, canonicalize(load(io.BytesIO(changed.encode()))))[:2]:
+    print(difference.kind, difference.measure, difference.detail)
+```
+
+## What is not kept
+
+- **Layout and engraving.**
+  Page and system breaks, positions, stems, beams, fonts, colours, credits:
+  a written file is laid out by whatever program opens it.
+- **Playback.**
+  `<sound>`, MIDI settings (kept in the Part's metadata, not used).
+- **Not yet modelled.**
+  Control flow (repeats are bar-line shapes; endings and % bars are recorded but not followed),
+  gradual tempo changes as spans, figured bass, drum maps.
+
+What the writer needs to put a file back as it was
+and the model cannot hold
+(voice and measure numbers, hidden notes, tuplet brackets, part ids, instruments)
+is kept in each node's `meta["musicxml"]`, a dict OMK itself never reads.
+The `reader` module's docstring lists its keys.
+
+## Reviewing an export
+
+For checking the writer against real scores,
+`tests/scores/review.py` sets each fixture's original engraving
+beside MuseScore's engraving of the export
+and writes the canonical differences:
+
+```bash
+uv run python -m tests.scores.review second-line-joe-avery
+```
+
+The pages land in `_review/<fixture>/`.
+It needs MuseScore (`mscore`), Poppler's `pdftoppm`,
+and for the side-by-side images ImageMagick's `montage`.

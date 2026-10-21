@@ -169,3 +169,20 @@ tied cymbal or a held bass drum loses its tie without the warning the plan's
 difference for that file until this is decided. Pitched ties are matched by
 (staff, pitch); kit strokes all hold `hit`, so the key would be (instrument,
 display pitch). Small either way: resolve them, or at least count them.
+
+## Layout in `meta["musicxml"]` (2026-10-20; not a release blocker)
+
+The MusicXML reader drops presentation by design (`_plans/musicxml.md` §2,
+§5.10): page and system breaks (`<print>`), `<defaults>` and the layouts,
+`<credit>`s, positions (`default-x/y`, `relative-x/y`), `placement`, stem
+directions, beams, displayed accidentals, noteheads other than slash, fonts
+and colours. So an export is laid out afresh by whatever opens it: in the
+review renders (`tests/scores/review.py`) the page counts differ from the
+originals (Mozart 6 pages against 15, the big band 37 against 21).
+
+Layout is what `meta` is for: it is not music, OMK core never reads it, and
+the writer could put it back. Come back to recording it in
+`meta["musicxml"]` (system and page breaks on the division they fall at,
+credits on the Score, stems, beams and placement on the events) and writing
+it out again, so that a round trip keeps the engraving as well as the music.
+The canonical comparison would keep ignoring it.
