@@ -32,9 +32,33 @@ class ClockDuration(Duration, Measurable):
     '00:01:30.000000'
     >>> ClockDuration.from_seconds(1) + ClockDuration.from_milliseconds(500) == ClockDuration(1_500_000)
     True
+
+    A float is refused, since it cannot hold most lengths exactly;
+    a fractional length is a Fraction:
+
+    >>> ClockDuration.from_seconds(Fraction(3, 2))
+    ClockDuration(microseconds=Fraction(1500000, 1))
+
+    Raises
+    ------
+    TypeError
+        if ``microseconds`` is a float, however the duration is built
+        (`from_seconds(1.5)`, `ClockDuration(5) * 1.5`).
+
+    >>> ClockDuration.from_seconds(1.5)
+    Traceback (most recent call last):
+    ...
+    TypeError: A ClockDuration cannot hold a float (1500000.0); use an int or a Fraction.
     """
 
     microseconds: int | Fraction
+
+    def __post_init__(self) -> None:
+        if isinstance(self.microseconds, float):
+            raise TypeError(
+                f"A ClockDuration cannot hold a float ({self.microseconds!r}); "
+                "use an int or a Fraction."
+            )
 
     @property
     def rational_length(self) -> Fraction:

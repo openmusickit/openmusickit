@@ -1076,7 +1076,7 @@ def test_time_signature_equality():
 def test_clock_duration_from_duration():
     q120 = Tempo(120, sym.quarter)
     assert ClockDuration.from_duration(sym.quarter, q120) == ClockDuration.from_milliseconds(500)
-    assert ClockDuration.from_duration(sym.dotted_half, q120) == ClockDuration.from_seconds(1.5)
+    assert ClockDuration.from_duration(sym.dotted_half, q120) == ClockDuration.from_seconds(F(3, 2))
     assert ClockDuration.from_duration(sym.four_four, q120) == ClockDuration.from_seconds(2)
     assert ClockDuration.from_duration(
         TemporalUnit(3, sym.eighth_in_triplet), q120
