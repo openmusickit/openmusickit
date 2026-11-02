@@ -7,7 +7,10 @@ from fractions import Fraction
 
 from hypothesis import given, settings
 
+from openmusickit.graph.edge import OmkEdge
+from openmusickit.graph.graph import OmkGraph
 from openmusickit.objects.note_event import NoteEvent
+from openmusickit.objects.omk_object import OmkObject
 from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
 from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
@@ -92,3 +95,17 @@ def test_interval_spellings(spelling):
 def test_lyric_texts(text):
     assert isinstance(text, str)
     assert text == text.strip()
+
+
+@FEW
+@given(omk.any_graphs())
+def test_any_graphs(graph):
+    assert isinstance(graph, OmkGraph)
+
+
+@FEW
+@given(omk.any_nodes(), omk.any_edges(), omk.any_durations(signed=True))
+def test_any_nodes_edges_and_durations(node, edge, duration):
+    assert (
+        isinstance(node, OmkObject) and isinstance(edge, OmkEdge) and isinstance(duration, Duration)
+    )

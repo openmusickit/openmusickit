@@ -1,0 +1,65 @@
+{
+  "edges": [
+    {
+      "@id": "78e51061-7311-48a3-82ce-6f447ed4d57b",
+      "@meta": {},
+      "@source": "1e2feb89-414c-443c-9027-c4d1c386bbc4",
+      "@target": "cd613e30-d8f1-4adf-91b7-584a2265b1f5",
+      "@type": "Edge",
+      "origin": "asserted",
+      "relation": "marks"
+    }
+  ],
+  "format": "omk-json",
+  "graph": {
+    "description": null,
+    "info": {},
+    "name": "Sketch"
+  },
+  "nodes": [
+    {
+      "@id": "1e2feb89-414c-443c-9027-c4d1c386bbc4",
+      "@meta": {},
+      "@type": "Marking",
+      "mark": {
+        "@type": "Mark",
+        "aliases": [],
+        "attachment_mode": "single",
+        "binds": false,
+        "description": "A staccato dot: the note is played detached and shortened.",
+        "kind": "articulation",
+        "name": "staccato"
+      }
+    },
+    {
+      "@id": "cd613e30-d8f1-4adf-91b7-584a2265b1f5",
+      "@meta": {},
+      "@type": "NoteEvent",
+      "duration": {
+        "@type": "wsmn:MetricalDuration",
+        "denominator": 4,
+        "dots": 0,
+        "numerator": 1,
+        "ratio": null
+      },
+      "tones": [
+        {
+          "@type": "wsmn:TonalVector",
+          "chromatic": 0,
+          "diatonic": 0,
+          "octave": 0
+        }
+      ]
+    }
+  ],
+  "vocabularies": {
+    "omk": {
+      "uri": "https://openmusickit.org/spec/omk",
+      "version": "0.1"
+    },
+    "wsmn": {
+      "uri": "https://openmusickit.org/spec/wsmn",
+      "version": "0.1"
+    }
+  }
+}

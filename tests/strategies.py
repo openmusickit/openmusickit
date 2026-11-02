@@ -13,6 +13,17 @@ from fractions import Fraction
 
 from hypothesis import strategies as st
 
+from openmusickit.errors import GraphError
+from openmusickit.graph.edge import (
+    Branch,
+    Contains,
+    EdgeOrigin,
+    EdgeType,
+    Next,
+    OmkEdge,
+    Simultaneous,
+    TimingAnchor,
+)
 from openmusickit.graph.graph import GraphMeta, OmkGraph
 from openmusickit.io.musicxml import tables
 from openmusickit.objects.chord_event import ChordEvent
@@ -21,23 +32,39 @@ from openmusickit.objects.division_event import DivisionEvent
 from openmusickit.objects.lyrics import LyricSection, LyricSyllable
 from openmusickit.objects.marking import Marking, MarkSpanner
 from openmusickit.objects.note_event import NoteEvent, Rest
-from openmusickit.objects.part import LineGroup, Part, StackGroup, Stint
+from openmusickit.objects.part import LineGroup, Part, PercussionPart, StackGroup, Stint
 from openmusickit.objects.score import Score
-from openmusickit.objects.sync_line import SyncLine
+from openmusickit.objects.sync_line import SyncLine, SyncPoint
+from openmusickit.systems.wsmn.percussion import symbols as percussion_symbols
 from openmusickit.systems.wsmn.percussion.percussion_tone import PercussionTone
 from openmusickit.systems.wsmn.scoring import symbols as scoring
+from openmusickit.systems.wsmn.scoring.bar_line_shape import BarLineShape
 from openmusickit.systems.wsmn.scoring.bracket_shape import BracketShape, BracketSymbol
 from openmusickit.systems.wsmn.scoring.staff_clef import ClefSign, StaffClef
 from openmusickit.systems.wsmn.temporal import symbols as temporal_symbols
-from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration
+from openmusickit.systems.wsmn.temporal.metrical_duration import MetricalDuration, TiedDuration
+from openmusickit.systems.wsmn.temporal.time_signature import TimeSignature
 from openmusickit.systems.wsmn.temporal.wsmn import WSMN_TEMPORAL
+from openmusickit.systems.wsmn.tonal import symbols as tonal_symbols
+from openmusickit.systems.wsmn.tonal.chords import ChordType
 from openmusickit.systems.wsmn.tonal.constants import ACCIDENTALS, DIATONES, QualityType
-from openmusickit.systems.wsmn.tonal.key import Key, KeySignature
+from openmusickit.systems.wsmn.tonal.key import Key, KeySignature, ModePattern
 from openmusickit.systems.wsmn.tonal.tonal_vector import TonalVector
 from openmusickit.utils.number_names import ORDINALS
-from openmusickit.values.text.word import Word
-from openmusickit.values.time.clock_time import Tempo
-from openmusickit.values.time.duration import GraceDuration, ZeroDuration
+from openmusickit.values.scoring.mark import AttachmentMode, Mark
+from openmusickit.values.scoring.tempo_term import TempoTerm
+from openmusickit.values.text.word import LexicalStress, Word
+from openmusickit.values.time.clock_time import CLOCK_TIME, ClockDuration, Tempo
+from openmusickit.values.time.duration import (
+    ANY_TEMPORAL_SYSTEM,
+    CompoundTemporalUnit,
+    GraceDuration,
+    TemporalRatio,
+    TemporalUnit,
+    ZeroDuration,
+)
+from openmusickit.values.tone.silent_tone import SilentTone
+from openmusickit.values.tone.tone_collection import ToneCollection
 from tests.domains import (
     ABSTRACT_VECTORS,
     ALL_VECTORS,
@@ -48,6 +75,28 @@ from tests.domains import (
 )
 
 DURATION_SYMBOLS = list(distinct(symbols_of(temporal_symbols, MetricalDuration)).values())
+
+# The symbol tables `any_graphs` draws from, one value per object.
+MARKS = list(distinct(symbols_of(scoring, Mark)).values())
+TEMPO_TERMS = list(distinct(symbols_of(scoring, TempoTerm)).values())
+CLEFS = list(distinct(symbols_of(scoring, StaffClef)).values())
+BAR_LINES = list(distinct(symbols_of(scoring, BarLineShape)).values())
+BRACKETS = list(distinct(symbols_of(scoring, BracketShape)).values())
+TIME_SIGNATURES = list(distinct(symbols_of(temporal_symbols, TimeSignature)).values())
+CHORD_TYPES = list(distinct(symbols_of(tonal_symbols, ChordType)).values())
+MODES = list(distinct(symbols_of(tonal_symbols, ModePattern)).values())
+PALETTES = list(distinct(symbols_of(percussion_symbols, ToneCollection)).values())
+TUPLET_RATIOS = [
+    make(base)
+    for make in (
+        temporal_symbols.duplet,
+        temporal_symbols.triplet,
+        temporal_symbols.quintuplet,
+        temporal_symbols.sextuplet,
+        temporal_symbols.septuplet,
+    )
+    for base in (temporal_symbols.quarter, temporal_symbols.eighth)
+]
 
 # --- tones ----------------------------------------------------------------------
 
@@ -609,3 +658,227 @@ def musicxml_documents(draw) -> bytes:
         f"<part-list>{part_list}</part-list>{''.join(bodies)}</score-partwise>"
     )
     return xml.encode("utf-8")
+
+
+# --- whole graphs, for serialization ----------------------------------------------------------
+#
+# `any_graphs` reaches every node type, edge kind and value type the JSON vocabularies define,
+# with metadata, unlike `exportable_scores` (below), which keeps to what MusicXML can carry.
+# The graphs are arbitrary rather than musical: any edge between any two nodes the graph allows.
+
+
+def json_data() -> st.SearchStrategy:
+    """Plain JSON data, as `meta` may hold. Floats stay within ±2**53, where a whole
+    float reads back as an equal integer (format specification §4.9)."""
+    scalars = (
+        st.none()
+        | st.booleans()
+        | st.integers()
+        | st.floats(min_value=-(2.0**53), max_value=2.0**53)
+        | st.text(max_size=6)
+    )
+    return st.recursive(
+        scalars,
+        lambda children: (
+            st.lists(children, max_size=3)
+            | st.dictionaries(st.text(max_size=4), children, max_size=3)
+        ),
+        max_leaves=6,
+    )
+
+
+def metadata() -> st.SearchStrategy[dict]:
+    return st.dictionaries(st.text(max_size=5), json_data(), max_size=2)
+
+
+def any_durations(signed: bool = False) -> st.SearchStrategy:
+    """A duration of any type the vocabularies define; with `signed`, possibly negative."""
+    ratios = st.sampled_from(TUPLET_RATIOS)
+    durations = st.one_of(
+        metrical_durations(),
+        st.builds(
+            lambda d, ratio: MetricalDuration(d.numerator, d.denominator, d.dots, ratio=ratio),
+            metrical_durations(),
+            ratios,
+        ),
+        st.fractions(min_value=0, max_value=10**9).map(ClockDuration),
+        st.just(ZeroDuration()),
+        st.builds(GraceDuration, metrical_durations(), on_beat=st.booleans()),
+        st.lists(metrical_durations(), min_size=2, max_size=3).map(TiedDuration),
+    )
+    if signed:
+        return st.one_of(
+            durations,
+            metrical_durations().map(lambda d: -d),
+            st.fractions(max_value=0).map(ClockDuration),
+        )
+    return durations
+
+
+def _optional(strategy: st.SearchStrategy) -> st.SearchStrategy:
+    return st.none() | strategy
+
+
+def _names() -> st.SearchStrategy[str | None]:
+    return _optional(st.text(max_size=8))
+
+
+def _tone_collections() -> st.SearchStrategy:
+    tones = st.one_of(tonal_vectors(), percussion_tones())
+
+    def collection(members, root, template):
+        name = (
+            template if (root is not None or template is None or "{root" not in template) else None
+        )
+        return ToneCollection(members, root=root, name=name)
+
+    plain = st.builds(
+        collection,
+        st.lists(tones, max_size=4),
+        _optional(tones),
+        st.sampled_from([None, "{root} triad", "{root}", "a {{set}}", "plain"]),
+    )
+    chords = st.builds(
+        lambda root, chord_type: root(chord_type),
+        st.sampled_from(ABSTRACT_VECTORS),
+        st.sampled_from(CHORD_TYPES),
+    )
+    return st.one_of(plain, st.sampled_from(CHORD_TYPES), chords, st.sampled_from(PALETTES))
+
+
+def _keys() -> st.SearchStrategy:
+    return st.one_of(
+        st.builds(Key.of, st.sampled_from(ABSTRACT_VECTORS), st.sampled_from(MODES)),
+        st.integers(-7, 7).map(lambda n: Key(tonic=None, signature=KeySignature.from_alts(n))),
+        st.just(Key(tonic=None, signature=None)),
+    )
+
+
+def _meters() -> st.SearchStrategy:
+    units = st.builds(TemporalUnit, st.integers(1, 12), metrical_durations())
+    return st.one_of(
+        st.sampled_from(TIME_SIGNATURES),
+        units,
+        st.lists(units, max_size=3).map(CompoundTemporalUnit),
+        metrical_durations(),
+    )
+
+
+def _tempos() -> st.SearchStrategy:
+    return st.one_of(
+        st.builds(Tempo, st.integers(1, 240), metrical_durations()),
+        st.builds(TemporalRatio, metrical_durations(), metrical_durations()),
+    )
+
+
+def _words() -> st.SearchStrategy[Word]:
+    syllable = st.text(alphabet="abcdeéz", min_size=1, max_size=4)
+    return st.lists(syllable, min_size=1, max_size=3).flatmap(
+        lambda syllables: st.builds(
+            lambda primary: Word(
+                syllables, stress=None if primary is None else {primary: LexicalStress.PRIMARY}
+            ),
+            _optional(st.integers(0, len(syllables) - 1)),
+        )
+    )
+
+
+def any_nodes() -> st.SearchStrategy:
+    """A node of any type the JSON vocabularies define, with fields across their domains."""
+    durations = _optional(any_durations())
+    pitched = st.frozensets(st.one_of(tonal_vectors(), percussion_tones()), max_size=3).map(set)
+    tones = st.one_of(pitched, st.just({SilentTone()}))
+    syllables = _words().flatmap(
+        lambda word: st.builds(
+            LyricSyllable,
+            word=st.just(word),
+            index=st.integers(0, len(word.syllables) - 1),
+            duration=durations,
+        )
+    )
+    return st.one_of(
+        st.builds(NoteEvent, tones=tones, duration=durations),
+        st.builds(ChordEvent, chord=_tone_collections(), duration=durations),
+        syllables,
+        st.builds(DivisionEvent, shape=_optional(st.sampled_from(BAR_LINES))),
+        st.builds(ModalContextEvent, modal_context=_optional(_keys())),
+        st.builds(MeterEvent, meter=_optional(_meters())),
+        st.builds(
+            TempoEvent, tempo=_optional(_tempos()), term=_optional(st.sampled_from(TEMPO_TERMS))
+        ),
+        st.builds(ClefEvent, clef=_optional(st.sampled_from(CLEFS))),
+        st.builds(
+            Marking,
+            mark=st.sampled_from([m for m in MARKS if m.attachment_mode != AttachmentMode.SPAN]),
+        ),
+        st.builds(
+            MarkSpanner,
+            mark=st.sampled_from([m for m in MARKS if m.attachment_mode != AttachmentMode.SINGLE]),
+        ),
+        st.builds(
+            LyricSection,
+            section_type=_optional(st.sampled_from(["verse", "chorus"])),
+            section_number=_optional(st.integers(1, 6)),
+            section_name=_names(),
+            language=_optional(st.sampled_from(["en", "la", "de-CH"])),
+        ),
+        st.builds(Part, name=st.text(max_size=8)),
+        st.builds(
+            PercussionPart, name=st.text(max_size=8), palette=_optional(st.sampled_from(PALETTES))
+        ),
+        st.builds(Stint, transposition=_optional(tonal_vectors())),
+        st.builds(LineGroup, name=_names()),
+        st.builds(
+            StackGroup,
+            name=_names(),
+            abbreviation=_names(),
+            shape=_optional(st.sampled_from(BRACKETS)),
+        ),
+        st.builds(Score, title=_names(), composer=_names(), opus=_names(), dedication=_names()),
+        st.builds(
+            SyncLine,
+            temporal_system=st.sampled_from([CLOCK_TIME, WSMN_TEMPORAL, ANY_TEMPORAL_SYSTEM]),
+            name=_names(),
+        ),
+        st.builds(
+            SyncPoint, offset=any_durations(signed=True), name=_names(), description=_names()
+        ),
+    )
+
+
+def any_edges() -> st.SearchStrategy:
+    """An edge of any kind the core vocabulary defines, not yet on a graph."""
+    origins = st.sampled_from(list(EdgeOrigin))
+    anchors = st.sampled_from(list(TimingAnchor))
+    displacements = _optional(any_durations(signed=True))
+    return st.one_of(
+        st.builds(Next, origin=origins),
+        st.builds(Branch, origin=origins, anchor=anchors, displacement=displacements),
+        st.builds(Simultaneous, origin=origins, anchor=anchors, displacement=displacements),
+        st.builds(Contains, origin=origins, displacement=displacements),
+        st.builds(OmkEdge, type=st.sampled_from(list(EdgeType)), origin=origins),
+    )
+
+
+@st.composite
+def any_graphs(draw, max_nodes: int = 10, max_edges: int = 14) -> OmkGraph:
+    """A graph of any nodes and edges the JSON vocabularies define, with metadata on the
+    graph and on some nodes and edges. An edge the graph refuses (a second edge of one
+    relation between two nodes, a second NEXT in or out) is left out."""
+    graph = OmkGraph(
+        GraphMeta(name=draw(_names()), description=draw(_names()), info=draw(metadata()))
+    )
+    nodes = draw(st.lists(any_nodes(), max_size=max_nodes))
+    for node in nodes:
+        node.meta.update(draw(metadata()))
+        graph.add_node(node)
+    if nodes:
+        for _ in range(draw(st.integers(0, max_edges))):
+            edge = draw(any_edges())
+            edge.meta.update(draw(metadata()))
+            source, target = draw(st.sampled_from(nodes)), draw(st.sampled_from(nodes))
+            try:
+                graph._graph.add_edge(source, target, edge)
+            except GraphError:
+                pass
+    return graph

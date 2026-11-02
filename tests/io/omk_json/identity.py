@@ -16,6 +16,7 @@ from fractions import Fraction
 from typing import Any
 
 from openmusickit.graph.edge import OmkEdge
+from openmusickit.graph.graph import OmkGraph
 from openmusickit.objects.omk_object import OmkObject
 
 
@@ -77,3 +78,21 @@ def _set_differences(a: set | frozenset, b: set | frozenset, path: str) -> list[
             return [f"{path}: {item!r} has no counterpart"]
         unmatched.remove(match)
     return [f"{path}: {unmatched!r} left over"] if unmatched else []
+
+
+def assert_same_graph(graph: OmkGraph, again: OmkGraph) -> None:
+    """The same node and edge ids, the same endpoints, identical content and equal meta."""
+    assert again.meta == graph.meta
+    nodes = {node.id: node for node in graph.nodes()}
+    assert {node.id for node in again.nodes()} == set(nodes)
+    for node in again.nodes():
+        assert not differences(nodes[node.id], node), differences(nodes[node.id], node)
+        assert node.meta == nodes[node.id].meta
+    edges = {edge.id: edge for edge in graph.edges()}
+    assert {edge.id for edge in again.edges()} == set(edges)
+    for edge in again.edges():
+        original = edges[edge.id]
+        assert not differences(original, edge)
+        assert edge.meta == original.meta
+        ends, original_ends = again.edge_endpoints(edge), graph.edge_endpoints(original)
+        assert [node.id for node in ends] == [node.id for node in original_ends]
