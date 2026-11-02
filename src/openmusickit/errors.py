@@ -80,6 +80,14 @@ class MusicXmlError(OmkError, ValueError):
     readable file says but OMK cannot place is an `OmkWarning`, never this."""
 
 
+class OmkJsonError(OmkError, ValueError):
+    """Raised when a document cannot be read as OMK JSON:
+    not JSON, not an OMK JSON document,
+    a vocabulary the reader was not given,
+    or anything else outside the specification (`docs/spec/omk-json.qmd`).
+    A refused document adds nothing to any graph."""
+
+
 class UnexportableError(OmkError, ValueError):
     """Raised when a graph cannot be written in a format at all: there is no
     score to write, several and none chosen, or a score with no parts. What a

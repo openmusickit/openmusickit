@@ -153,6 +153,13 @@ Any JSON value, subject to these rules:
 
 `json` is used only for metadata (`@meta` and the graph's `info`).
 
+As in JSON itself, a number in `json` data is just a number:
+the format does not record whether it was an integer or a floating-point value.
+A number written without a fraction or an exponent reads back as an integer,
+and the canonical form (§9.3) writes a whole-valued float that way (`100.0` is written `100`).
+For a float of magnitude 2^53 or more, the integer its canonical text spells
+is its shortest round-tripping spelling, which need not be its exact value.
+
 ### 4.10 Tagged values
 
 Every value that is not a primitive is a JSON object with a key `@type`,
@@ -462,6 +469,7 @@ What an implementation holds and the format does not carry:
 
 - the distinction between an integer and a whole-number rational
   (`2` and `2/1` are the same number, and are written `2`);
+- in metadata, the distinction between an integer and a whole-valued float (§4.9);
 - whether two nodes share one value object or hold equal copies
   (values have no identity, §3);
 - anything about how the graph is stored.
