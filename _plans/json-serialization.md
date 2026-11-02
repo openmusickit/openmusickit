@@ -1,6 +1,6 @@
 # JSON serialization: a published, language-neutral format for OMK graphs
 
-Status: **plan, 2026-10-21. Nothing started.**
+Status: **Stage 1 (prerequisites P1a–P4) done 2026-11-02; Stage 2 (spec draft) in progress.**
 D1–D4 in §9 confirmed with the developer on 2026-10-21, as recommended.
 The prerequisites in §8 (P1–P4, which settle D5) confirmed on 2026-11-02.
 D6, D7, D8 and D12 confirmed on 2026-11-02, as recommended.
@@ -694,10 +694,10 @@ The recommendation comes first in each.
 
 - **Extension edge relations in the model.**
   The format leaves room for them (§4.4),
-  but changing `EdgeType` from a closed enum is a model decision of its own.
-  It goes in `revisit.md` when this plan is approved.
-- **Plain `OmkEdge(type=NEXT)` existing at all** (D3's alternative).
-  It is a revisit entry if D3 is settled as recommended.
+  but changing `EdgeType` from a closed enum is a model decision of its own
+  (`revisit.md`, 2026-11-02).
+- **Plain `OmkEdge(type=NEXT)` existing at all** (D3's alternative;
+  `revisit.md`, 2026-11-02).
 - Opaque passthrough of unknown vocabularies (D6).
 - Writing a subgraph or a single Score; the stubs are whole-graph.
 - Streaming, compression, binary encodings, and diff or merge tooling.

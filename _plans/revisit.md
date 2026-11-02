@@ -206,3 +206,23 @@ agreeing is not much evidence. Two cheap additions:
   the developer's call.
 
 Sibelius, Dorico and Finale can only be checked by hand on a machine that has them.
+
+## Extensions cannot add edge relations (2026-11-02)
+
+`EdgeType` (`src/openmusickit/graph/edge.py`) is a closed `StrEnum`, and
+`USER_DEFINED` carries no name, so an extension package (OMK Gregorian, OMK
+Analysis) has no way to add a relation of its own. The JSON format leaves room
+for one: an edge's `relation` may be a prefixed name such as
+`"gregorian:ligature"` (`_plans/json-serialization.md` §4.4), so the model can
+change later without changing the format. Decide when the first extension
+needs a relation.
+
+## A plain `OmkEdge(type=NEXT)` can exist (2026-11-02)
+
+`OmkGraph.add_edge(a, b, EdgeType.NEXT)` builds a plain `OmkEdge`, which is
+not `==` to the `Next()` that `add_next` builds; the same holds for BRANCHES
+and SIMULTANEOUS. The JSON format carries the difference faithfully (an
+`Edge` with `relation: "next"` beside a `Next`), so nothing breaks, but it is
+a Python accident rather than a musical distinction. A Score's plain CONTAINS
+is deliberate and is not part of this question. Options: `add_edge` builds the
+right class for these types, or refuses them in favour of the semantic methods.
