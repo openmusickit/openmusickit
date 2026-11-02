@@ -8,8 +8,6 @@ subtitle: "Draft 0.1 — not yet stable"
 This is a **draft** of version 0.1 of the OMK JSON format.
 While a vocabulary's version begins with `0.`,
 any part of it may change incompatibly (§6.3).
-One point is explicitly provisional, and is marked where it occurs:
-the order of nodes and edges in the canonical form (§9.4).
 
 The format is defined by three pages:
 this one (the data model, the envelope, the canonical form, and what readers and writers must do),
@@ -397,10 +395,8 @@ In short:
 - The elements of a `set` are sorted as §9.5 says.
 - Every other array keeps its own order.
 
-*Provisional:* sorting nodes and edges by `@id` is stable under edits
-(adding a note adds one block to a textual diff)
-and is defined for every graph, however incomplete.
-A musical order may replace it before version 1.0.
+Sorting nodes and edges by `@id` is defined for every graph, however incomplete,
+and is stable under edits: adding a note adds one block to a textual diff.
 
 ### 9.5 The order of a set
 

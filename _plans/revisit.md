@@ -226,3 +226,18 @@ and SIMULTANEOUS. The JSON format carries the difference faithfully (an
 a Python accident rather than a musical distinction. A Score's plain CONTAINS
 is deliberate and is not part of this question. Options: `add_edge` builds the
 right class for these types, or refuses them in favour of the semantic methods.
+
+## The MusicXML writer's bytes depend on storage order (2026-11-02)
+
+The same music, stored in a different order, writes different MusicXML bytes.
+Found by sending the fixtures through OMK JSON, which keeps the music and ids
+exactly but not the graph's storage order or `meta` key order: six of nine then
+export different bytes with no musical difference
+(`io.musicxml.canonical.compare` finds none). The writer orders by storage:
+a note's articulations (MARKS edges in adapter order), the notes of a chord
+and the voices of a staff, and `meta["musicxml"]` dicts in key order
+(`<midi-instrument>` children, `<tuplet>` attributes). Options: give each a
+defined order (marks by table, tones by pitch, `<midi-instrument>` in schema
+order), so the writer's output is a function of the graph's content; or accept
+that only canonical equality is promised. The JSON corpus test compares
+canonically meanwhile (`_plans/json-serialization.md`, D19).

@@ -6,8 +6,7 @@ The prerequisites in §8 (P1–P4, which settle D5) confirmed on 2026-11-02.
 D6, D7, D8 and D12 confirmed on 2026-11-02, as recommended.
 D10 and D11 confirmed on 2026-11-02, as recommended.
 The spec review settled D13–D18 the same day (§9).
-D9 waits for a side-by-side of one fixture in both orders, once a whole graph can be written (end of Stage 5);
-until then the spec marks node order as provisional.
+D9 confirmed on 2026-11-02 (by id), from the Croft hymn written in both orders.
 
 Written for two readers:
 the developer (to decide §9 and approve the prerequisites in §8),
@@ -554,7 +553,8 @@ The finite domains get exhaustive sweeps, the unbounded ones get Hypothesis.
 - **Corpus.**
   For each of the ten fixtures: MusicXML → graph → JSON → graph.
   The result must keep the ids and meta and be `is_equivalent`,
-  and **writing MusicXML from the reloaded graph must give the same document as writing it directly.**
+  and writing MusicXML from the reloaded graph must give the same music as writing it directly:
+  no differences under `io.musicxml.canonical.compare` (D19).
   That last check is the test for the symbol-identity problem in §2.5.
 - **Golden documents.**
   The spec's example documents are files under `docs/spec/examples/`.
@@ -662,7 +662,9 @@ The recommendation comes first in each.
   A schema cannot express the canonical form or the graph rules,
   but it gives a re-implementer something to check structure against mechanically.
 - **D9 Node order.** *By id* (§4.6), or a musical walk order.
-  **Deferred to the end of Stage 5:** dump one fixture in both orders and decide from real files.
+  **Confirmed 2026-11-02: by id**, after comparing the Croft hymn written both ways.
+  A musical walk order read better but would have to be specified exactly
+  (branches, groups, stacks, cycles, fragments) and reproduced byte for byte by every implementation.
 - **D10 How vocabularies are supplied.** **Confirmed 2026-11-02:** an explicit argument (§5.2).
 - **D11 Module name.** **Confirmed 2026-11-02:** `io.omk_json`.
 - **D12 Value domains checked on read.** **Confirmed 2026-11-02.**
@@ -686,6 +688,12 @@ Settled in the review of the spec draft, 2026-11-02:
 - **D17 Field names** as drafted: `TonalVector` is `diatonic`, `chromatic`, `octave`;
   `Tempo` is `count`, `beat`, `clock_time`.
 - **D18 `ChordType` writes its `root`**, which must be `(0, 0)` with no octave.
+- **D19 The corpus test compares MusicXML canonically, not byte for byte** (2026-11-02).
+  After a JSON round trip, six fixtures export different bytes and the same music
+  (0 canonical differences in all nine):
+  the MusicXML writer orders some output by the graph's storage order
+  and by dict key order in `meta`, which JSON deliberately keeps neither of.
+  That is the writer's property, not the format's (`revisit.md`).
 
 ## 10. Stages
 
