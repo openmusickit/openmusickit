@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from numbers import Real
+from fractions import Fraction
 
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality
 from openmusickit.systems.wsmn.tonal.constants import C_LEN, D_LEN, DIATONES, SHARP_ORDER
@@ -16,7 +16,10 @@ class KeySignature(tuple):
     in semitones up or down from natural:
     - Sharps are positive, flats are negative
     - Handles double and triple sharps and flats
-    - Use fractional values for microtones
+    - Use a Fraction for a microtone: `f=Fraction(1, 2)` is a quarter-tone sharp
+
+    An alteration is exact, so a float is refused;
+    a whole-number Fraction is stored as the int it equals.
 
     Positional order is C, D, E, F, G, A, B;
     each letter name is also available as a property.
@@ -50,19 +53,44 @@ class KeySignature(tuple):
     Traceback (most recent call last):
     ...
     ValueError: Key signature alterations must be between -3 and 3
+
+    >>> KeySignature(f=Fraction(1, 2)).f, KeySignature(f=Fraction(2, 2)).f
+    (Fraction(1, 2), 1)
+    >>> KeySignature(f=0.5)
+    Traceback (most recent call last):
+    ...
+    TypeError: A key signature alteration cannot be a float (0.5); use an int or a Fraction.
+
+    Raises
+    ------
+    TypeError
+        if an alteration is a float.
+    ValueError
+        if an alteration is beyond a triple sharp or flat.
     """
 
     def __new__(
         cls,
-        c: Real = 0,
-        d: Real = 0,
-        e: Real = 0,
-        f: Real = 0,
-        g: Real = 0,
-        a: Real = 0,
-        b: Real = 0,
+        c: int | Fraction = 0,
+        d: int | Fraction = 0,
+        e: int | Fraction = 0,
+        f: int | Fraction = 0,
+        g: int | Fraction = 0,
+        a: int | Fraction = 0,
+        b: int | Fraction = 0,
     ):
         values = (c, d, e, f, g, a, b)
+
+        for value in values:
+            if isinstance(value, float):
+                raise TypeError(
+                    f"A key signature alteration cannot be a float ({value!r}); "
+                    "use an int or a Fraction."
+                )
+        values = tuple(
+            int(value) if isinstance(value, Fraction) and value.denominator == 1 else value
+            for value in values
+        )
 
         if any(not -3 <= value <= 3 for value in values):
             raise ValueError("Key signature alterations must be between -3 and 3")
@@ -110,31 +138,31 @@ class KeySignature(tuple):
         return cls(*values)
 
     @property
-    def c(self) -> Real:
+    def c(self) -> int | Fraction:
         return self[0]
 
     @property
-    def d(self) -> Real:
+    def d(self) -> int | Fraction:
         return self[1]
 
     @property
-    def e(self) -> Real:
+    def e(self) -> int | Fraction:
         return self[2]
 
     @property
-    def f(self) -> Real:
+    def f(self) -> int | Fraction:
         return self[3]
 
     @property
-    def g(self) -> Real:
+    def g(self) -> int | Fraction:
         return self[4]
 
     @property
-    def a(self) -> Real:
+    def a(self) -> int | Fraction:
         return self[5]
 
     @property
-    def b(self) -> Real:
+    def b(self) -> int | Fraction:
         return self[6]
 
     @property

@@ -1,3 +1,5 @@
+from fractions import Fraction
+
 import pytest
 
 from openmusickit.systems.wsmn.tonal.chords import ChordQuality
@@ -106,13 +108,13 @@ def test_key_signature_defaults_to_all_natural():
 
 
 @pytest.mark.parametrize("letter", "cdefgab")
-@pytest.mark.parametrize("value", [4, -4, 3.5, -3.5])
+@pytest.mark.parametrize("value", [4, -4, Fraction(7, 2), Fraction(-7, 2)])
 def test_key_signature_rejects_alterations_beyond_triple(letter, value):
     with pytest.raises(ValueError):
         KeySignature(**{letter: value})
 
 
-@pytest.mark.parametrize("value", [3, -3, 0.5, -0.5])
+@pytest.mark.parametrize("value", [3, -3, Fraction(1, 2), Fraction(-1, 2)])
 def test_key_signature_accepts_triples_and_microtones(value):
     assert KeySignature(f=value).f == value
 
@@ -133,7 +135,7 @@ def test_repr_shows_only_nonzero_alterations_as_kwargs():
     assert repr(KeySignature()) == "KeySignature()"
     assert repr(KeySignature(f=1)) == "KeySignature(f=1)"
     assert repr(KeySignature(e=-1, a=-1, b=-1)) == "KeySignature(e=-1, a=-1, b=-1)"
-    assert repr(KeySignature(f=0.5)) == "KeySignature(f=0.5)"
+    assert repr(KeySignature(f=Fraction(1, 2))) == "KeySignature(f=Fraction(1, 2))"
 
 
 @pytest.mark.parametrize("n", range(-21, 22))
@@ -192,7 +194,7 @@ def test_from_alts_rejects_more_than_triple_alterations(n):
         KeySignature(f=-1),  # Fb alone
         KeySignature(f=2),  # Fx without the other six sharps
         KeySignature(f=1, c=1, g=1, d=1, a=1, e=1, b=2),  # B## before F##
-        KeySignature(f=0.5),  # microtonal
+        KeySignature(f=Fraction(1, 2)),  # microtonal
         KeySignature(f=1, c=1, g=2),  # gap: G## but C# single
     ],
 )
