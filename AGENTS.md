@@ -154,13 +154,13 @@ how the new code should be tests is part of the discussion.
 
 The default `uv run pytest` is the fast set:
 100 Hypothesis examples per property,
-with tests marked `slow` deselected (the "1 deselected" in its summary).
+with tests marked `slow` deselected (the "39 deselected" in its summary, as of 2026-11-02).
 The heavy set is one command:
 
     uv run pytest --hypothesis-profile=thorough -m ""
 
 which runs every property at 2,000 examples and includes the `slow` tests,
-in about three minutes.
+in about eleven minutes (10:56 on 2026-11-02).
 Run the heavy set once at the start of any multi-commit piece of work
 and once at its end.
 The start run is the baseline:
