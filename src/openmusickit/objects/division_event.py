@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from openmusickit.objects.omk_object import SequentialEvent
 from openmusickit.values.scoring.division_shape import DivisionShape
@@ -38,6 +39,11 @@ class DivisionEvent(SequentialEvent):
     Traceback (most recent call last):
     ...
     TypeError: ...
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> DivisionEvent().duration = quarter
+    Traceback (most recent call last):
+    ...
+    ValueError: A DivisionEvent has zero duration; it cannot be given MetricalDuration(1, 4).
 
     Marks attach to a division as to any node;
     a segno or a fermata on a bar line is a `Marking` with a MARKS edge to it:
@@ -53,7 +59,19 @@ class DivisionEvent(SequentialEvent):
     >>> graph.add_edge(sign, division, EdgeType.MARKS)
     >>> graph.get_edge(sign, division, EdgeType.MARKS).type
     <EdgeType.MARKS: 'marks'>
+
+    Raises
+    ------
+    ValueError
+        if `duration` is assigned anything but a `ZeroDuration`.
     """
 
     shape: DivisionShape | None = None
     duration: Duration = field(default_factory=ZeroDuration, init=False, repr=False)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "duration" and type(value) is not ZeroDuration:
+            raise ValueError(
+                f"A {type(self).__name__} has zero duration; it cannot be given {value!r}."
+            )
+        super().__setattr__(name, value)

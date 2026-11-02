@@ -1,6 +1,7 @@
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from openmusickit.errors import OmkWarning
 from openmusickit.objects.omk_object import SequentialEvent, TonalObject
@@ -25,9 +26,26 @@ class ContextEvent(SequentialEvent):
     Traceback (most recent call last):
     ...
     TypeError: ...
+    >>> from openmusickit.systems.wsmn.temporal.symbols import quarter
+    >>> ContextEvent().duration = quarter
+    Traceback (most recent call last):
+    ...
+    ValueError: A ContextEvent has zero duration; it cannot be given MetricalDuration(1, 4).
+
+    Raises
+    ------
+    ValueError
+        if `duration` is assigned anything but a `ZeroDuration`.
     """
 
     duration: Duration = field(default_factory=ZeroDuration, init=False, repr=False)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "duration" and type(value) is not ZeroDuration:
+            raise ValueError(
+                f"A {type(self).__name__} has zero duration; it cannot be given {value!r}."
+            )
+        super().__setattr__(name, value)
 
 
 @dataclass(kw_only=True, slots=True)
