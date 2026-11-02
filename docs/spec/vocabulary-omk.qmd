@@ -140,8 +140,12 @@ from the target of its `starts_at` edge to the target of its `ends_at` edge.
 |---|---|---|
 | `section_type` | `string?` | |
 | `section_number` | `integer?` | |
-| `section_name` | `string?` | |
+| `section_name` | `string?` | not `null` when `section_type` is not `null` |
 | `language` | `string?` | a [BCP 47](https://www.rfc-editor.org/info/bcp47) language tag |
+
+A section with a type always has a name:
+where none is given, an implementation names it from its type and number (`"verse 1"`),
+and the name it gave is what is written.
 
 ### Performers, groups and scores
 
@@ -321,7 +325,7 @@ Kind *Measurable*.
 
 | field | type | |
 |---|---|---|
-| `count` | `integer` | the number of beats |
+| `count` | `integer` | the number of beats; not negative |
 | `beat` | *Duration* | the beat |
 | `clock_time` | `ClockDuration` | the span; one minute is `60000000` microseconds |
 

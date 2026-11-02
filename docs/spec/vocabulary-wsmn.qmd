@@ -146,9 +146,12 @@ a mode is compared by every field, its name included.
 | `signature` | `KeySignature?` | `null` for no signature (with a `null` tonic: no key) |
 | `tones` | `ToneCollection` | the tones of the key's scale (D major: D E F♯ G A B C♯); empty when none are asserted |
 | `mode` | `ModePattern?` | |
-| `name` | `string?` | |
+| `name` | `string` | |
 
-The name is written as held, even where an implementation would derive the same name itself.
+A key always has a name:
+where none is given, an implementation names it from its tonic and mode
+(`"D Major"`, or `"3 flats"` for a bare signature),
+and the name it gave is what is written.
 
 ## Clefs, bar lines and brackets
 

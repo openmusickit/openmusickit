@@ -6,6 +6,9 @@ this package is its reference implementation.
 The design, and what is deliberately left out, are in `_plans/json-serialization.md`.
 """
 
-from openmusickit.io.omk_json import canonical, primitives
+from openmusickit.io.omk_json import canonical, core, primitives, vocabulary, wsmn
+from openmusickit.io.omk_json.core import CORE
+from openmusickit.io.omk_json.vocabulary import Vocabulary
+from openmusickit.io.omk_json.wsmn import WSMN
 
-__all__ = ["canonical", "primitives"]
+__all__ = ["CORE", "WSMN", "Vocabulary", "canonical", "core", "primitives", "vocabulary", "wsmn"]
