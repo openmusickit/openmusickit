@@ -427,7 +427,7 @@ A reader MUST refuse a document, and add nothing to any graph, if:
   (including a value whose `@type` is not of the field's kind),
   or lies outside the field's domain,
   even where an implementation's own constructors would accept it;
-- two nodes, or two edges, have the same `@id`,
+- any two nodes or edges (two nodes, two edges, or a node and an edge) have the same `@id`,
   or an edge's `@source` or `@target` is not the `@id` of a node in the document;
 - two edges have the same source, target and relation;
 - two edges with relation `next` have the same source,

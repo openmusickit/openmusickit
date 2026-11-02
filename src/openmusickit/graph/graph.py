@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from openmusickit.errors import GraphError, OmkWarning, TemporalCompatibilityError
@@ -36,6 +36,9 @@ from openmusickit.objects.score import Score
 from openmusickit.objects.sync_line import SyncLine, SyncPoint
 from openmusickit.values.time.duration import Duration, Measurable, ZeroDuration
 from openmusickit.values.tone.tone import Tone
+
+if TYPE_CHECKING:
+    from openmusickit.io.omk_json.vocabulary import Vocabulary
 
 # What a STACKS_ABOVE edge may join (see `OmkGraph.add_stacked`).
 Stackable = Part | LineGroup | SequentialEvent | SyncLine
@@ -98,61 +101,157 @@ class OmkGraph:
     # Load and import
 
     @classmethod
-    def from_json(cls, js_graph, graph_engine: GraphAdapter | None = None) -> OmkGraph:
-        """Returns an OmkGraph built from a JSON serialization."""
-        raise NotImplementedError
+    def from_json(
+        cls,
+        text: str,
+        graph_engine: GraphAdapter | None = None,
+        vocabularies: Iterable[Vocabulary] = (),
+    ) -> OmkGraph:
+        """Returns the graph an OMK JSON document holds, with its ids and metadata
+        (see `io.omk_json`); `vocabularies` are any beyond the core and WSMN
+        that the document requires.
+
+        >>> from openmusickit.objects.note_event import NoteEvent
+        >>> graph = OmkGraph(GraphMeta(name="Sketch"))
+        >>> graph.add_node(NoteEvent(tones=set()))
+        >>> again = OmkGraph.from_json(graph.export_to_json())
+        >>> again.meta.name, [node.id for node in again.nodes()] == [node.id for node in graph.nodes()]
+        ('Sketch', True)
+
+        Raises
+        ------
+        OmkJsonError
+            if `text` is not an OMK JSON document, or breaks the specification.
+        """
+        from openmusickit.io.omk_json.document import loads
+
+        return loads(text, vocabularies, graph_engine)
 
     @classmethod
     def from_file(cls, f: Path, graph_engine: GraphAdapter | None = None) -> OmkGraph:
         """Returns an OmkGraph read from a file, by its suffix: `.musicxml`,
-        `.xml` and `.mxl` through `io.musicxml.read`. JSON is not implemented yet.
+        `.xml` and `.mxl` through `io.musicxml.read`, and `.json` through
+        `io.omk_json.read` (which keeps the document's graph metadata).
 
         Raises ValueError for a suffix no reader claims."""
+        path = Path(f)
+        if path.suffix.lower() == ".json":
+            from openmusickit.io.omk_json.document import read
+
+            return read(path, graph_engine=graph_engine)
         graph = cls(GraphMeta(), graph_engine)
-        graph.import_file(f)
+        graph.import_file(path)
         return graph
 
-    def import_json_graph(self, js_graph) -> None:
-        """Adds the contents of js_graph to the current graph.
-        Do not assume metadata from the source graph is retained."""
-        raise NotImplementedError
+    def import_json_graph(self, text: str, vocabularies: Iterable[Vocabulary] = ()) -> None:
+        """Adds the nodes and edges of an OMK JSON document to this graph, with their ids.
+        The document's graph metadata is not merged into this graph's.
+        A document that cannot be read, or holds an id already on this graph,
+        adds nothing.
+
+        Raises
+        ------
+        OmkJsonError
+            if `text` is not an OMK JSON document, or breaks the specification.
+        GraphError
+            if a node or edge of the document has an id already on this graph.
+        """
+        from openmusickit.io.omk_json.document import loads
+
+        imported = loads(text, vocabularies)  # every rule checked on a graph of its own first
+        edges = [(edge, *imported.edge_endpoints(edge)) for edge in imported.edges()]
+        self._add_objects(list(imported.nodes()), edges)
 
     def import_file(self, f: Path) -> None:
         """Adds the contents of a file to the current graph, by its suffix
-        (see `from_file`); a MusicXML file becomes a new Score on the graph."""
+        (see `from_file`); a MusicXML file becomes a new Score on the graph,
+        and a JSON document's nodes and edges are added with their ids
+        (`import_json_graph`)."""
         path = Path(f)
         if path.suffix.lower() in (".musicxml", ".xml", ".mxl"):
             from openmusickit.io.musicxml.reader import read_into
 
             read_into(self, path)
         elif path.suffix.lower() == ".json":
-            raise NotImplementedError
+            from openmusickit.io.omk_json.document import read
+
+            imported = read(path)
+            edges = [(edge, *imported.edge_endpoints(edge)) for edge in imported.edges()]
+            self._add_objects(list(imported.nodes()), edges)
         else:
             raise ValueError(f"No reader for {path.suffix!r} files: {path}")
 
-    def export_to_json(self):
-        raise NotImplementedError
+    def export_to_json(self, vocabularies: Iterable[Vocabulary] = ()) -> str:
+        """The canonical OMK JSON document of this graph (see `io.omk_json`);
+        `vocabularies` are any beyond the core and WSMN that its types need.
 
-    def export_json_to_file(self, f: Path) -> None:
-        raise NotImplementedError
+        >>> OmkGraph(GraphMeta()).export_to_json().splitlines()[:3]
+        ['{', '  "edges": [],', '  "format": "omk-json",']
+
+        Raises
+        ------
+        UnexportableError
+            if the graph holds something no vocabulary can write.
+        """
+        from openmusickit.io.omk_json.document import dumps
+
+        return dumps(self, vocabularies)
+
+    def export_json_to_file(self, f: Path, vocabularies: Iterable[Vocabulary] = ()) -> None:
+        """Writes `export_to_json` to a file, as UTF-8 with LF line endings.
+
+        Raises
+        ------
+        UnexportableError
+            as `export_to_json` does.
+        """
+        from openmusickit.io.omk_json.document import write
+
+        write(self, f, vocabularies)
 
     def export_file(self, f: Path, score: Score | None = None) -> None:
         """Writes a file, by its suffix: `.musicxml`, `.xml` and `.mxl` through
         `io.musicxml.write`, which writes one Score (the graph's only one when
-        `score` is None). JSON is not implemented yet.
+        `score` is None), and `.json` through `io.omk_json.write`,
+        which writes the whole graph.
 
-        Raises ValueError for a suffix no writer claims, and
-        `UnexportableError` (from `io.musicxml.write`) when there is no
-        score to write."""
+        Raises ValueError for a suffix no writer claims, or for a `score`
+        given with `.json`; and `UnexportableError` when the format cannot
+        write the graph (from `io.musicxml.write`, when there is no score)."""
         path = Path(f)
         if path.suffix.lower() in (".musicxml", ".xml", ".mxl"):
             from openmusickit.io.musicxml.writer import write
 
             write(self, path, score)
         elif path.suffix.lower() == ".json":
-            raise NotImplementedError
+            if score is not None:
+                raise ValueError("A JSON document holds the whole graph; `score` is for MusicXML.")
+            self.export_json_to_file(path)
         else:
             raise ValueError(f"No writer for {path.suffix!r} files: {path}")
+
+    def _add_objects(
+        self, nodes: list[OmkObject], edges: list[tuple[OmkEdge, OmkObject, OmkObject]]
+    ) -> None:
+        """Adds nodes, and edges already built (with their ids) between them,
+        as a reader builds them. Nothing is added if any id is already on the graph.
+
+        Raises
+        ------
+        GraphError
+            if an id is already on the graph, or an edge breaks a rule of the graph
+            (which leaves the edges before it added).
+        """
+        existing = {node.id for node in self._graph.nodes()} | {
+            edge.id for edge in self._graph.edges()
+        }
+        clashes = existing & ({node.id for node in nodes} | {edge.id for edge, _, _ in edges})
+        if clashes:
+            raise GraphError(f"These ids are already on the graph: {sorted(map(str, clashes))}.")
+        for node in nodes:
+            self._graph.add_node(node)
+        for edge, source, target in edges:
+            self._graph.add_edge(source, target, edge)
 
     # Basic Add, Connect, Remove
 

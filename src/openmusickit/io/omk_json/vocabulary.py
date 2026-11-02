@@ -29,6 +29,7 @@ from openmusickit.values.time.duration import TemporalSystem
 from openmusickit.values.tone.tone import TonalSystem
 
 Role = Literal["node", "edge", "value"]
+_A = {"node": "a node", "edge": "an edge", "value": "a value"}
 
 _VERSION = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
 _PREFIX = re.compile(r"[a-z][a-z0-9-]*")
@@ -184,7 +185,7 @@ class Encoder:
         """`obj` as a tagged object: its fields and its `@type`."""
         vocabulary, codec = self.codec(obj)
         if codec.role != role:
-            raise UnexportableError(f"{type(obj).__name__} is a {codec.role}, not a {role}.")
+            raise UnexportableError(f"{type(obj).__name__} is {_A[codec.role]}, not {_A[role]}.")
         self.used.add(vocabulary)
         data = codec.encode(obj, self)
         data["@type"] = qualify(vocabulary, codec.name)
@@ -312,7 +313,7 @@ class Decoder:
         if codec is None:
             raise OmkJsonError(f"{name!r} is not a type of {vocabulary.uri}.")
         if codec.role != role:
-            raise OmkJsonError(f"{name!r} is a {codec.role}, not a {role}.")
+            raise OmkJsonError(f"{name!r} is {_A[codec.role]}, not {_A[role]}.")
         if kind is not None and kind not in codec.kinds:
             raise OmkJsonError(f"{name!r} is not a {kind}.")
         if role == "value":

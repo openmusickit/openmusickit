@@ -672,8 +672,6 @@ def test_export_file_dispatches_on_the_suffix(tmp_path):
     assert (tmp_path / "out.mxl").read_bytes()[:2] == b"PK"
     with pytest.raises(ValueError, match="No writer for '.txt'"):
         graph.export_file(tmp_path / "out.txt")
-    with pytest.raises(NotImplementedError):
-        graph.export_file(tmp_path / "out.json")
 
 
 def test_what_musicxml_cannot_carry_is_left_out_with_a_warning():
