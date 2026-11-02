@@ -1,12 +1,13 @@
 # JSON serialization: a published, language-neutral format for OMK graphs
 
-Status: **Stage 1 (prerequisites P1a–P4) done 2026-11-02; Stage 2 (spec draft) in progress.**
+Status: **Stage 1 (prerequisites P1a–P4) and Stage 2 (spec draft, reviewed) done 2026-11-02.**
 D1–D4 in §9 confirmed with the developer on 2026-10-21, as recommended.
 The prerequisites in §8 (P1–P4, which settle D5) confirmed on 2026-11-02.
 D6, D7, D8 and D12 confirmed on 2026-11-02, as recommended.
-D9 waits for a side-by-side of one fixture in both orders, once the canonical writer exists (Stage 3);
+D10 and D11 confirmed on 2026-11-02, as recommended.
+The spec review settled D13–D18 the same day (§9).
+D9 waits for a side-by-side of one fixture in both orders, once a whole graph can be written (end of Stage 5);
 until then the spec marks node order as provisional.
-D10 and D11 are Python API only and are settled when that code is written.
 
 Written for two readers:
 the developer (to decide §9 and approve the prerequisites in §8),
@@ -322,9 +323,9 @@ Primitive types in the spec:
   The format never uses a float in a musical value.
 - **uuid**: lowercase, hyphenated, 36 characters.
   Any UUID version is allowed, matching `_plans/completed/small-items.md`.
-- **enumeration**: a string from a list the spec gives.
-  For a `StrEnum` this is its value (`"rim shot"`).
-  `RelativePitch` is an `IntEnum`; the spec gives it the strings `"low"` … `"high"`.
+- **enumeration**: a string from a list the spec gives:
+  always the member's name in lowercase (`"rim_shot"`, `"low_mid"`; D16).
+  For every enumeration but `Stroke` and `RelativePitch` that is also the Python value.
 - **array of T**: a tuple field, kept in order
 - **set of T**: an array sorted by the canonical bytes of each element.
   Today `NoteEvent.tones` is the only one.
@@ -340,7 +341,8 @@ Some example encodings:
   `numerator`, `denominator`, `dots`, `ratio`.
 - `Tempo` is `count`, `beat`, `clock_time`, which is its constructor's signature, not the `TemporalUnit` pair it stores.
   A plain `TemporalRatio` is written as `nominal` and `contextual`.
-- `ChordType` leaves out `root`, because the constructor forces it to `(0, 0)`.
+- `ChordType` writes `root`, although the constructor forces it to `(0, 0)` (D18);
+  the spec makes any other root out of domain.
 
 **Values are written in full, never by symbol name.**
 `staccato` is written as its six fields, not as `"staccato"`.
@@ -660,14 +662,30 @@ The recommendation comes first in each.
   A schema cannot express the canonical form or the graph rules,
   but it gives a re-implementer something to check structure against mechanically.
 - **D9 Node order.** *By id* (§4.6), or a musical walk order.
-  **Deferred to Stage 3:** dump one fixture in both orders and decide from real files.
-- **D10 How vocabularies are supplied.**
-  *An explicit argument* (§5.2), or entry-point discovery.
-- **D11 Module name.** *`io.omk_json`*, or `io.json`.
+  **Deferred to the end of Stage 5:** dump one fixture in both orders and decide from real files.
+- **D10 How vocabularies are supplied.** **Confirmed 2026-11-02:** an explicit argument (§5.2).
+- **D11 Module name.** **Confirmed 2026-11-02:** `io.omk_json`.
 - **D12 Value domains checked on read.** **Confirmed 2026-11-02.**
   *Yes.*
   A spec domain that the reader does not enforce is not really part of the spec.
   This makes the reader stricter than some Python constructors (`TonalVector` does not validate).
+
+Settled in the review of the spec draft, 2026-11-02:
+
+- **D13 Vocabulary URIs** use `https://openmusickit.org/spec/<vocabulary>`.
+- **D14 Name templates** stay, with a minimal grammar:
+  `{root}`, `{root:FORM}` (a display form of the root's vocabulary), `{{` and `}}`.
+  Any other brace is out of domain, so Python's `{root!r}` is refused.
+  So is `{root}` in a collection with no root,
+  which the model formats as `"None"`: Python's spelling of null leaking into a name.
+  (Whether the model should refuse that too is not this plan's question.)
+- **D15 Non-normalised `MetricalDuration`s are rejected** on read (`2/4`, `3/8`), following D12.
+- **D16 Enumeration strings** are the member's name in lowercase:
+  `"rim_shot"`, `"low_mid"`, not the model's display values `"rim shot"`, `"low-mid"`.
+  The codec maps them; the model is unchanged.
+- **D17 Field names** as drafted: `TonalVector` is `diatonic`, `chromatic`, `octave`;
+  `Tempo` is `count`, `beat`, `clock_time`.
+- **D18 `ChordType` writes its `root`**, which must be `(0, 0)` with no octave.
 
 ## 10. Stages
 
@@ -678,9 +696,9 @@ The recommendation comes first in each.
    The developer reviews it.
    This is the stage where names get fixed for good.
 3. **Canonical layer**: `canonical.py` and `primitives.py`, with their tests.
-   Then settle D9 from a fixture dumped in both orders, and D11 (the module name).
 4. **Codecs**: `vocabulary.py`, `core.py`, `wsmn.py`, value sweeps, field coverage.
 5. **Document and graph wiring**: `document.py`, the `OmkGraph` stubs, suffix dispatch, error tests.
+   Then settle D9 from one fixture dumped in both orders.
 6. **Laws and corpus**: `any_graphs()`, L1–L4, the corpus round trip, golden documents.
 7. **Schemas** (D8): the three schema files and validation tests;
    `jsonschema` goes into the dev group.

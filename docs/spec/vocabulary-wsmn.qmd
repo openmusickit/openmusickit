@@ -5,7 +5,7 @@ subtitle: "Draft 0.1 — not yet stable"
 
 | | |
 |---|---|
-| URI | `https://openmusickit.org/spec/wsmn` (provisional domain) |
+| URI | `https://openmusickit.org/spec/wsmn` |
 | version | `0.1` |
 | prefix | `wsmn` |
 
@@ -49,7 +49,6 @@ Display forms, for name templates
 (see the [`omk` vocabulary](vocabulary-omk.qmd#name-templates)):
 `unicode` (the default; `E♭4`), `ascii` (`Eb4`), `letter` (`E`),
 `verbose` (`Eflat4`), `ly` and `ly_absolute` (LilyPond, `ees`).
-*Provisional* with the template grammar.
 
 ## Durations
 
@@ -69,6 +68,8 @@ a half is `1/2`, never `2/4`;
 a breve is `2/1`, a longa `4/1`.
 A quarter in a quarter-note triplet is `1/4` with the `ratio`
 3 quarters (`nominal`) against 2 quarters (`contextual`).
+A value in any other form is outside the domain and a reader rejects it:
+`2/4` (write `1/2`), `3/8` (write `1/4` with one dot), `6/1` (write `4/1` with one dot).
 
 A note value's length is
 `numerator/denominator × (2 − 1/2^dots)`,
@@ -101,12 +102,11 @@ Kind *ToneCollection*.
 | field | type | domain |
 |---|---|---|
 | `tones` | `array<TonalVector>` | the chord's tones as intervals above the root; includes `(0, 0)` (octave `null`) |
+| `root` | `TonalVector` | always `(0, 0)` with octave `null`: the tones are measured from it |
 | `name` | `string` | a name template |
 | `bass` | `TonalVector` | the interval above the root of the lowest tone: `(0, 0)` in root position |
 | `quality` | chord quality? | |
 | `suffix` | `string?` | the lead-sheet suffix (`"maj7"`, `"sus4"`; `""` for a plain major triad) |
-
-A chord type's root is always `(0, 0)` and is not written.
 
 **`Chord`**: a chord on a particular root: C major, G7/B.
 Kind *ToneCollection*.
@@ -194,5 +194,5 @@ Kind *Tone*. System `wsmn:percussion`.
 | bar line component | `"thin"`, `"thick"`, `"dashed"`, `"dotted"`, `"short"`, `"tick"`, `"dots"` |
 | bracket symbol | `"bracket"`, `"brace"`, `"line"`, `"square"` |
 | group bar lines | `"separate"`, `"joined"`, `"mensurstrich"` |
-| relative pitch | `"low"`, `"low-mid"`, `"mid"`, `"high-mid"`, `"high"` |
-| stroke | `"center"`, `"edge"`, `"rim"`, `"rim shot"`, `"cross stick"`, `"shell"`, `"dead"`, `"open"`, `"slap"`, `"bass"`, `"mute"`, `"palm"`, `"finger"`, `"fist"`, `"heel"`, `"toe"`, `"closed"`, `"half open"`, `"pedal"`, `"foot splash"`, `"bell"`, `"crash"`, `"scrape"`, `"shake"`, `"thumb roll"`, `"clap"`, `"snap"`, `"stomp"` |
+| relative pitch | `"low"`, `"low_mid"`, `"mid"`, `"high_mid"`, `"high"` |
+| stroke | `"center"`, `"edge"`, `"rim"`, `"rim_shot"`, `"cross_stick"`, `"shell"`, `"dead"`, `"open"`, `"slap"`, `"bass"`, `"mute"`, `"palm"`, `"finger"`, `"fist"`, `"heel"`, `"toe"`, `"closed"`, `"half_open"`, `"pedal"`, `"foot_splash"`, `"bell"`, `"crash"`, `"scrape"`, `"shake"`, `"thumb_roll"`, `"clap"`, `"snap"`, `"stomp"` |

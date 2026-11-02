@@ -8,12 +8,8 @@ subtitle: "Draft 0.1 — not yet stable"
 This is a **draft** of version 0.1 of the OMK JSON format.
 While a vocabulary's version begins with `0.`,
 any part of it may change incompatibly (§6.3).
-Three points are explicitly provisional and are marked where they occur:
-
-- the order of nodes and edges in the canonical form (§9.4);
-- the vocabulary URIs, whose domain is not yet settled (§6.1);
-- the grammar of name templates (`ToneCollection.name`,
-  see the [`omk` vocabulary](vocabulary-omk.qmd#name-templates)).
+One point is explicitly provisional, and is marked where it occurs:
+the order of nodes and edges in the canonical form (§9.4).
 
 The format is defined by three pages:
 this one (the data model, the envelope, the canonical form, and what readers and writers must do),
@@ -126,6 +122,9 @@ Any UUID version is permitted.
 
 A string drawn from a list given by a vocabulary.
 Enumeration values are case-sensitive and are written exactly as listed.
+Every enumeration value is an identifier in lowercase `snake_case`
+(`"articulation"`, `"rim_shot"`, `"low_mid"`):
+never containing spaces, hyphens or capitals.
 
 ### 4.6 `array<T>`
 
@@ -208,8 +207,6 @@ The URI is an identifier only; it need not resolve.
 |---|---|---|
 | core | `https://openmusickit.org/spec/omk` | `omk` |
 | Western Standard Music Notation | `https://openmusickit.org/spec/wsmn` | `wsmn` |
-
-*Provisional:* the domain `openmusickit.org` is not yet confirmed.
 
 ### 6.2 The `vocabularies` object
 

@@ -5,7 +5,7 @@ subtitle: "Draft 0.1 — not yet stable"
 
 | | |
 |---|---|
-| URI | `https://openmusickit.org/spec/omk` (provisional domain) |
+| URI | `https://openmusickit.org/spec/omk` |
 | version | `0.1` |
 | prefix | `omk`; its names are written bare |
 
@@ -372,15 +372,16 @@ so a document does not depend on any table of marks.
 
 ### Name templates
 
-*Provisional.* A `ToneCollection`'s `name` (and the `name` of the `wsmn` chord types)
+A `ToneCollection`'s `name` (and the `name` of the `wsmn` chord types)
 is a template, so that a chord's name follows its root through transposition.
 It is literal text, in which:
 
 - `{root}` stands for the root, in its default display form;
 - `{root:FORM}` stands for the root in the display form `FORM`,
-  one of the forms the root's own vocabulary defines;
-- `{{` and `}}` stand for literal braces.
+  one of the forms the root's own vocabulary defines
+  (for `wsmn:TonalVector`, see the [`wsmn` vocabulary](vocabulary-wsmn.qmd#pitch));
+- `{{` and `}}` stand for a literal `{` and `}`.
 
-No other use of braces is allowed.
-The display forms, and whether templates belong in the format at all
-or should be replaced by a structured name, are open questions for version 0.1.
+No other use of braces is allowed:
+a template holding any other `{` or `}` is outside the field's domain.
+A template that uses `{root}` in a collection whose `root` is `null` is also outside it.
