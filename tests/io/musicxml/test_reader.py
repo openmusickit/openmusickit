@@ -670,7 +670,7 @@ def test_a_direction_inside_a_note_attaches_with_an_offset():
     assert markings_on(graph, c) == []
     (marking,) = markings_on(graph, d)
     assert marking.mark is scoring.forte
-    assert xml_meta_of(marking) == {"offset": Fraction(1, 4)}
+    assert xml_meta_of(marking) == {"offset": "1/4"}
 
 
 def test_a_wedge_spans_from_the_note_at_its_start_to_the_note_ending_at_its_stop():

@@ -35,6 +35,8 @@ hold goes in `node.meta["musicxml"]`, a dict OMK core never reads. Its keys:
   (kit lines), `tuplet`, `measure_repeat`, `staff` (only where it differs).
 - `Marking` / `MarkSpanner`: `offset`, `tremolo`, `fingering`, `accidental_mark`,
   `ending`, `element` (a minted mark's source element), `fermata_type`, `text`.
+  `offset` (and a spanner's `end_offset`) is how far past its event's onset the mark
+  falls, in whole notes, as a fraction string (`"1/4"`), so that meta stays plain JSON.
 - `MeterEvent`: `symbol`; `TempoEvent`: `sound_tempo`, `per_minute`, `tempo_hidden` (the figure is not printed), `term_hidden`, `term_text` (the word as printed, when it is not the term's name).
 - `LyricSyllable`: `extend`, `humming`, `laughing`, `end_line`, `end_paragraph`.
 - `ChordEvent`: `kind`, `kind_text`, `frame`.
@@ -1969,8 +1971,8 @@ class _PartReader:
         found = line.containing(position)
         if found is not None:
             event, onset = found
-            return event, {"offset": position - onset}
-        return line.events[-1], {"offset": position - line.onsets[-1]}
+            return event, {"offset": str(position - onset)}
+        return line.events[-1], {"offset": str(position - line.onsets[-1])}
 
     def place_direction_spans(self) -> None:
         open_starts: dict[tuple[str, str, int], _DirectionSpan] = {}
