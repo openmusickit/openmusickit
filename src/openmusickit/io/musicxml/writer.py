@@ -613,9 +613,7 @@ class _Writer:
         ):
             return False
         for edge_type in (EdgeType.STARTS_AT, EdgeType.ENDS_AT):
-            if any(
-                s.mark is not scoring.tie for s in nodes.predecessors(head, MarkSpanner, edge_type)
-            ):
+            if any(s.mark != scoring.tie for s in nodes.predecessors(head, MarkSpanner, edge_type)):
                 return False
         if any(nodes.successors(head, LyricSyllable, EdgeType.LYRIC)):
             return False
@@ -638,11 +636,11 @@ class _Writer:
         and the per-tone marks on each tone."""
         nodes = self.graph._graph
         tie_out = any(
-            s.mark is scoring.tie
+            s.mark == scoring.tie
             for s in nodes.predecessors(event, MarkSpanner, EdgeType.STARTS_AT)
         )
         tie_in = any(
-            s.mark is scoring.tie for s in nodes.predecessors(event, MarkSpanner, EdgeType.ENDS_AT)
+            s.mark == scoring.tie for s in nodes.predecessors(event, MarkSpanner, EdgeType.ENDS_AT)
         )
         names = sorted(
             m.mark.name
@@ -1217,9 +1215,9 @@ class _PartWriter:
         ):
             self.barline_marks[onset].append(mark)
             return
-        if mark is scoring.simile and _meta(event).get("measure_repeat"):
+        if mark == scoring.simile and _meta(event).get("measure_repeat"):
             return  # the % bar says it
-        if mark is scoring.breath_mark and meta.get("element") == "words":
+        if mark == scoring.breath_mark and meta.get("element") == "words":
             words = self.direction([_element("words", ",")], voice.staff)
             self.add_item(voice.staff, onset + _length(event), _DIRECTION, words, at_end=True)
             return  # a comma after the note, as the file wrote it
@@ -1308,7 +1306,7 @@ class _PartWriter:
             self.count("spanners ending outside the part, written open")
             end = None
         mark, meta = spanner.mark, _meta(spanner)
-        if mark is scoring.tie:
+        if mark == scoring.tie:
             if end is None:
                 self.count("ties with no end, left out")
                 return
@@ -1317,7 +1315,7 @@ class _PartWriter:
             self.ties_in[end.id].update(tones)
             self.ordered_pairs.append((start, end))
             return
-        if mark in tables.NOTATION_SPAN_NAMES or mark is scoring.wavy_line:
+        if mark in tables.NOTATION_SPAN_NAMES or mark == scoring.wavy_line:
             kind = tables.NOTATION_SPAN_NAMES.get(mark, "wavy-line")
             if not isinstance(start, NoteEvent) or (
                 end is not None and not isinstance(end, NoteEvent)
@@ -1436,7 +1434,7 @@ class _PartWriter:
                 start.set("niente", "yes")
             return "wedge", [start], [_element("wedge", type="stop")]
         if mark in (scoring.sustain_pedal, scoring.sostenuto_pedal):
-            kind = "sostenuto" if mark is scoring.sostenuto_pedal else "start"
+            kind = "sostenuto" if mark == scoring.sostenuto_pedal else "start"
             if meta.get("change") and self.pedal_meets(spanner, at_start=True):
                 kind = "change"
             start = _element("pedal", type=kind)
@@ -1460,7 +1458,7 @@ class _PartWriter:
                 [start],
                 [_element("octave-shift", type="stop", size=str(shift[1]))],
             )
-        if mark is scoring.una_corda:
+        if mark == scoring.una_corda:
             return "una corda", [_element("words", "una corda")], [_element("words", "tre corde")]
         kind = "bracket" if meta.get("element") == "bracket" else "dashes"
         line_end = {"line_end": "none"} if kind == "bracket" else {}
@@ -1901,7 +1899,7 @@ class _PartWriter:
         shape = bar.closing.shape if bar.closing is not None else None
         if shape in (scoring.end_repeat, scoring.double_repeat):
             style, repeat = "light-heavy", "backward"
-        elif shape is scoring.start_repeat:
+        elif shape == scoring.start_repeat:
             if index == len(self.bars) - 1:
                 self.count("start repeats on the last bar line, written as heavy-light")
                 style = "heavy-light"
@@ -2388,7 +2386,7 @@ def _notation_element(mark: Mark, meta: dict) -> tuple[str | None, ET.Element] |
     if mark in tables.ARPEGGIO_DIRECTIONS:
         direction = tables.ARPEGGIO_DIRECTIONS[mark]
         return None, _element("arpeggiate", **({"direction": direction} if direction else {}))
-    if mark is scoring.laissez_vibrer:
+    if mark == scoring.laissez_vibrer:
         return None, _element("tied", type="let-ring")
     if mark in tables.HARMON_MUTE_STATES:
         element = _element("harmon-mute")
@@ -2452,9 +2450,9 @@ def _direction_types(mark: Mark, meta: dict) -> list[ET.Element]:
     ):
         if mark is symbol:
             return [_element(tag)]
-    if mark is scoring.con_sordino:
+    if mark == scoring.con_sordino:
         return [_element("string-mute", type="on")]
-    if mark is scoring.senza_sordino:
+    if mark == scoring.senza_sordino:
         return [_element("string-mute", type="off")]
     return [_element("words", mark.name)]
 

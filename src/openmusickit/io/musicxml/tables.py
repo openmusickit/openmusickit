@@ -474,7 +474,7 @@ for _wrapper, _table in (
     for _name, _mark in _table.items():
         NOTATION_ELEMENTS.setdefault(_mark, (_wrapper, _name, None))
 for _text, _mark in BREATH_MARKS.items():
-    if _mark is not scoring.breath_mark:
+    if _mark != scoring.breath_mark:
         NOTATION_ELEMENTS.setdefault(_mark, ("articulations", "breath-mark", _text))
 for _element, _table in (
     ("fingering", FINGERINGS),

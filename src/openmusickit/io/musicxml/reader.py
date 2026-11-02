@@ -1626,12 +1626,12 @@ class _PartReader:
             mark = self.minted(text, MarkType.EXPRESSION, "words")
             self.point_marks.append(_PointMark(position, staff, mark, meta={"element": "words"}))
             return
-        if mark is scoring.tre_corde:
+        if mark == scoring.tre_corde:
             self.direction_spans.append(
                 _DirectionSpan("una corda", "1", staff, position, self.next_order(), False)
             )
             return
-        if mark is scoring.una_corda:
+        if mark == scoring.una_corda:
             self.direction_spans.append(
                 _DirectionSpan(
                     "una corda",
@@ -1807,7 +1807,7 @@ class _PartReader:
             if direction == "forward":
                 return (
                     scoring.double_repeat
-                    if previous is scoring.end_repeat
+                    if previous == scoring.end_repeat
                     else scoring.start_repeat
                 )
             return scoring.end_repeat

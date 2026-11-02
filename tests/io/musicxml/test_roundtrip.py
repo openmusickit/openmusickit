@@ -7,6 +7,7 @@ a meter's spelling, a tempo word, and the reader's `meta["musicxml"]`.
 
 from __future__ import annotations
 
+import copy
 import io
 import warnings
 from functools import cache
@@ -84,6 +85,20 @@ def test_a_round_trip_keeps_what_equivalence_cannot_see(fixture):
         for key in set(meta) | set(meta_after):
             if (kind, key) not in CHANGED_ON_PURPOSE:
                 assert meta.get(key) == meta_after.get(key), (kind, key)
+
+
+@pytest.mark.parametrize("fixture", fixtures())
+def test_a_copy_of_a_graph_writes_the_same_document(fixture):
+    """The writer recognises a tie, a repeat or a pedal by its value, not by its
+    identity, so a copy (as `materialize` and JSON reading make) writes the same
+    document as the graph it was copied from."""
+    graph, _ = graph_and_warnings(fixture.slug)
+    original, copied = io.BytesIO(), io.BytesIO()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", OmkWarning)
+        write(graph, original)
+        write(copy.deepcopy(graph), copied)
+    assert copied.getvalue() == original.getvalue()
 
 
 def test_the_corrected_companions_round_trip():
