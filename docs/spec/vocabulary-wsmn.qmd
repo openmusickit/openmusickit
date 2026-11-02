@@ -1,0 +1,198 @@
+---
+title: "OMK JSON: the wsmn vocabulary"
+subtitle: "Draft 0.1 — not yet stable"
+---
+
+| | |
+|---|---|
+| URI | `https://openmusickit.org/spec/wsmn` (provisional domain) |
+| version | `0.1` |
+| prefix | `wsmn` |
+
+Western Standard Music Notation:
+the pitch, duration, chord, key, clef, bar line and percussion types of
+common Western notation.
+WSMN is one musical system among others, not a default;
+a document uses this vocabulary only when it holds WSMN values.
+Names are written with the prefix: `wsmn:TonalVector`.
+Section numbers (§4.3) refer to [the format specification](omk-json.qmd),
+and kinds (in *italics*) to the [`omk` vocabulary](vocabulary-omk.qmd#kinds).
+
+## Systems
+
+| identifier | system | type |
+|---|---|---|
+| `wsmn:tonal` | WSMN pitch: seven letter names and twelve semitones to the octave | tonal |
+| `wsmn:percussion` | WSMN unpitched percussion | tonal |
+| `wsmn:metrical` | WSMN metrical time: note values, dots and tuplets | temporal |
+
+## Pitch
+
+**`TonalVector`**: a pitch, a pitch class, or an interval, spelled.
+Kinds *Tone* and *Interval*. System `wsmn:tonal`.
+
+| field | type | domain |
+|---|---|---|
+| `diatonic` | `integer` | 0–6: the letter name, counted in steps from C (0 = C, 1 = D, ... 6 = B); as an interval, the number of letter steps |
+| `chromatic` | `integer` | 0–11: the pitch class, counted in semitones from C; as an interval, the number of semitones, modulo 12 |
+| `octave` | `integer?` | the octave of the *letter name*, 0 for the octave beginning at middle C; `null` for a pitch class or a simple interval |
+
+The two coordinates spell the pitch:
+`(0, 0)` is C, `(0, 1)` is C♯, `(1, 1)` is D♭, `(0, 11)` is C♭.
+The octave counts by letter, not by sound:
+`(0, 11, 0)` is C♭4 and `(6, 0, 0)` is B♯4,
+although C♭4 sounds a semitone below C4 and B♯4 sounds as C5.
+A value with `octave` `null` and one with an `octave` are different values,
+even where the octave is 0.
+
+Display forms, for name templates
+(see the [`omk` vocabulary](vocabulary-omk.qmd#name-templates)):
+`unicode` (the default; `E♭4`), `ascii` (`Eb4`), `letter` (`E`),
+`verbose` (`Eflat4`), `ly` and `ly_absolute` (LilyPond, `ees`).
+*Provisional* with the template grammar.
+
+## Durations
+
+**`MetricalDuration`**: a note value, with its dots and the tuplet it is in.
+Kinds *Duration* and *Measurable*. System `wsmn:metrical`.
+
+| field | type | domain |
+|---|---|---|
+| `numerator` | `integer` | non-zero; its absolute value is a power of two (1, 2, 4, ...); negative for a negative (signed) duration |
+| `denominator` | `integer` | a positive power of two; if the numerator's absolute value is more than 1, the denominator is 1 |
+| `dots` | `integer` | not negative |
+| `ratio` | *TemporalRatio*? | the tuplet: the notated values against the values they stand in for; `null` outside a tuplet |
+
+The fields are the *nominal* note value, in lowest terms, plus the dots:
+a dotted quarter is `1/4` with one dot (its length, 3/8, is not written);
+a half is `1/2`, never `2/4`;
+a breve is `2/1`, a longa `4/1`.
+A quarter in a quarter-note triplet is `1/4` with the `ratio`
+3 quarters (`nominal`) against 2 quarters (`contextual`).
+
+A note value's length is
+`numerator/denominator × (2 − 1/2^dots)`,
+multiplied, when there is a ratio,
+by the ratio's contextual length over its nominal length.
+
+**`TiedDuration`**: two or more durations tied into one, in order.
+Kinds *Duration* and *Measurable*. System `wsmn:metrical`.
+
+| field | type | domain |
+|---|---|---|
+| `members` | `array<`*Duration*`>` | at least two |
+
+**`TimeSignature`**: a meter, as the units it groups and as it is printed.
+Kind *Measurable*.
+
+| field | type | |
+|---|---|---|
+| `units` | `array<`*Measurable*`>` | the beats or groups: 4/4 is four quarters, 2+2+3/8 three groups of eighths |
+| `presentation` | `array<string>?` | exactly two strings, as printed (`["4", "4"]`, `["2+2+3", "8"]`); `null` if not given |
+
+4/4 and 2/2 have the same length and are different values:
+a time signature is written in full and compared field by field.
+
+## Chords
+
+**`ChordType`**: a chord quality, independent of root: a major triad, a dominant seventh.
+Kind *ToneCollection*.
+
+| field | type | domain |
+|---|---|---|
+| `tones` | `array<TonalVector>` | the chord's tones as intervals above the root; includes `(0, 0)` (octave `null`) |
+| `name` | `string` | a name template |
+| `bass` | `TonalVector` | the interval above the root of the lowest tone: `(0, 0)` in root position |
+| `quality` | chord quality? | |
+| `suffix` | `string?` | the lead-sheet suffix (`"maj7"`, `"sus4"`; `""` for a plain major triad) |
+
+A chord type's root is always `(0, 0)` and is not written.
+
+**`Chord`**: a chord on a particular root: C major, G7/B.
+Kind *ToneCollection*.
+
+| field | type |
+|---|---|
+| `root` | `TonalVector` |
+| `tones` | `array<TonalVector>` |
+| `bass` | `TonalVector` |
+| `name` | `string?` (a name template) |
+| `suffix` | `string?` |
+
+## Keys
+
+**`KeySignature`**: the alteration of each letter name, in semitones (sharps positive).
+
+| field | type | domain |
+|---|---|---|
+| `c`, `d`, `e`, `f`, `g`, `a`, `b` | `rational` | −3 to 3; a fraction is a microtone (`"1/2"` is a quarter-tone sharp) |
+
+**`ModePattern`**: a mode, as the intervals of its scale from its tonic.
+
+| field | type | domain |
+|---|---|---|
+| `name` | `string` | |
+| `tones` | `ToneCollection` | its first tone is `(0, 0)` (octave `null`) |
+| `quality` | chord quality? | |
+
+Major and Ionian have the same tones and are different modes:
+a mode is compared by every field, its name included.
+
+**`Key`**: a key. Kind *ModalContext*.
+
+| field | type | domain |
+|---|---|---|
+| `tonic` | `TonalVector?` | `null` when no tonality is asserted: no key at all, or a bare signature ("three flats") that does not say which key |
+| `signature` | `KeySignature?` | `null` for no signature (with a `null` tonic: no key) |
+| `tones` | `ToneCollection` | the tones of the key's scale (D major: D E F♯ G A B C♯); empty when none are asserted |
+| `mode` | `ModePattern?` | |
+| `name` | `string?` | |
+
+The name is written as held, even where an implementation would derive the same name itself.
+
+## Clefs, bar lines and brackets
+
+**`StaffClef`**: a clef on a staff. Kind *Clef*.
+
+| field | type | domain |
+|---|---|---|
+| `sign` | clef sign | |
+| `line` | `integer?` | 1–5 (counted from the bottom) for `"g"`, `"f"` and `"c"`; `null` for the others |
+| `octave_change` | `integer` | octaves the staff sounds from where it is written: −1 for the treble clef with an 8 below |
+
+**`BarLineShape`**: how a bar line is drawn, from left to right. Kind *DivisionShape*.
+
+| field | type |
+|---|---|
+| `components` | `array<`bar line component`>` |
+
+A final bar is `["thin", "thick"]`; an end repeat `["dots", "thin", "thick"]`.
+
+**`BracketShape`**: how a group of staves is bracketed. Kind *StackGroupShape*.
+
+| field | type |
+|---|---|
+| `symbol` | bracket symbol? |
+| `bar_lines` | group bar lines |
+
+## Percussion
+
+**`PercussionTone`**: a stroke on an unpitched instrument, at a relative pitch.
+Kind *Tone*. System `wsmn:percussion`.
+
+| field | type |
+|---|---|
+| `relative_pitch` | relative pitch? |
+| `stroke` | stroke? |
+
+## Enumerations
+
+| enumeration | values |
+|---|---|
+| chord quality | `"maj"`, `"min"`, `"sus"`, `"pow"`, `"aug"`, `"dim"`, `"dom"`, `"hdm"` |
+| clef sign | `"g"`, `"f"`, `"c"`, `"percussion"`, `"tab"`, `"none"` |
+| bar line component | `"thin"`, `"thick"`, `"dashed"`, `"dotted"`, `"short"`, `"tick"`, `"dots"` |
+| bracket symbol | `"bracket"`, `"brace"`, `"line"`, `"square"` |
+| group bar lines | `"separate"`, `"joined"`, `"mensurstrich"` |
+| relative pitch | `"low"`, `"low-mid"`, `"mid"`, `"high-mid"`, `"high"` |
+| stroke | `"center"`, `"edge"`, `"rim"`, `"rim shot"`, `"cross stick"`, `"shell"`, `"dead"`, `"open"`, `"slap"`, `"bass"`, `"mute"`, `"palm"`, `"finger"`, `"fist"`, `"heel"`, `"toe"`, `"closed"`, `"half open"`, `"pedal"`, `"foot splash"`, `"bell"`, `"crash"`, `"scrape"`, `"shake"`, `"thumb roll"`, `"clap"`, `"snap"`, `"stomp"` |

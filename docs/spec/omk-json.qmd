@@ -1,0 +1,544 @@
+---
+title: "OMK JSON: format specification"
+subtitle: "Draft 0.1 — not yet stable"
+---
+
+## Status of this document
+
+This is a **draft** of version 0.1 of the OMK JSON format.
+While a vocabulary's version begins with `0.`,
+any part of it may change incompatibly (§6.3).
+Three points are explicitly provisional and are marked where they occur:
+
+- the order of nodes and edges in the canonical form (§9.4);
+- the vocabulary URIs, whose domain is not yet settled (§6.1);
+- the grammar of name templates (`ToneCollection.name`,
+  see the [`omk` vocabulary](vocabulary-omk.qmd#name-templates)).
+
+The format is defined by three pages:
+this one (the data model, the envelope, the canonical form, and what readers and writers must do),
+the [`omk` vocabulary](vocabulary-omk.qmd) (the core types),
+and the [`wsmn` vocabulary](vocabulary-wsmn.qmd)
+(the types of Western Standard Music Notation).
+
+## 1. Scope
+
+An OMK JSON document holds one OMK graph:
+musical objects (*nodes*), the typed relationships between them (*edges*),
+and the values the objects are made of (pitches, durations, marks, ...).
+It holds the music and the data applications attach to it,
+and nothing about any particular implementation:
+no database or graph-library identifiers,
+no programming-language types or module names.
+
+The format is written so that an implementation of OMK in any language,
+using the names and data types defined by the vocabularies,
+can read and write the same documents,
+and so that a document read and written again comes out byte for byte the same (§9).
+
+## 2. Conventions
+
+The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT,
+RECOMMENDED, MAY and OPTIONAL are to be interpreted as described in
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and
+[RFC 8174](https://www.rfc-editor.org/rfc/rfc8174)
+when, and only when, they appear in all capitals.
+
+*JSON* is as defined by [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259).
+A *reader* turns a document into a graph;
+a *writer* turns a graph into a document.
+
+## 3. Data model
+
+A **graph** is a set of nodes and a set of directed edges between them,
+together with a little metadata about the graph itself.
+There may be any number of edges between two nodes,
+but at most one edge of a given relation from one node to another (§10).
+A graph need not be connected, need not be a complete score,
+and need not have a score at all:
+sketches, fragments and analyses are graphs too.
+
+A **node** is a musical object: a note, a chord symbol, a key change, a slur, a part, a score.
+Every node has a type, an identifier, metadata, and the fields its type defines.
+No field of a node refers to another node;
+every relationship between nodes is an edge.
+
+An **edge** is a relationship from one node (its *source*) to another (its *target*):
+one note follows another, a mark is attached to a note,
+a part performs a line.
+Every edge has a kind, an identifier, a source, a target, metadata,
+and the fields its kind defines.
+
+A **value** is an immutable piece of musical data with no identity of its own:
+a pitch, a duration, a time signature, a staccato.
+Two values with the same type and the same fields are the same value.
+Values are the fields of nodes, of edges, and of other values.
+
+**Identity.** Every node and every edge has an identifier, a UUID,
+that stays with it for as long as it exists, in every document it is written to.
+Values have no identifiers.
+
+**Metadata** (`@meta`, and the graph's `info`)
+is free-form data that applications attach to a node, an edge or the graph:
+an editor's on-screen placement of a note, an importer's record of its source.
+It is not interpreted by OMK, and this specification says nothing about its content
+beyond the rules of §4.9.
+
+## 4. Primitive types
+
+The vocabularies give each field one of the following types.
+A type written with a trailing `?` (`string?`) also admits `null`.
+
+### 4.1 `string`, `boolean`, `null`
+
+As in JSON.
+A string MUST NOT contain a lone surrogate code point.
+
+### 4.2 `integer`
+
+A JSON number with no fraction and no exponent.
+Readers MUST preserve integers exactly, whatever their size.
+
+### 4.3 `rational`
+
+An exact rational number.
+A whole number is written as an `integer`;
+any other value is written as a string `"n/d"`:
+the numerator `n` (with a leading `-` if negative) and the denominator `d`,
+in lowest terms, with `d` greater than 1,
+and no spaces, no leading zeros and no `+` sign.
+
+```json
+3        "1/2"       "-7/3"       0
+```
+
+A rational MUST NOT be written as a JSON number with a fraction or an exponent.
+The format never uses floating-point numbers for musical data.
+
+### 4.4 `uuid`
+
+A UUID ([RFC 9562](https://www.rfc-editor.org/rfc/rfc9562)) as a string
+of 36 characters in the hyphenated form, with lowercase hexadecimal digits:
+`"5d1e7a40-3c2b-4f6e-9a8d-0b1c2d3e4f50"`.
+Any UUID version is permitted.
+
+### 4.5 Enumerations
+
+A string drawn from a list given by a vocabulary.
+Enumeration values are case-sensitive and are written exactly as listed.
+
+### 4.6 `array<T>`
+
+A JSON array whose elements are of type `T`, in order.
+Order is significant.
+
+### 4.7 `set<T>`
+
+A JSON array whose elements are of type `T`, all distinct, in no significant order.
+Writers MUST write the elements in canonical order (§9.5);
+readers MUST NOT give the order any meaning,
+and MUST reject a set holding two equal elements.
+
+### 4.8 System identifiers
+
+A string naming a tonal or temporal system, as declared by a vocabulary (§6.4).
+
+### 4.9 `json`
+
+Any JSON value, subject to these rules:
+
+- object keys MUST be unique within each object;
+- a number with a fraction or an exponent MUST be finite
+  and is written in canonical form (§9.3);
+- strings follow §4.1.
+
+`json` is used only for metadata (`@meta` and the graph's `info`).
+
+### 4.10 Tagged values
+
+Every value that is not a primitive is a JSON object with a key `@type`,
+whose string names the value's type (§7.1),
+and one key for each field that type defines.
+Where a field may hold values of several types
+(a duration may be a metrical duration, a clock duration, a tied duration, ...),
+the vocabularies name a *kind* (§7.3), and `@type` says which type the value is.
+
+## 5. The document
+
+A document is a single JSON object with exactly these keys:
+
+| key | type | content |
+|---|---|---|
+| `format` | string | the literal `"omk-json"` |
+| `vocabularies` | object | the vocabularies the document uses (§6) |
+| `graph` | object | the graph's metadata (§5.1) |
+| `nodes` | `array` of node objects | §8.1 |
+| `edges` | `array` of edge objects | §8.2 |
+
+### 5.1 The graph's metadata
+
+An object with exactly these keys:
+
+| key | type | |
+|---|---|---|
+| `name` | `string?` | a name for the graph as a container |
+| `description` | `string?` | |
+| `info` | object of `json` | free-form metadata about the graph (§3) |
+
+The metadata of a *work* (title, composer, ...) is not here:
+it is on a `Score` node,
+because a graph may hold several works, or fragments that are none.
+
+## 6. Vocabularies
+
+A vocabulary is a published, versioned set of names:
+node types, edge kinds, value types, kinds, enumerations,
+edge relations, and system identifiers.
+This version of the format defines two:
+[`omk`](vocabulary-omk.qmd), the core, which every document uses,
+and [`wsmn`](vocabulary-wsmn.qmd), Western Standard Music Notation.
+Extensions define their own.
+
+### 6.1 Identification
+
+A vocabulary is identified by a URI.
+The URI is an identifier only; it need not resolve.
+
+| vocabulary | URI | preferred prefix |
+|---|---|---|
+| core | `https://openmusickit.org/spec/omk` | `omk` |
+| Western Standard Music Notation | `https://openmusickit.org/spec/wsmn` | `wsmn` |
+
+*Provisional:* the domain `openmusickit.org` is not yet confirmed.
+
+### 6.2 The `vocabularies` object
+
+The `vocabularies` object maps a *prefix* to an object with exactly two keys,
+`uri` (a string) and `version` (a string, §6.3):
+
+```json
+"vocabularies": {
+  "omk": {"uri": "https://openmusickit.org/spec/omk", "version": "0.1"},
+  "wsmn": {"uri": "https://openmusickit.org/spec/wsmn", "version": "0.1"}
+}
+```
+
+A prefix is a string of lowercase ASCII letters, digits and hyphens,
+beginning with a letter.
+Prefixes are local to the document:
+a reader identifies a vocabulary by its `uri`, never by its prefix.
+The same URI MUST NOT appear under two prefixes.
+
+The `omk` vocabulary MUST be present, under the prefix `omk`.
+Its names are written without a prefix (§7.1).
+
+The object MUST list exactly the vocabularies whose names appear in the document,
+plus `omk`.
+A writer uses each vocabulary's preferred prefix.
+
+This object is the document's list of requirements:
+a reader that does not implement every vocabulary listed,
+at a version it supports, MUST refuse the document (§10).
+
+### 6.3 Versions
+
+A version is a string `"major.minor"` of two non-negative integers
+with no leading zeros.
+A reader that implements version *M.n* of a vocabulary
+MUST accept a document requiring version *M.m* of it when *m* ≤ *n*, and *M* ≥ 1;
+while *M* is 0, it MUST accept only *0.n* exactly.
+It MUST refuse every other version.
+
+Within a major version (from 1 onwards), a new minor version only adds:
+new types, kinds, fields of new types, enumeration values, relations, or systems.
+It never changes or removes what an earlier minor version defined.
+
+### 6.4 System identifiers
+
+A tonal or temporal *system* is a musical system that values belong to:
+WSMN's metrical time, clock time, WSMN's pitch system.
+Most values imply their system by their type
+(a `wsmn:MetricalDuration` is in WSMN's metrical time),
+so systems appear in documents only where a node names one directly
+(`SyncLine.temporal_system`).
+
+Each vocabulary declares identifiers for its systems.
+Tonal and temporal systems are separate namespaces,
+since a field's type always says which is meant.
+Identifiers follow the same prefix rule as type names (§7.1).
+
+## 7. Names
+
+### 7.1 Qualified names
+
+A name defined by the `omk` vocabulary is written bare: `NoteEvent`, `ClockDuration`, `marks`.
+A name defined by any other vocabulary is written `prefix:Name`,
+where `prefix` is that vocabulary's prefix in the `vocabularies` object:
+`wsmn:TonalVector`, `wsmn:metrical`.
+
+This applies to `@type` values, edge relations, and system identifiers.
+It does not apply to field names or enumeration values,
+which belong to the type that defines them.
+
+### 7.2 Type names and field names
+
+Each vocabulary defines its types, and for each type its fields:
+a name, a primitive type or kind, whether `null` is admitted,
+and the field's domain (the values it may take).
+Field names are written as defined, in `snake_case`.
+
+### 7.3 Kinds
+
+A *kind* names a set of types that may appear in the same field:
+`Duration`, `Tone`, `Measurable`, ...
+A vocabulary defines kinds and says which of its own types belong to which kinds;
+a later vocabulary may add its own types to an earlier vocabulary's kinds.
+(An extension's new duration type belongs to the kind `Duration`,
+and may then appear wherever a duration may.)
+
+## 8. Nodes and edges
+
+### 8.1 Node objects
+
+A node is a JSON object with these keys, and no others:
+
+| key | type | |
+|---|---|---|
+| `@id` | `uuid` | the node's identifier |
+| `@type` | string | the node's type: a node type of some vocabulary |
+| `@meta` | object of `json` | the node's metadata (§3) |
+| *field* | as defined | one key for each field of the type (§8.3) |
+
+### 8.2 Edge objects
+
+An edge is a JSON object with these keys, and no others:
+
+| key | type | |
+|---|---|---|
+| `@id` | `uuid` | the edge's identifier |
+| `@type` | string | the edge's kind: an edge kind of some vocabulary |
+| `@source` | `uuid` | the `@id` of the edge's source node |
+| `@target` | `uuid` | the `@id` of the edge's target node |
+| `@meta` | object of `json` | the edge's metadata (§3) |
+| *field* | as defined | one key for each field of the kind (§8.3) |
+
+The core edge kinds (`Next`, `Branch`, `Simultaneous`, `Contains`, `Edge`)
+and the core relations are defined by the [`omk` vocabulary](vocabulary-omk.qmd#edges).
+Every edge has a *relation*, the kind of relationship it asserts:
+for `Edge` it is the field `relation`;
+for the other kinds it is implied by the kind.
+
+### 8.3 Fields
+
+Every field the type defines MUST be present,
+including fields whose value is `null`
+and fields whose value is what an implementation might consider a default.
+No other keys are permitted.
+(So the content of a document never depends on any implementation's defaults.)
+
+Keys beginning with `@` are reserved for this specification;
+no vocabulary defines a field whose name begins with `@`.
+
+## 9. Canonical form
+
+Every graph has exactly one canonical document.
+Writers MUST produce it.
+Readers MUST accept any document that is valid JSON
+and otherwise conforms to this specification, canonical or not.
+
+### 9.1 Encoding
+
+UTF-8, with no byte order mark.
+Lines end with a single LF (U+000A).
+The document ends with a single LF.
+
+### 9.2 Layout
+
+- Each object key is followed by `": "` (a colon and one space).
+- The members of an object, and the elements of an array,
+  are each written on their own line,
+  indented two spaces more than the line that opened the object or array,
+  and separated by a comma at the end of each line except the last.
+  The closing `}` or `]` is on its own line,
+  at the indentation of the line that opened it.
+- An empty object is written `{}`, and an empty array `[]`.
+- There is no other whitespace.
+
+This is the layout that, for example, Python's
+`json.dumps(value, indent=2, ensure_ascii=False)`
+and JavaScript's `JSON.stringify(value, null, 2)` produce,
+apart from the key order (§9.4) and the number and string rules (§9.3).
+
+### 9.3 Strings and numbers
+
+Strings and numbers are serialised as
+[RFC 8785](https://www.rfc-editor.org/rfc/rfc8785) (JSON Canonicalization Scheme) §3.2.2 specifies.
+In short:
+
+- a string escapes `"` as `\"`, `\` as `\\`,
+  the control characters U+0008, U+0009, U+000A, U+000C and U+000D
+  as `\b`, `\t`, `\n`, `\f` and `\r`,
+  and every other control character below U+0020 as `\u` followed by four lowercase hexadecimal digits;
+  no other character is escaped;
+- an integer is written in decimal, with a `-` if negative, and no leading zeros;
+- a number with a fraction (only possible in `json` data, §4.9)
+  is written as ECMAScript's `Number.prototype.toString` writes it
+  (the shortest form that reads back as the same IEEE 754 double).
+
+### 9.4 Order
+
+- The keys of every object are sorted by Unicode code point.
+  (So `@`-keys come before all field names.)
+- The elements of `nodes` and of `edges` are sorted by `@id`.
+- The elements of a `set` are sorted as §9.5 says.
+- Every other array keeps its own order.
+
+*Provisional:* sorting nodes and edges by `@id` is stable under edits
+(adding a note adds one block to a textual diff)
+and is defined for every graph, however incomplete.
+A musical order may replace it before version 1.0.
+
+### 9.5 The order of a set
+
+The elements of a `set` are sorted by their canonical serialisation
+as a sequence of Unicode code points,
+each element serialised on its own as §9.1–9.4 describe, starting at indentation zero.
+
+## 10. Readers
+
+A reader MUST refuse a document, and add nothing to any graph, if:
+
+- it is not valid JSON, or an object in it has two equal keys;
+- its `format` is not `"omk-json"`,
+  or the document, or any node, edge, value or envelope object,
+  has a key this specification does not allow there, or lacks one it requires;
+- `vocabularies` lacks `omk` (under the prefix `omk`),
+  lists a URI twice,
+  or lists a vocabulary the reader does not implement at a version it accepts (§6.3);
+  the reader SHOULD name every such vocabulary, with its URI and version,
+  so that a user can tell what is missing;
+- a qualified name uses a prefix not listed in `vocabularies`,
+  or names a type, relation or system that its vocabulary does not define;
+- a value has the wrong type for its field
+  (including a value whose `@type` is not of the field's kind),
+  or lies outside the field's domain,
+  even where an implementation's own constructors would accept it;
+- two nodes, or two edges, have the same `@id`,
+  or an edge's `@source` or `@target` is not the `@id` of a node in the document;
+- two edges have the same source, target and relation;
+- two edges with relation `next` have the same source,
+  or two have the same target.
+
+A reader MUST NOT refuse a document for musical incompleteness:
+a note with no duration, a line with no part, a graph with no score.
+The rules above are all the structure a graph is required to have.
+
+A reader that adds a document to a graph that already holds nodes or edges
+MUST refuse it if any `@id` in the document is already in the graph.
+It MUST NOT change the existing graph's own metadata.
+
+## 11. Writers
+
+A writer MUST write the canonical form (§9).
+It MUST refuse to write a graph that holds:
+
+- a node, an edge or a value of a type that no vocabulary it implements defines,
+  including a specialisation of a defined type whose own type is not defined;
+- a value outside its field's domain;
+- a system that no vocabulary declares;
+- metadata that is not `json` (§4.9).
+
+## 12. Round trips
+
+For a reader and writer that conform to this specification:
+
+- **document → graph → document.**
+  Reading a canonical document and writing the graph produces the same bytes.
+- **graph → document → graph.**
+  Writing a graph and reading the document produces a graph with
+  the same node and edge identifiers,
+  every edge between the same nodes,
+  every node, edge and value of the same type with the same fields,
+  and the same metadata.
+
+What an implementation holds and the format does not carry:
+
+- the distinction between an integer and a whole-number rational
+  (`2` and `2/1` are the same number, and are written `2`);
+- whether two nodes share one value object or hold equal copies
+  (values have no identity, §3);
+- anything about how the graph is stored.
+
+## 13. Example
+
+One middle-C quarter note with a staccato dot, in a graph named "Sketch".
+*Illustrative:* the examples published with version 0.1
+will be generated by the reference implementation and checked by its tests.
+
+```json
+{
+  "edges": [
+    {
+      "@id": "0b7a2c1e-5f34-4e8b-9c1d-2a3b4c5d6e7f",
+      "@meta": {},
+      "@source": "6c1f0e2d-8a4b-4c3d-9e5f-1a2b3c4d5e6f",
+      "@target": "9e8d7c6b-5a49-4382-a716-f5e4d3c2b1a0",
+      "@type": "Edge",
+      "origin": "asserted",
+      "relation": "marks"
+    }
+  ],
+  "format": "omk-json",
+  "graph": {
+    "description": null,
+    "info": {},
+    "name": "Sketch"
+  },
+  "nodes": [
+    {
+      "@id": "6c1f0e2d-8a4b-4c3d-9e5f-1a2b3c4d5e6f",
+      "@meta": {},
+      "@type": "Marking",
+      "mark": {
+        "@type": "Mark",
+        "aliases": [],
+        "attachment_mode": "single",
+        "binds": false,
+        "description": "A staccato dot: the note is played detached and shortened.",
+        "kind": "articulation",
+        "name": "staccato"
+      }
+    },
+    {
+      "@id": "9e8d7c6b-5a49-4382-a716-f5e4d3c2b1a0",
+      "@meta": {},
+      "@type": "NoteEvent",
+      "duration": {
+        "@type": "wsmn:MetricalDuration",
+        "denominator": 4,
+        "dots": 0,
+        "numerator": 1,
+        "ratio": null
+      },
+      "tones": [
+        {
+          "@type": "wsmn:TonalVector",
+          "chromatic": 0,
+          "diatonic": 0,
+          "octave": 0
+        }
+      ]
+    }
+  ],
+  "vocabularies": {
+    "omk": {
+      "uri": "https://openmusickit.org/spec/omk",
+      "version": "0.1"
+    },
+    "wsmn": {
+      "uri": "https://openmusickit.org/spec/wsmn",
+      "version": "0.1"
+    }
+  }
+}
+```

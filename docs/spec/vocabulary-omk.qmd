@@ -1,0 +1,386 @@
+---
+title: "OMK JSON: the omk vocabulary"
+subtitle: "Draft 0.1 — not yet stable"
+---
+
+| | |
+|---|---|
+| URI | `https://openmusickit.org/spec/omk` (provisional domain) |
+| version | `0.1` |
+| prefix | `omk`; its names are written bare |
+
+The core vocabulary: every node type, every edge kind and relation,
+the values that belong to no particular musical system,
+and the kinds that other vocabularies add their own types to.
+Every document uses it.
+The format itself (primitive types, the envelope, the canonical form)
+is in [the format specification](omk-json.qmd);
+section numbers below (§4.3) refer to it.
+
+In the tables, a type with a trailing `?` admits `null`.
+A **kind** in a field's type (written in *italics*, as *Duration*)
+means a tagged value of any type belonging to that kind (§7.3),
+from this vocabulary or any other.
+
+## Kinds
+
+| kind | what it is | `omk` types | `wsmn` types |
+|---|---|---|---|
+| *Duration* | a signed length of time, or none | `ZeroDuration`, `GraceDuration`, `ClockDuration` | `MetricalDuration`, `TiedDuration` |
+| *Measurable* | a length that reduces to one number: every *Duration* above, and groupings of them | the *Duration* types, `TemporalUnit`, `CompoundTemporalUnit` | the *Duration* types, `TimeSignature` |
+| *TemporalRatio* | one length against another: a tuplet, a tempo, a metric modulation | `TemporalRatio`, `Tempo` | |
+| *Tone* | something sounded, or silence | `SilentTone` | `TonalVector`, `PercussionTone` |
+| *Interval* | the distance between two tones | | `TonalVector` |
+| *ToneCollection* | an ordered collection of tones | `ToneCollection` | `Chord`, `ChordType` |
+| *ModalContext* | a key, mode, raga, maqam, ... | | `Key` |
+| *Clef* | how a staff maps to pitch | | `StaffClef` |
+| *DivisionShape* | how a division (a bar line) is drawn | | `BarLineShape` |
+| *StackGroupShape* | how a group of stacked things is drawn | | `BracketShape` |
+
+## Systems
+
+| identifier | system | type |
+|---|---|---|
+| `any` | belongs to no temporal system in particular; compatible with all | temporal |
+| `clock-time` | real time, measured in microseconds | temporal |
+| `any` | belongs to no tonal system in particular; compatible with all | tonal |
+
+## Nodes
+
+A node of any type may be the source or target of any edge
+unless a rule in §10 of the format specification says otherwise.
+
+### Events
+
+*Sequential events* take up time and are placed in lines by `Next` edges.
+An event's `duration`, where it has one, MUST NOT be negative.
+
+**`NoteEvent`**: something sounded (or a rest) for a duration.
+
+| field | type | domain |
+|---|---|---|
+| `duration` | *Duration*? | not negative; `null` is a duration not yet known |
+| `tones` | `set<`*Tone*`>` | if it holds a `SilentTone`, it holds nothing else (a rest) |
+
+**`ChordEvent`**: a chord symbol (a harmony, as in a lead sheet), not a chord of notes.
+
+| field | type | domain |
+|---|---|---|
+| `duration` | *Duration*? | not negative |
+| `chord` | *ToneCollection* | |
+
+**`LyricSyllable`**: one syllable of a word, sung over a duration.
+
+| field | type | domain |
+|---|---|---|
+| `duration` | *Duration*? | not negative |
+| `word` | `Word` | |
+| `index` | `integer` | 0 ≤ `index` < the number of syllables in `word` |
+
+Each syllable carries its whole word.
+Syllables of one word carry equal `Word` values.
+
+**`DivisionEvent`**: a division between one stretch of a line and the next
+(in WSMN, a bar line). It has zero duration, and no `duration` field.
+
+| field | type | domain |
+|---|---|---|
+| `shape` | *DivisionShape*? | `null` is a division whose drawing is unspecified |
+
+### Context events
+
+A context event changes how later material in its line is read.
+It has zero duration, and no `duration` field.
+
+**`ModalContextEvent`**
+
+| field | type |
+|---|---|
+| `modal_context` | *ModalContext*? |
+
+**`MeterEvent`**
+
+| field | type |
+|---|---|
+| `meter` | *Measurable*? |
+
+**`TempoEvent`**
+
+| field | type |
+|---|---|
+| `tempo` | *TemporalRatio*? |
+| `term` | `TempoTerm`? |
+
+**`ClefEvent`**
+
+| field | type |
+|---|---|
+| `clef` | *Clef*? |
+
+### Marks
+
+**`Marking`**: a mark attached to one node (by a `marks` edge from the marking).
+
+| field | type | domain |
+|---|---|---|
+| `mark` | `Mark` | its `attachment_mode` is not `"span"` |
+
+**`MarkSpanner`**: a mark over a run of a line,
+from the target of its `starts_at` edge to the target of its `ends_at` edge.
+
+| field | type | domain |
+|---|---|---|
+| `mark` | `Mark` | its `attachment_mode` is not `"single"` |
+
+### Lyrics
+
+**`LyricSection`**: a span over a run of lyrics: a verse, a chorus.
+
+| field | type | domain |
+|---|---|---|
+| `section_type` | `string?` | |
+| `section_number` | `integer?` | |
+| `section_name` | `string?` | |
+| `language` | `string?` | a [BCP 47](https://www.rfc-editor.org/info/bcp47) language tag |
+
+### Performers, groups and scores
+
+**`Part`**: an instrument, and by extension whoever plays it.
+
+| field | type |
+|---|---|
+| `name` | `string` |
+
+**`PercussionPart`**: a part played on percussion.
+
+| field | type |
+|---|---|
+| `name` | `string` |
+| `palette` | *ToneCollection*? |
+
+**`Stint`**: a part's run on a line, from the target of its `starts_at` edge
+to the target of its `ends_at` edge.
+
+| field | type | |
+|---|---|---|
+| `transposition` | *Interval*? | the interval the reader applies to the notes, if any |
+
+**`LineGroup`**: lines that are done together and timed from one origin
+(the hands of a pianist, the drums of a kit).
+
+| field | type |
+|---|---|
+| `name` | `string?` |
+
+**`StackGroup`**: a span over a run of a stack (a bracket over the strings).
+
+| field | type |
+|---|---|
+| `name` | `string?` |
+| `abbreviation` | `string?` |
+| `shape` | *StackGroupShape*? |
+
+**`Score`**: a work's metadata; names one connected part of the graph.
+
+| field | type |
+|---|---|
+| `title` | `string?` |
+| `subtitle` | `string?` |
+| `composer` | `string?` |
+| `lyricist` | `string?` |
+| `arranger` | `string?` |
+| `copyright` | `string?` |
+| `opus` | `string?` |
+| `dedication` | `string?` |
+
+### Timelines
+
+**`SyncLine`**: a named timeline in its own temporal system (a stopwatch, a film reel).
+
+| field | type |
+|---|---|
+| `temporal_system` | temporal system identifier |
+| `name` | `string?` |
+| `description` | `string?` |
+
+**`SyncPoint`**: an instant on a sync line.
+
+| field | type | domain |
+|---|---|---|
+| `offset` | *Duration* | signed: from the sync line's origin |
+| `name` | `string?` | |
+| `description` | `string?` | |
+
+## Edges
+
+### Edge relations
+
+An edge's relation is one of these, or a relation defined by another vocabulary:
+
+`"next"`, `"branches"`, `"simultaneous"`, `"performs"`, `"implements"`, `"realizes"`,
+`"annotates"`, `"marks"`, `"lyric"`, `"accompanies"`, `"harmonizes"`, `"variation_of"`,
+`"derivative_of"`, `"contains"`, `"references"`, `"user_defined"`, `"starts_at"`,
+`"ends_at"`, `"stacks_above"`.
+
+### Edge enumerations
+
+| enumeration | values |
+|---|---|
+| origin | `"asserted"`, `"derived"`, `"inferred"` |
+| anchor | `"onset"`, `"offset"` |
+
+### Edge kinds
+
+**`Next`**: the target follows the source in a line. Relation `next`.
+
+| field | type |
+|---|---|
+| `origin` | origin |
+
+**`Branch`**: the target is the head of a second line of the same performer
+(a second voice), starting at the source's `anchor` plus the `displacement`.
+Relation `branches`.
+
+| field | type | domain |
+|---|---|---|
+| `origin` | origin | |
+| `anchor` | anchor | |
+| `displacement` | *Duration*? | signed; `null` means none |
+
+**`Simultaneous`**: the target, an event of another line, happens when the source does
+(at its `anchor`, plus the `displacement`). Relation `simultaneous`.
+
+| field | type | domain |
+|---|---|---|
+| `origin` | origin | |
+| `anchor` | anchor | |
+| `displacement` | *Duration*? | signed; `null` means none |
+
+**`Contains`**: from a `LineGroup` to the head of one of its lines,
+which starts at the group's origin plus the `displacement`. Relation `contains`.
+
+| field | type | domain |
+|---|---|---|
+| `origin` | origin | |
+| `displacement` | *Duration*? | signed; `null` means none |
+
+**`Edge`**: any other relationship, carrying no timing.
+A `Score`'s `contains` edges are of this kind:
+a score is not a timing origin, so it says nothing about when anything happens.
+So are a `SyncLine`'s `contains` edges to its `SyncPoint`s,
+since each point carries its own `offset`.
+
+| field | type |
+|---|---|
+| `origin` | origin |
+| `relation` | relation |
+
+## Values
+
+**`SilentTone`**: silence; the tone of a rest. No fields. Kind *Tone*.
+
+**`ZeroDuration`**: no length at all, in any system. No fields. Kinds *Duration*, *Measurable*.
+
+**`GraceDuration`**: the zero length of a grace note,
+with the note value it is drawn as. Kinds *Duration*, *Measurable*.
+
+| field | type | |
+|---|---|---|
+| `nominal` | *Duration* | the value it is drawn as |
+| `on_beat` | `boolean` | `true` takes its time from the note it precedes |
+
+**`ClockDuration`**: a signed length of real time. Kinds *Duration*, *Measurable*.
+
+| field | type | |
+|---|---|---|
+| `microseconds` | `rational` | signed |
+
+**`TemporalUnit`**: a count of some length (three eighths). Kind *Measurable*.
+
+| field | type | domain |
+|---|---|---|
+| `count` | `integer` | not negative |
+| `base` | *Measurable* | |
+
+**`CompoundTemporalUnit`**: a sequence of lengths taken together (2 + 2 + 3 eighths).
+Kind *Measurable*.
+
+| field | type |
+|---|---|
+| `units` | `array<`*Measurable*`>` |
+
+**`TemporalRatio`**: one length against another
+(3 quarters in the time of 2; a quarter in the time of an eighth). Kind *TemporalRatio*.
+
+| field | type |
+|---|---|
+| `nominal` | *Measurable* |
+| `contextual` | *Measurable* |
+
+**`Tempo`**: a number of beats in a span of clock time (♩ = 120). Kind *TemporalRatio*.
+
+| field | type | |
+|---|---|---|
+| `count` | `integer` | the number of beats |
+| `beat` | *Duration* | the beat |
+| `clock_time` | `ClockDuration` | the span; one minute is `60000000` microseconds |
+
+**`ToneCollection`**: an ordered collection of tones, with an optional root and name.
+Order is significant (it tells an added 2nd from an added 9th). Kind *ToneCollection*.
+
+| field | type | |
+|---|---|---|
+| `tones` | `array<`*Tone*`>` | |
+| `root` | *Tone*? | |
+| `name` | `string?` | a name template (below) |
+
+**`Mark`**: a mark in a notation system's vocabulary (a staccato dot, a slur, *mf*).
+Marks are written in full, never by name,
+so a document does not depend on any table of marks.
+
+| field | type | domain |
+|---|---|---|
+| `name` | `string` | |
+| `description` | `string?` | |
+| `kind` | mark kind? | |
+| `attachment_mode` | attachment mode? | |
+| `aliases` | `array<string>` | |
+| `binds` | `boolean` | `true` if the events under the mark are one articulation (a slur, a tie) |
+
+**`TempoTerm`**: a tempo word (*Allegro*, *a tempo*).
+
+| field | type |
+|---|---|
+| `name` | `string` |
+| `description` | `string?` |
+| `aliases` | `array<string>` |
+
+**`Word`**: a word of lyrics, divided into syllables.
+
+| field | type | domain |
+|---|---|---|
+| `syllables` | `array<string>` | at least one; no syllable empty or only whitespace |
+| `stress` | `array<`lexical stress?`>` | as many as `syllables`; at most one `"primary"` |
+
+### Value enumerations
+
+| enumeration | values |
+|---|---|
+| mark kind | `"articulation"`, `"dynamic"`, `"ornament"`, `"technique"`, `"fingering"`, `"bowing"`, `"breath"`, `"ficta"`, `"phrasing"`, `"navigation"`, `"transposition"`, `"expression"`, `"rehearsal"`, `"other"` |
+| attachment mode | `"single"`, `"span"`, `"either"` |
+| lexical stress | `"unstressed"`, `"secondary"`, `"primary"` |
+
+### Name templates
+
+*Provisional.* A `ToneCollection`'s `name` (and the `name` of the `wsmn` chord types)
+is a template, so that a chord's name follows its root through transposition.
+It is literal text, in which:
+
+- `{root}` stands for the root, in its default display form;
+- `{root:FORM}` stands for the root in the display form `FORM`,
+  one of the forms the root's own vocabulary defines;
+- `{{` and `}}` stand for literal braces.
+
+No other use of braces is allowed.
+The display forms, and whether templates belong in the format at all
+or should be replaced by a structured name, are open questions for version 0.1.

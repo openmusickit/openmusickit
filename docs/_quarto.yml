@@ -21,6 +21,14 @@ website:
         text: Examples
       - href: musicxml.qmd
         text: MusicXML
+      - text: Specification
+        menu:
+          - href: spec/omk-json.qmd
+            text: OMK JSON format (draft)
+          - href: spec/vocabulary-omk.qmd
+            text: "Vocabulary: omk"
+          - href: spec/vocabulary-wsmn.qmd
+            text: "Vocabulary: wsmn"
       - href: overview.md
         text: Overview
       - href: goals.md
