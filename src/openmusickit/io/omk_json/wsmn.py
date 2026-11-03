@@ -130,7 +130,7 @@ def _decode_metrical_duration(f: dict[str, Any], d: Decoder) -> MetricalDuration
         # The model normalises (2/4 to 1/2, 3/8 to a dotted 1/4); the format admits only the normal form.
         raise ValueError(
             f"A MetricalDuration is written in its normal form: "
-            f"{normal[0]}/{normal[1]} with {normal[2]} dots, not {written[0]}/{written[1]} with {written[2]}."
+            f"{normal[0]}/{normal[1]} with {normal[2]} dots, not {written[0]}/{written[1]} with {written[2]} dots."
         )
     return duration
 

@@ -1,0 +1,149 @@
+---
+title: "OMK JSON"
+---
+
+This page is executable:
+every code block below runs when the documentation is built.
+
+`openmusickit.io.omk_json` writes a whole graph as JSON and reads it back.
+It is OMK's own format, and it keeps everything:
+every node and edge with its id,
+every value with all of its fields,
+and the metadata applications attach (`meta`, and the graph's `info`).
+It holds the music and nothing about the implementation,
+so another implementation of OMK, in any language, can read and write the same files.
+The format is [specified separately](spec/omk-json.qmd),
+with [JSON Schemas](spec/omk-json.qmd#schemas) to check documents against.
+
+```{python}
+import json
+import tempfile
+import warnings
+from pathlib import Path
+
+import openmusickit as omk
+from openmusickit.io.omk_json import dumps, loads, read, write
+from openmusickit.io.musicxml import read as read_musicxml
+from openmusickit.systems.wsmn.symbols import *
+```
+
+## Writing and reading
+
+`dumps` gives a graph's document as text, and `loads` reads one back as a new graph.
+Here is one note with a staccato dot.
+
+```{python}
+graph = omk.OmkGraph(omk.GraphMeta(name="Sketch"))
+note = omk.NoteEvent(tones={C}, duration=quarter)
+graph.add_node(note)
+graph.add_articulation(omk.Marking(mark=staccato), note)
+
+text = dumps(graph)
+print(text[:600])
+```
+
+Every node and edge carries its id (`@id`) and its type (`@type`);
+types from Western Standard Music Notation are prefixed `wsmn:`,
+and the document lists the vocabularies it uses under `vocabularies`.
+A value is written in full, even a ready-made one like `staccato`,
+so a document never depends on OMK's tables of symbols.
+
+A round trip is exact both ways.
+The graph read back holds the same objects, with the same ids,
+and writing it again gives the same text, byte for byte:
+
+```{python}
+again = loads(text)
+print(again.get_node(note.id) == note)
+print(dumps(again) == text)
+```
+
+The text is *canonical*: keys sorted, nodes and edges sorted by id,
+numbers and strings written one way only.
+So two graphs holding the same music with the same ids
+write the same bytes, whatever order they were built in,
+and a change to a score is a small change to its file.
+
+## Files
+
+`write` and `read` do the same with a file, as UTF-8.
+`OmkGraph.from_file` and `export_file` dispatch `.json` here by suffix,
+as they do `.musicxml` to the MusicXML reader and writer;
+`.omk.json` is the suggested suffix.
+
+```{python}
+lead_sheet = Path("../tests/scores/second-line-joe-avery/SECOND LINE, (THE ORIGINAL) (JOE AVERY BLUES).xml")
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", omk.OmkWarning)
+    tune = read_musicxml(lead_sheet)
+
+out = Path(tempfile.mkdtemp()) / "second-line.omk.json"
+tune.export_file(out)
+copy = omk.OmkGraph.from_file(out)
+
+print(f"{out.stat().st_size:,} bytes, {len(list(copy.nodes()))} nodes")
+print(copy.is_equivalent(tune))
+print({node.id for node in copy.nodes()} == {node.id for node in tune.nodes()})
+```
+
+The MusicXML reader's notes for its writer (`meta["musicxml"]`) come through too,
+so a score read from MusicXML, saved as JSON and loaded again
+writes the same music back to MusicXML.
+
+`OmkGraph.import_json_graph` adds a document's contents to a graph that already has some,
+keeping their ids;
+it refuses a document holding an id the graph already has, and then adds nothing.
+
+## What is refused
+
+A reader is strict.
+A document that breaks the specification is refused with an `OmkJsonError`,
+and nothing is added to any graph:
+a value outside its domain, a field a type does not have,
+two edges where the graph allows one.
+Values must be written in their one canonical form:
+a half note is `1/2`, never `2/4`.
+
+```{python}
+document = json.loads(text)
+duration = next(n for n in document["nodes"] if n["@type"] == "NoteEvent")["duration"]
+duration.update(numerator=2, denominator=8)
+try:
+    loads(json.dumps(document))
+except omk.errors.OmkJsonError as error:
+    print(error)
+```
+
+A writer refuses what a reader would reject,
+naming the node or edge,
+and `meta` must be plain JSON data (no tuples, no `Fraction`s):
+
+```{python}
+note.meta["position"] = (120, 40)
+try:
+    dumps(graph)
+except omk.errors.UnexportableError as error:
+    print(str(error)[:120], "...")
+note.meta["position"] = [120, 40]
+```
+
+## Extensions
+
+The types in a document come from *vocabularies*:
+`omk` for the core and `wsmn` for Western Standard Music Notation,
+which are always available.
+An extension of OMK that adds its own node, edge or value types
+publishes a vocabulary of its own,
+and a program that uses the extension passes it to `dumps`, `loads`, `read` and `write`
+(`vocabularies=[...]`).
+A document lists every vocabulary it needs;
+reading one without them names what is missing:
+
+```{python}
+document = json.loads(text)
+document["vocabularies"]["chant"] = {"uri": "https://example.org/spec/chant", "version": "0.3"}
+try:
+    loads(json.dumps(document))
+except omk.errors.OmkJsonError as error:
+    print(error)
+```

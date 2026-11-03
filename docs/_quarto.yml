@@ -21,6 +21,8 @@ website:
         text: Examples
       - href: musicxml.qmd
         text: MusicXML
+      - href: json.qmd
+        text: OMK JSON
       - text: Specification
         menu:
           - href: spec/omk-json.qmd
@@ -143,6 +145,13 @@ quartodoc:
         - io.musicxml.canonical
         - io.musicxml.tables
         - io.musicxml.container
+        - io.omk_json
+        - io.omk_json.document
+        - io.omk_json.vocabulary
+        - io.omk_json.core
+        - io.omk_json.wsmn
+        - io.omk_json.canonical
+        - io.omk_json.primitives
     - title: Visualization
       desc: Pictures of a graph, laid out by Graphviz.
       contents:
