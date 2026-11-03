@@ -1,6 +1,11 @@
 # JSON serialization: a published, language-neutral format for OMK graphs
 
-Status: **Stage 1 (prerequisites P1a–P4) and Stage 2 (spec draft, reviewed) done 2026-11-02.**
+Status: **Stages 1–8 done 2026-11-02**: prerequisites, the spec (reviewed),
+`io.omk_json` (canonical text, primitives, the `omk` and `wsmn` codecs, documents),
+the `OmkGraph` JSON methods, the laws over `any_graphs`, the corpus through JSON,
+generated examples, JSON Schemas, and the docs page.
+Stage 9: the closing heavy run passed, 4314 tests in 16:24 (baseline 3935 in 10:56).
+Moving this file to `completed/` is the developer's call.
 D1–D4 in §9 confirmed with the developer on 2026-10-21, as recommended.
 The prerequisites in §8 (P1–P4, which settle D5) confirmed on 2026-11-02.
 D6, D7, D8 and D12 confirmed on 2026-11-02, as recommended.

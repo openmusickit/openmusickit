@@ -160,7 +160,7 @@ The heavy set is one command:
     uv run pytest --hypothesis-profile=thorough -m ""
 
 which runs every property at 2,000 examples and includes the `slow` tests,
-in about eleven minutes (10:56 on 2026-11-02).
+in about sixteen minutes (16:24 on 2026-11-02, with the JSON properties).
 Run the heavy set once at the start of any multi-commit piece of work
 and once at its end.
 The start run is the baseline:
