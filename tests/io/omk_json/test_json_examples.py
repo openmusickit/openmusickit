@@ -30,7 +30,7 @@ def test_the_examples_directory_holds_only_the_examples():
 
 def test_the_format_page_shows_the_sketch_verbatim():
     page = FORMAT_PAGE.read_text(encoding="utf-8")
-    section = page[page.index("## 13. Examples") :]
+    section = page[page.index("## 14. Examples") :]
     shown = re.search(r"```json\n(.*?)```", section, re.DOTALL).group(1)
     assert shown == path_of("sketch").read_text(encoding="utf-8")
 

@@ -1,0 +1,1978 @@
+{
+  "$defs": {
+    "Branch": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@source": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@target": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@type": {
+          "const": "Branch"
+        },
+        "anchor": {
+          "enum": [
+            "onset",
+            "offset"
+          ]
+        },
+        "displacement": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+            }
+          ]
+        },
+        "origin": {
+          "enum": [
+            "asserted",
+            "derived",
+            "inferred"
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@source",
+        "@target",
+        "@type",
+        "anchor",
+        "displacement",
+        "origin"
+      ],
+      "type": "object"
+    },
+    "ChordEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "ChordEvent"
+        },
+        "chord": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/ToneCollection"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "chord",
+        "duration"
+      ],
+      "type": "object"
+    },
+    "ClefEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "ClefEvent"
+        },
+        "clef": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Clef"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "clef"
+      ],
+      "type": "object"
+    },
+    "ClockDuration": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ClockDuration"
+        },
+        "microseconds": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        }
+      },
+      "required": [
+        "@type",
+        "microseconds"
+      ],
+      "type": "object"
+    },
+    "CompoundTemporalUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CompoundTemporalUnit"
+        },
+        "units": {
+          "items": {
+            "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Measurable"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "units"
+      ],
+      "type": "object"
+    },
+    "Contains": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@source": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@target": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@type": {
+          "const": "Contains"
+        },
+        "displacement": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+            }
+          ]
+        },
+        "origin": {
+          "enum": [
+            "asserted",
+            "derived",
+            "inferred"
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@source",
+        "@target",
+        "@type",
+        "displacement",
+        "origin"
+      ],
+      "type": "object"
+    },
+    "DivisionEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "DivisionEvent"
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/DivisionShape"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "shape"
+      ],
+      "type": "object"
+    },
+    "Edge": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@source": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@target": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@type": {
+          "const": "Edge"
+        },
+        "origin": {
+          "enum": [
+            "asserted",
+            "derived",
+            "inferred"
+          ]
+        },
+        "relation": {
+          "anyOf": [
+            {
+              "enum": [
+                "next",
+                "branches",
+                "simultaneous",
+                "performs",
+                "implements",
+                "realizes",
+                "annotates",
+                "marks",
+                "lyric",
+                "accompanies",
+                "harmonizes",
+                "variation_of",
+                "derivative_of",
+                "contains",
+                "references",
+                "user_defined",
+                "starts_at",
+                "ends_at",
+                "stacks_above"
+              ]
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/qualified"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@source",
+        "@target",
+        "@type",
+        "origin",
+        "relation"
+      ],
+      "type": "object"
+    },
+    "GraceDuration": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "GraceDuration"
+        },
+        "nominal": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+        },
+        "on_beat": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type",
+        "nominal",
+        "on_beat"
+      ],
+      "type": "object"
+    },
+    "LineGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "LineGroup"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "name"
+      ],
+      "type": "object"
+    },
+    "LyricSection": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "LyricSection"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "section_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "section_number": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "section_type": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "language",
+        "section_name",
+        "section_number",
+        "section_type"
+      ],
+      "type": "object"
+    },
+    "LyricSyllable": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "LyricSyllable"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+            }
+          ]
+        },
+        "index": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "word": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "Word"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "duration",
+        "index",
+        "word"
+      ],
+      "type": "object"
+    },
+    "Mark": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Mark"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "attachment_mode": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "single",
+                "span",
+                "either"
+              ]
+            }
+          ]
+        },
+        "binds": {
+          "type": "boolean"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "articulation",
+                "dynamic",
+                "ornament",
+                "technique",
+                "fingering",
+                "bowing",
+                "breath",
+                "ficta",
+                "phrasing",
+                "navigation",
+                "transposition",
+                "expression",
+                "rehearsal",
+                "other"
+              ]
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "aliases",
+        "attachment_mode",
+        "binds",
+        "description",
+        "kind",
+        "name"
+      ],
+      "type": "object"
+    },
+    "MarkSpanner": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "MarkSpanner"
+        },
+        "mark": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "Mark"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "mark"
+      ],
+      "type": "object"
+    },
+    "Marking": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "Marking"
+        },
+        "mark": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "Mark"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "mark"
+      ],
+      "type": "object"
+    },
+    "MeterEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "MeterEvent"
+        },
+        "meter": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Measurable"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "meter"
+      ],
+      "type": "object"
+    },
+    "ModalContextEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "ModalContextEvent"
+        },
+        "modal_context": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/ModalContext"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "modal_context"
+      ],
+      "type": "object"
+    },
+    "Next": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@source": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@target": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@type": {
+          "const": "Next"
+        },
+        "origin": {
+          "enum": [
+            "asserted",
+            "derived",
+            "inferred"
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@source",
+        "@target",
+        "@type",
+        "origin"
+      ],
+      "type": "object"
+    },
+    "NoteEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "NoteEvent"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+            }
+          ]
+        },
+        "tones": {
+          "items": {
+            "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Tone"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "duration",
+        "tones"
+      ],
+      "type": "object"
+    },
+    "Part": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "Part"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "name"
+      ],
+      "type": "object"
+    },
+    "PercussionPart": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "PercussionPart"
+        },
+        "name": {
+          "type": "string"
+        },
+        "palette": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/ToneCollection"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "name",
+        "palette"
+      ],
+      "type": "object"
+    },
+    "Score": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "Score"
+        },
+        "arranger": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "composer": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "copyright": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "dedication": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "lyricist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "opus": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "arranger",
+        "composer",
+        "copyright",
+        "dedication",
+        "lyricist",
+        "opus",
+        "subtitle",
+        "title"
+      ],
+      "type": "object"
+    },
+    "SilentTone": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SilentTone"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "Simultaneous": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@source": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@target": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@type": {
+          "const": "Simultaneous"
+        },
+        "anchor": {
+          "enum": [
+            "onset",
+            "offset"
+          ]
+        },
+        "displacement": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+            }
+          ]
+        },
+        "origin": {
+          "enum": [
+            "asserted",
+            "derived",
+            "inferred"
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@source",
+        "@target",
+        "@type",
+        "anchor",
+        "displacement",
+        "origin"
+      ],
+      "type": "object"
+    },
+    "StackGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "StackGroup"
+        },
+        "abbreviation": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/StackGroupShape"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "abbreviation",
+        "name",
+        "shape"
+      ],
+      "type": "object"
+    },
+    "Stint": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "Stint"
+        },
+        "transposition": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Interval"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "transposition"
+      ],
+      "type": "object"
+    },
+    "SyncLine": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "SyncLine"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "temporal_system": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/name"
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "description",
+        "name",
+        "temporal_system"
+      ],
+      "type": "object"
+    },
+    "SyncPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "SyncPoint"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "offset": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "description",
+        "name",
+        "offset"
+      ],
+      "type": "object"
+    },
+    "Tempo": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Tempo"
+        },
+        "beat": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+        },
+        "clock_time": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "ClockDuration"
+                }
+              }
+            }
+          ]
+        },
+        "count": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "beat",
+        "clock_time",
+        "count"
+      ],
+      "type": "object"
+    },
+    "TempoEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "@id": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/uuid"
+        },
+        "@meta": {
+          "type": "object"
+        },
+        "@type": {
+          "const": "TempoEvent"
+        },
+        "tempo": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/TemporalRatio"
+            }
+          ]
+        },
+        "term": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+                },
+                {
+                  "properties": {
+                    "@type": {
+                      "const": "TempoTerm"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "@id",
+        "@meta",
+        "@type",
+        "tempo",
+        "term"
+      ],
+      "type": "object"
+    },
+    "TempoTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "TempoTerm"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "aliases",
+        "description",
+        "name"
+      ],
+      "type": "object"
+    },
+    "TemporalRatio": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "TemporalRatio"
+        },
+        "contextual": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Measurable"
+        },
+        "nominal": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Measurable"
+        }
+      },
+      "required": [
+        "@type",
+        "contextual",
+        "nominal"
+      ],
+      "type": "object"
+    },
+    "TemporalUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "TemporalUnit"
+        },
+        "base": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Measurable"
+        },
+        "count": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "base",
+        "count"
+      ],
+      "type": "object"
+    },
+    "ToneCollection": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ToneCollection"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/template"
+            }
+          ]
+        },
+        "root": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Tone"
+            }
+          ]
+        },
+        "tones": {
+          "items": {
+            "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Tone"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "name",
+        "root",
+        "tones"
+      ],
+      "type": "object"
+    },
+    "Word": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Word"
+        },
+        "stress": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  "unstressed",
+                  "secondary",
+                  "primary"
+                ]
+              }
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "syllables": {
+          "items": {
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "stress",
+        "syllables"
+      ],
+      "type": "object"
+    },
+    "ZeroDuration": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ZeroDuration"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "edge": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Next"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Next"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Branch"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Branch"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Simultaneous"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Simultaneous"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Contains"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Contains"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Edge"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Edge"
+          }
+        }
+      ]
+    },
+    "node": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "NoteEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/NoteEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "ChordEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ChordEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "LyricSyllable"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/LyricSyllable"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "DivisionEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/DivisionEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "ModalContextEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ModalContextEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "MeterEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/MeterEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "TempoEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TempoEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "ClefEvent"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ClefEvent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Marking"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Marking"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "MarkSpanner"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/MarkSpanner"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "LyricSection"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/LyricSection"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Part"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Part"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "PercussionPart"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/PercussionPart"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Stint"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Stint"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "LineGroup"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/LineGroup"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "StackGroup"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/StackGroup"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Score"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Score"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "SyncLine"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/SyncLine"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "SyncPoint"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/SyncPoint"
+          }
+        }
+      ]
+    },
+    "value": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "SilentTone"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/SilentTone"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "ZeroDuration"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ZeroDuration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "GraceDuration"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/GraceDuration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "ClockDuration"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ClockDuration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "TemporalUnit"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TemporalUnit"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "CompoundTemporalUnit"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/CompoundTemporalUnit"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "TemporalRatio"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TemporalRatio"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Tempo"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Tempo"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "ToneCollection"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ToneCollection"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Mark"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Mark"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "TempoTerm"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TempoTerm"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "Word"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Word"
+          }
+        }
+      ]
+    }
+  },
+  "$id": "https://openmusickit.org/spec/schema/omk.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The types of the vocabulary https://openmusickit.org/spec/omk, version 0.1. Validates the fields of each type; nested values are checked through the document schema, omk-json.schema.json, which composes the vocabularies.",
+  "title": "OMK JSON: the omk vocabulary"
+}

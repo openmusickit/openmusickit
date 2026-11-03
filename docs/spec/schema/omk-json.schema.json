@@ -1,0 +1,446 @@
+{
+  "$defs": {
+    "edge": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/tagged"
+        },
+        {
+          "required": [
+            "@id",
+            "@meta",
+            "@source",
+            "@target"
+          ]
+        },
+        {
+          "$ref": "https://openmusickit.org/spec/schema/omk.schema.json#/$defs/edge"
+        }
+      ]
+    },
+    "kinds": {
+      "Clef": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "wsmn:StaffClef"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "DivisionShape": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "wsmn:BarLineShape"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Duration": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "ZeroDuration",
+                      "GraceDuration",
+                      "ClockDuration",
+                      "wsmn:MetricalDuration",
+                      "wsmn:TiedDuration"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Interval": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "wsmn:TonalVector"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Measurable": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "ZeroDuration",
+                      "GraceDuration",
+                      "ClockDuration",
+                      "TemporalUnit",
+                      "CompoundTemporalUnit",
+                      "wsmn:MetricalDuration",
+                      "wsmn:TiedDuration",
+                      "wsmn:TimeSignature"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ModalContext": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "wsmn:Key"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "StackGroupShape": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "wsmn:BracketShape"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "TemporalRatio": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "TemporalRatio",
+                      "Tempo"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Tone": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "SilentTone",
+                      "wsmn:TonalVector",
+                      "wsmn:PercussionTone"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ToneCollection": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/value"
+          },
+          {
+            "properties": {
+              "@type": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "ToneCollection",
+                      "wsmn:Chord",
+                      "wsmn:ChordType"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/qualified"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "name": {
+      "pattern": "^([a-z][a-z0-9-]*:)?[A-Za-z][A-Za-z0-9_-]*$",
+      "type": "string"
+    },
+    "node": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/tagged"
+        },
+        {
+          "required": [
+            "@id",
+            "@meta"
+          ]
+        },
+        {
+          "$ref": "https://openmusickit.org/spec/schema/omk.schema.json#/$defs/node"
+        }
+      ]
+    },
+    "qualified": {
+      "pattern": "^(?!omk:|wsmn:)[a-z][a-z0-9-]*:[A-Za-z][A-Za-z0-9_-]*$",
+      "type": "string"
+    },
+    "rational": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[1-9][0-9]*/[1-9][0-9]*$",
+          "type": "string"
+        }
+      ]
+    },
+    "tagged": {
+      "properties": {
+        "@type": {
+          "$ref": "#/$defs/name"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "template": {
+      "pattern": "^([^{}]|\\{\\{|\\}\\}|\\{root(:[a-z_]+)?\\})*$",
+      "type": "string"
+    },
+    "uuid": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "value": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/tagged"
+        },
+        {
+          "$ref": "https://openmusickit.org/spec/schema/omk.schema.json#/$defs/value"
+        },
+        {
+          "$ref": "https://openmusickit.org/spec/schema/wsmn.schema.json#/$defs/value"
+        }
+      ]
+    },
+    "vocabulary": {
+      "additionalProperties": false,
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uri",
+        "version"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://openmusickit.org/spec/schema/omk-json.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "An OMK JSON document using the omk and wsmn vocabularies under their preferred prefixes. Checks structure, fields, kinds, enumerations and primitive forms. It cannot check the canonical form, the graph's rules (unique ids, edge endpoints, one edge of a relation between two nodes, one NEXT in and out), or domains that depend on several fields; see docs/spec/omk-json.qmd. A type from any other vocabulary is checked only as a tagged object: to validate an extension's types, compose its schema as this one composes omk and wsmn.",
+  "properties": {
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/edge"
+      },
+      "type": "array"
+    },
+    "format": {
+      "const": "omk-json"
+    },
+    "graph": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "info": {
+          "type": "object"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "description",
+        "info",
+        "name"
+      ],
+      "type": "object"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/node"
+      },
+      "type": "array"
+    },
+    "vocabularies": {
+      "additionalProperties": {
+        "$ref": "#/$defs/vocabulary"
+      },
+      "properties": {
+        "omk": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/vocabulary"
+            },
+            {
+              "properties": {
+                "uri": {
+                  "const": "https://openmusickit.org/spec/omk"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "required": [
+        "omk"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "edges",
+    "format",
+    "graph",
+    "nodes",
+    "vocabularies"
+  ],
+  "title": "OMK JSON document, version 0.1",
+  "type": "object"
+}

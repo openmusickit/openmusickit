@@ -470,7 +470,21 @@ What an implementation holds and the format does not carry:
   (values have no identity, §3);
 - anything about how the graph is stored.
 
-## 13. Examples
+## 13. Schemas
+
+[JSON Schemas](https://json-schema.org/) (draft 2020-12) for documents that use
+the `omk` and `wsmn` vocabularies under their preferred prefixes:
+[`schema/omk-json.schema.json`](schema/omk-json.schema.json) for the document,
+which composes [`schema/omk.schema.json`](schema/omk.schema.json)
+and [`schema/wsmn.schema.json`](schema/wsmn.schema.json).
+They check the structure, each type's fields, kinds, enumerations, and the forms of the primitive types.
+They cannot check the canonical form (§9), the rules of §10 that relate several parts of a document
+(unique identifiers, edge endpoints, one edge of a relation between two nodes, one `next` in and out),
+or domains that span several fields; this page and the vocabulary pages are normative where they differ.
+A type from any other vocabulary is checked only as a tagged object:
+to validate an extension's types, compose its schema as the document schema composes `omk` and `wsmn`.
+
+## 14. Examples
 
 One middle-C quarter note with a staccato dot, in a graph named "Sketch"
 ([`examples/sketch.omk.json`](examples/sketch.omk.json)):

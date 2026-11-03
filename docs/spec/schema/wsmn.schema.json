@@ -1,0 +1,874 @@
+{
+  "$defs": {
+    "BarLineShape": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:BarLineShape"
+        },
+        "components": {
+          "items": {
+            "enum": [
+              "thin",
+              "thick",
+              "dashed",
+              "dotted",
+              "short",
+              "tick",
+              "dots"
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "components"
+      ],
+      "type": "object"
+    },
+    "BracketShape": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:BracketShape"
+        },
+        "bar_lines": {
+          "enum": [
+            "separate",
+            "joined",
+            "mensurstrich"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "bracket",
+                "brace",
+                "line",
+                "square"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "bar_lines",
+        "symbol"
+      ],
+      "type": "object"
+    },
+    "Chord": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:Chord"
+        },
+        "bass": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "wsmn:TonalVector"
+                }
+              }
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/template"
+            }
+          ]
+        },
+        "root": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "wsmn:TonalVector"
+                }
+              }
+            }
+          ]
+        },
+        "suffix": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "tones": {
+          "items": {
+            "allOf": [
+              {
+                "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+              },
+              {
+                "properties": {
+                  "@type": {
+                    "const": "wsmn:TonalVector"
+                  }
+                }
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "bass",
+        "name",
+        "root",
+        "suffix",
+        "tones"
+      ],
+      "type": "object"
+    },
+    "ChordType": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:ChordType"
+        },
+        "bass": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "wsmn:TonalVector"
+                }
+              }
+            }
+          ]
+        },
+        "name": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/template"
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "maj",
+                "min",
+                "sus",
+                "pow",
+                "aug",
+                "dim",
+                "dom",
+                "hdm"
+              ]
+            }
+          ]
+        },
+        "root": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "wsmn:TonalVector"
+                }
+              }
+            }
+          ]
+        },
+        "suffix": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "tones": {
+          "items": {
+            "allOf": [
+              {
+                "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+              },
+              {
+                "properties": {
+                  "@type": {
+                    "const": "wsmn:TonalVector"
+                  }
+                }
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "bass",
+        "name",
+        "quality",
+        "root",
+        "suffix",
+        "tones"
+      ],
+      "type": "object"
+    },
+    "Key": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:Key"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+                },
+                {
+                  "properties": {
+                    "@type": {
+                      "const": "wsmn:ModePattern"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+                },
+                {
+                  "properties": {
+                    "@type": {
+                      "const": "wsmn:KeySignature"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "tones": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "ToneCollection"
+                }
+              }
+            }
+          ]
+        },
+        "tonic": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+                },
+                {
+                  "properties": {
+                    "@type": {
+                      "const": "wsmn:TonalVector"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "mode",
+        "name",
+        "signature",
+        "tones",
+        "tonic"
+      ],
+      "type": "object"
+    },
+    "KeySignature": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:KeySignature"
+        },
+        "a": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        },
+        "b": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        },
+        "c": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        },
+        "d": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        },
+        "e": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        },
+        "f": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        },
+        "g": {
+          "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/rational"
+        }
+      },
+      "required": [
+        "@type",
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "type": "object"
+    },
+    "MetricalDuration": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:MetricalDuration"
+        },
+        "denominator": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "dots": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "numerator": {
+          "not": {
+            "const": 0
+          },
+          "type": "integer"
+        },
+        "ratio": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/TemporalRatio"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "denominator",
+        "dots",
+        "numerator",
+        "ratio"
+      ],
+      "type": "object"
+    },
+    "ModePattern": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:ModePattern"
+        },
+        "name": {
+          "type": "string"
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "maj",
+                "min",
+                "sus",
+                "pow",
+                "aug",
+                "dim",
+                "dom",
+                "hdm"
+              ]
+            }
+          ]
+        },
+        "tones": {
+          "allOf": [
+            {
+              "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/value"
+            },
+            {
+              "properties": {
+                "@type": {
+                  "const": "ToneCollection"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "name",
+        "quality",
+        "tones"
+      ],
+      "type": "object"
+    },
+    "PercussionTone": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:PercussionTone"
+        },
+        "relative_pitch": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "low",
+                "low_mid",
+                "mid",
+                "high_mid",
+                "high"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "center",
+                "edge",
+                "rim",
+                "rim_shot",
+                "cross_stick",
+                "shell",
+                "dead",
+                "open",
+                "slap",
+                "bass",
+                "mute",
+                "palm",
+                "finger",
+                "fist",
+                "heel",
+                "toe",
+                "closed",
+                "half_open",
+                "pedal",
+                "foot_splash",
+                "bell",
+                "crash",
+                "scrape",
+                "shake",
+                "thumb_roll",
+                "clap",
+                "snap",
+                "stomp"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "relative_pitch",
+        "stroke"
+      ],
+      "type": "object"
+    },
+    "StaffClef": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:StaffClef"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            }
+          ]
+        },
+        "octave_change": {
+          "type": "integer"
+        },
+        "sign": {
+          "enum": [
+            "g",
+            "f",
+            "c",
+            "percussion",
+            "tab",
+            "none"
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "line",
+        "octave_change",
+        "sign"
+      ],
+      "type": "object"
+    },
+    "TiedDuration": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:TiedDuration"
+        },
+        "members": {
+          "items": {
+            "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Duration"
+          },
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "members"
+      ],
+      "type": "object"
+    },
+    "TimeSignature": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:TimeSignature"
+        },
+        "presentation": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          ]
+        },
+        "units": {
+          "items": {
+            "$ref": "https://openmusickit.org/spec/schema/omk-json.schema.json#/$defs/kinds/Measurable"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "presentation",
+        "units"
+      ],
+      "type": "object"
+    },
+    "TonalVector": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "wsmn:TonalVector"
+        },
+        "chromatic": {
+          "maximum": 11,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "diatonic": {
+          "maximum": 6,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "octave": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "chromatic",
+        "diatonic",
+        "octave"
+      ],
+      "type": "object"
+    },
+    "value": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:TonalVector"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TonalVector"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:MetricalDuration"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/MetricalDuration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:TiedDuration"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TiedDuration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:TimeSignature"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/TimeSignature"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:ChordType"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ChordType"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:Chord"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Chord"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:KeySignature"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/KeySignature"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:ModePattern"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/ModePattern"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:Key"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/Key"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:StaffClef"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/StaffClef"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:BarLineShape"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/BarLineShape"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:BracketShape"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/BracketShape"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "@type": {
+                "const": "wsmn:PercussionTone"
+              }
+            },
+            "required": [
+              "@type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/PercussionTone"
+          }
+        }
+      ]
+    }
+  },
+  "$id": "https://openmusickit.org/spec/schema/wsmn.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The types of the vocabulary https://openmusickit.org/spec/wsmn, version 0.1. Validates the fields of each type; nested values are checked through the document schema, omk-json.schema.json, which composes the vocabularies.",
+  "title": "OMK JSON: the wsmn vocabulary"
+}
