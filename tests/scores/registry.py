@@ -261,11 +261,6 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "x-noteheads",
             },
             expected_warnings=("minted mark", "<ending> brackets"),
-            known_differences={
-                "tie": (
-                    "the reader does not read ties between drum-kit strokes (_plans/revisit.md)"
-                ),
-            },
             shape={
                 "lines": 26,
                 "chord_lines": 0,
@@ -275,8 +270,8 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "notes": 3543,
                 "divisions": 2210,
                 "markings": 24,
-                "spanners": 568,
-                "ties": 454,
+                "spanners": 579,
+                "ties": 465,
                 "slurs": 0,
                 "lyric_lines": 0,
                 "chords": 0,

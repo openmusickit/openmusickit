@@ -1017,11 +1017,17 @@ KIT_ATTRIBUTES = (
 
 
 def stroke(
-    step: str, octave: int, instrument: str, duration: int = Q, type_name: str = "quarter"
+    step: str,
+    octave: int,
+    instrument: str,
+    duration: int = Q,
+    type_name: str = "quarter",
+    tie: str | None = None,
 ) -> str:
+    tie_xml = f'<tie type="{tie}"/>' if tie else ""
     return (
         f"<note><unpitched><display-step>{step}</display-step><display-octave>{octave}</display-octave>"
-        f'</unpitched><duration>{duration}</duration><instrument id="{instrument}"/>'
+        f'</unpitched><duration>{duration}</duration>{tie_xml}<instrument id="{instrument}"/>'
         f"<voice>1</voice><type>{type_name}</type></note>"
     )
 
@@ -1057,6 +1063,44 @@ def test_a_drum_kit_is_a_group_with_one_line_per_instrument():
     snare = [e for e in lines["Snare"] if isinstance(e, NoteEvent)]
     assert [e.tones for e in snare] == [set(), {hit}, set()]
     assert xml_meta_of(snare[1]) == {"voice": "1", "display": ["C", "5"], "instrument": "P1-I38"}
+
+
+def test_a_tie_between_kit_strokes_joins_strokes_of_one_instrument():
+    # both are written on one staff position, so only the instrument tells the ties apart
+    first = stroke("F", 4, "P1-I38", 2 * Q, "half", "start")
+    first += stroke("F", 4, "P1-I36", 2 * Q, "half", "start")
+    second = stroke("F", 4, "P1-I36", 2 * Q, "half", "stop")
+    second += stroke("F", 4, "P1-I38", 2 * Q, "half", "stop")
+    graph, warned = read_with_warnings(
+        first, second, attributes=KIT_ATTRIBUTES, part_list_extra=KIT_INSTRUMENTS
+    )
+    assert warned == []
+    ties = spanners_named(graph, "tie")
+    assert len(ties) == 2
+    lines = kit_lines(graph)
+    for name in ("Bass Drum", "Snare"):
+        stroke_events = [e for e in lines[name] if isinstance(e, NoteEvent) and e.tones]
+        assert any(
+            graph.spanner_start(tie) is stroke_events[0]
+            and graph.spanner_end(tie) is stroke_events[1]
+            for tie in ties
+        )
+
+
+@pytest.mark.parametrize(
+    ("tie", "expected"),
+    [
+        ("start", "a tie from the F4 stroke of P1-I36 on staff 1 was never ended; ignored"),
+        ("stop", "a tie ends on the F4 stroke of P1-I36 with no tie into it; ignored"),
+    ],
+)
+def test_an_unmatched_tie_on_a_kit_stroke_is_reported(tie: str, expected: str):
+    body = stroke("F", 4, "P1-I36", 2 * Q, "half", tie) + stroke("C", 5, "P1-I38", 2 * Q, "half")
+    graph, warned = read_with_warnings(
+        body, attributes=KIT_ATTRIBUTES, part_list_extra=KIT_INSTRUMENTS
+    )
+    assert spanners_named(graph, "tie") == []
+    assert len(warned) == 1 and expected in warned[0]
 
 
 def test_a_rest_in_a_kit_staff_produces_nothing():

@@ -553,6 +553,19 @@ class _ToneData:
     def signature(self) -> tuple:
         return (self.tie_start, self.tie_stop, tuple(sorted(m.name for m in self.marks)))
 
+    def tie_subject(self) -> tuple[TonalVector | None, str | None, tuple[str, str] | None]:
+        """What both ends of a tie share: a pitch, or in a drum kit,
+        where every stroke holds `hit`, an instrument and its staff position."""
+        if self.display is None:
+            return (self.tone, None, None)
+        return (self.tone, self.instrument, self.display)
+
+    def tie_name(self) -> str:
+        """How a warning about this tone's tie names it."""
+        if self.display is None:
+            return self.tone.pitch.unicode
+        return f"the {''.join(self.display)} stroke of {self.instrument or 'the kit'}"
+
 
 @dataclass
 class _Span:
@@ -649,8 +662,8 @@ class _PartReader:
         self.splits: list[tuple[NoteEvent, NoteEvent]] = []
         self.marks: list[tuple[Marking, SequentialEvent]] = []
         self.spanners: list[tuple[MarkSpanner, SequentialEvent, SequentialEvent | None]] = []
-        self.open_ties: dict[tuple[int, TonalVector], NoteEvent] = {}
-        self.last_tie_start: dict[tuple[int, TonalVector], NoteEvent] = {}
+        self.open_ties: dict[tuple[int, tuple], tuple[NoteEvent, str]] = {}
+        self.last_tie_start: dict[tuple[int, tuple], NoteEvent] = {}
         self.open_spans: dict[tuple[str, str], list[tuple[NoteEvent, Mark | None, dict]]] = (
             defaultdict(list)
         )
@@ -1299,6 +1312,7 @@ class _PartReader:
         if data.rest:
             return  # a rest in a kit staff belongs to a voice, not to any instrument
         first: NoteEvent | None = None
+        at_bar_start = data.onset == self.measure_start
         for tone in data.tones:
             event = NoteEvent(tones={hit}, duration=data.duration)
             meta = xml_meta(event)
@@ -1311,6 +1325,7 @@ class _PartReader:
                 meta["instrument"] = tone.instrument
             self.apply_meta(event, data.meta)
             self.kit_line(tone.instrument or "").add(data.onset, _NOTE, data.order, event)
+            self.resolve_ties(tone, event, data.staff, at_bar_start)
             for mark, mark_meta in zip(tone.marks, tone.mark_meta, strict=False):
                 self.add_mark(mark, event, mark_meta)
             if first is None:
@@ -1386,22 +1401,23 @@ class _PartReader:
     ) -> None:
         if tone.tone is None:
             return
-        key = (staff, tone.tone)
+        key = (staff, tone.tie_subject())
+        name = tone.tie_name()
         if tone.tie_stop:
-            start = self.open_ties.pop(key, None)
+            start, _ = self.open_ties.pop(key, (None, None))
             if start is None and at_bar_start and key in self.last_tie_start:
                 # a tie into the first note of a bar with no start before it: the
                 # note before a repeat or a first ending is tied into this ending too
                 start = self.last_tie_start[key]
                 self.count("ties with one start and two ends (into both endings of a repeat)")
             if start is None:
-                self.warn(f"a tie ends on {tone.tone.pitch.unicode} with no tie into it; ignored")
+                self.warn(f"a tie ends on {name} with no tie into it; ignored")
             else:
                 self.spanners.append((MarkSpanner(mark=scoring.tie), start, event))
         if tone.tie_start:
             if key in self.open_ties:
-                self.warn(f"a tie from {tone.tone.pitch.unicode} was never ended; replaced")
-            self.open_ties[key] = event
+                self.warn(f"a tie from {name} was never ended; replaced")
+            self.open_ties[key] = (event, name)
             self.last_tie_start[key] = event
 
     def notation_span(self, span: _Span, event: NoteEvent) -> None:
@@ -1899,8 +1915,8 @@ class _PartReader:
             while stack:
                 self.count(f"{key[0]} {key[1]} left open (no stop in the file)")
                 self.close_open_span(key, None)
-        for staff, tone in self.open_ties:
-            self.warn(f"a tie from {tone.pitch.unicode} on staff {staff} was never ended; ignored")
+        for (staff, _), (_, name) in self.open_ties.items():
+            self.warn(f"a tie from {name} on staff {staff} was never ended; ignored")
         lines = self.all_lines()
         if not lines:
             self.emit_counts()

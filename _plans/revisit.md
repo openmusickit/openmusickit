@@ -159,17 +159,6 @@ compare `TimeSignature.presentation` directly through `correspondence`.
 Whether a meter *event* should compare its presentation too is a small
 question for when the next consumer of meters appears.
 
-## Ties between drum-kit strokes are dropped silently (2026-10-19)
-
-`_PartReader.place_kit_note` (`src/openmusickit/io/musicxml/reader.py`) never
-resolves the `<tie>`/`<tied>` of an unpitched stroke, and counts nothing, so a
-tied cymbal or a held bass drum loses its tie without the warning the plan's
-"loud about loss" rule asks for. Found by the canonical comparison of
-`moonlight-gaze-big-band` (22 tie elements); the registry accepts the "tie"
-difference for that file until this is decided. Pitched ties are matched by
-(staff, pitch); kit strokes all hold `hit`, so the key would be (instrument,
-display pitch). Small either way: resolve them, or at least count them.
-
 ## Layout in `meta["musicxml"]` (2026-10-20; not a release blocker)
 
 The MusicXML reader drops presentation by design (`_plans/musicxml.md` §2,

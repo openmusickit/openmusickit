@@ -290,3 +290,17 @@ container, so a Part cannot sit differently in two Scores; that belongs to a
 layout object if it is ever needed. A bracket or brace is a `StackGroup`
 spanner over a run of the stack, its drawing a WSMN `BracketShape`. The
 MusicXML reader's `index` and `groups` meta are gone.
+
+## Ties between drum-kit strokes are dropped silently (2026-10-19, resolved 2026-11-04)
+
+`_PartReader.place_kit_note` (`src/openmusickit/io/musicxml/reader.py`) never
+resolves the `<tie>`/`<tied>` of an unpitched stroke, and counts nothing, so a
+tied cymbal or a held bass drum loses its tie without the warning the plan's
+"loud about loss" rule asks for. Found by the canonical comparison of
+`moonlight-gaze-big-band` (22 tie elements); the registry accepts the "tie"
+difference for that file until this is decided. Pitched ties are matched by
+(staff, pitch); kit strokes all hold `hit`, so the key would be (instrument,
+display pitch). Small either way: resolve them, or at least count them.
+
+Resolved: `place_kit_note` now resolves them through `resolve_ties`,
+matching a kit stroke by its instrument and staff position.
