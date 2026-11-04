@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmusickit"
-version = "0.0.1"
+version = "0.1.0"
 description = "Open Music Kit: Music encoding/decoding tools for computational analysis and machine learning."
 authors = [
   { name = "Adam Michael Wood", email = "adam.michael.wood@gmail.com" }
