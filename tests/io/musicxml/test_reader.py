@@ -498,6 +498,16 @@ def test_adjacent_backward_and_forward_repeats_merge_into_one_double_repeat():
     assert last.shape is None
 
 
+def test_a_forward_repeat_after_a_styled_bar_line_keeps_that_style_in_meta():
+    first = h("C") + h("D") + right_barline("<bar-style>light-light</bar-style>")
+    second = left_barline('<repeat direction="forward"/>') + h("E") + h("F")
+    graph, warned = read_with_warnings(first, second)
+    assert warned == []
+    between, _ = (e for e in events_of(graph, main_line(graph)) if isinstance(e, DivisionEvent))
+    assert between.shape == scoring.start_repeat
+    assert xml_meta_of(between) == {"number": "1", "left": True, "right_style": "light-light"}
+
+
 def test_a_forward_repeat_on_the_first_measure_is_a_division_at_the_head():
     body = left_barline('<repeat direction="forward"/>') + h("C") + h("D")
     graph, warned = read_with_warnings(body)

@@ -306,12 +306,6 @@ FIXTURES: dict[str, ScoreFixture] = {
                 "alto-clef",
             },
             expected_warnings=("minted mark", "<ending> brackets"),
-            known_differences={
-                "barline": (
-                    "a double bar line just before a forward repeat is read as one "
-                    "start-repeat bar line, which the writer writes as the repeat alone"
-                ),
-            },
             shape={
                 "lines": 4,
                 "chord_lines": 0,

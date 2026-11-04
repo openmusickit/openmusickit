@@ -1903,6 +1903,8 @@ class _PartWriter:
             if index == len(self.bars) - 1:
                 self.count("start repeats on the last bar line, written as heavy-light")
                 style = "heavy-light"
+            else:
+                style = _meta(bar.closing).get("right_style")
         elif shape is not None:
             style = tables.BAR_STYLE_NAMES.get(shape)  # type: ignore[arg-type]
             if style is None:

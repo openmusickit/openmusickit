@@ -29,7 +29,8 @@ hold goes in `node.meta["musicxml"]`, a dict OMK core never reads. Its keys:
 - `Score`: `movement_number`, `movement_title`, `encoding`, `source`.
 - `Part`: `id`, `abbreviation`, `instruments`, `midi`.
 - a line's head event: `staff`, `voice`, `hidden`.
-- `DivisionEvent`: `number`, `implicit`, `width`, `left`, `multiple_rest`, `slash`.
+- `DivisionEvent`: `number`, `implicit`, `width`, `left`, `right_style` (the `<bar-style>`
+  a start repeat replaced at this boundary), `multiple_rest`, `slash`.
 - `NoteEvent`: `forward` (a gap the file left), `hidden`, `cue`, `slash_pitch`,
   `display` (unpitched step and octave), `notehead`, `instrument`, `voice`
   (kit lines), `tuplet`, `measure_repeat`, `staff` (only where it differs).
@@ -1854,9 +1855,13 @@ class _PartReader:
                 self.add_mark(mark, head_divisions[0])
             return
         for division in self.end_divisions:
-            division.shape = self.shape_of(style, repeat, division.shape)
+            previous = division.shape
+            division.shape = self.shape_of(style, repeat, previous)
             if repeat is not None or style:
                 xml_meta(division)["left"] = True
+            # one boundary has one bar line, so the bar's own style has no home on the model
+            if division.shape == scoring.start_repeat and previous in tables.BAR_STYLE_NAMES:
+                xml_meta(division)["right_style"] = tables.BAR_STYLE_NAMES[previous]
         for mark in marks:
             self.add_mark(mark, self.end_divisions[0])
 

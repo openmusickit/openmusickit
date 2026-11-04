@@ -23,9 +23,18 @@ from openmusickit.io.musicxml import container, read
 from openmusickit.io.musicxml.canonical import Difference, canonicalize, compare
 from openmusickit.io.musicxml.writer import to_bytes
 from openmusickit.objects.score import Score
-from tests.io.musicxml.documents import direction, doc, lyric, measure, note, rest
+from tests.io.musicxml.documents import direction, doc, lyric, measure, note, read_bytes, rest
 from tests.io.musicxml.test_corpus import LARGE, WITH_MUSICXML, graph_and_warnings
-from tests.io.musicxml.test_reader import BACKUP, TWO_STAVES, Q, h, q, right_barline, w
+from tests.io.musicxml.test_reader import (
+    BACKUP,
+    TWO_STAVES,
+    Q,
+    h,
+    left_barline,
+    q,
+    right_barline,
+    w,
+)
 
 
 def fixtures():
@@ -112,6 +121,13 @@ def same(a: bytes, b: bytes) -> list[Difference]:
 
 def kinds(a: bytes, b: bytes) -> set[str]:
     return {difference.kind for difference in same(a, b)}
+
+
+def test_a_double_bar_before_a_forward_repeat_writes_back_as_it_was_read():
+    first = h("C") + h("D") + right_barline("<bar-style>light-light</bar-style>")
+    forward = '<bar-style>heavy-light</bar-style><repeat direction="forward"/>'
+    original = doc(first, left_barline(forward) + h("E") + h("F"))
+    assert same(original, quietly_written(read_bytes(original))) == []
 
 
 def test_presentation_divisions_numbers_and_ids_are_not_differences():
