@@ -143,7 +143,9 @@ class ChordType(_ChordBase):
         if TonalVector(0, 0) not in tones:
             raise ValueError("Include `TonalVector(0,0)` as root of chord type.")
 
-        super().__init__(tones, root=TonalVector(0, 0), name=name)
+        # Explicit: slots=True rebuilds the class, and zero-argument
+        # super() fails on the rebuilt class before Python 3.13.14.
+        super(ChordType, self).__init__(tones, root=TonalVector(0, 0), name=name)
         object.__setattr__(self, "bass", self.root if bass is None else bass)
         object.__setattr__(self, "quality", quality)
         # Lead-sheet suffix, e.g. "maj7", "sus4", "7♭9". Empty string for a plain major triad.
@@ -267,7 +269,9 @@ class Chord(_ChordBase):
         suffix: str | None = None,
     ):
 
-        super().__init__(tuple(tones), root=root, name=name)
+        # Explicit: slots=True rebuilds the class, and zero-argument
+        # super() fails on the rebuilt class before Python 3.13.14.
+        super(Chord, self).__init__(tuple(tones), root=root, name=name)
         object.__setattr__(self, "bass", self.root if bass is None else bass)
         object.__setattr__(self, "suffix", suffix)
 

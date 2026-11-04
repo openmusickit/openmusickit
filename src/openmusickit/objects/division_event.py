@@ -74,4 +74,6 @@ class DivisionEvent(SequentialEvent):
             raise ValueError(
                 f"A {type(self).__name__} has zero duration; it cannot be given {value!r}."
             )
-        super().__setattr__(name, value)
+        # Explicit: slots=True rebuilds the class, and zero-argument
+        # super() fails on the rebuilt class before Python 3.13.14.
+        super(DivisionEvent, self).__setattr__(name, value)

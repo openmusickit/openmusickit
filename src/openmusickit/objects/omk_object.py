@@ -58,7 +58,9 @@ class SequentialEvent(OmkObject):
     def __setattr__(self, name: str, value: Any) -> None:
         if name == "duration" and isinstance(value, Measurable) and value.rational_length < 0:
             raise ValueError(f"A SequentialEvent cannot have a negative duration: {value!r}")
-        super().__setattr__(name, value)
+        # Explicit: slots=True rebuilds the class, and zero-argument
+        # super() fails on the rebuilt class before Python 3.13.14.
+        super(SequentialEvent, self).__setattr__(name, value)
 
     def alter_duration(self, operation: Callable[[Duration, Any], Duration], operand: Any) -> None:
         new_duration = operation(self.duration, operand)

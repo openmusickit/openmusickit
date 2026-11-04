@@ -40,7 +40,9 @@ class TimeSignature(CompoundTemporalUnit):
     ):
         if isinstance(spec, TemporalUnit):
             spec = [spec]
-        super().__init__(spec)
+        # Explicit: slots=True rebuilds the class, and zero-argument
+        # super() fails on the rebuilt class before Python 3.13.14.
+        super(TimeSignature, self).__init__(spec)
         object.__setattr__(self, "presentation", tuple(presentation) if presentation else None)
 
     def scale(self, scalar) -> TimeSignature:
