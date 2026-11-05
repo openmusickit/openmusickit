@@ -45,6 +45,10 @@ website:
             text: Overview
           - href: goals.md
             text: Goals
+          - href: https://github.com/openmusickit/openmusickit/blob/main/paper/mathy.pdf
+            text: Some incomplete, informal notes on the mathematics of OMK
+          - href: https://github.com/openmusickit/openmusickit/blob/main/paper/paper.md
+            text: OMK Paper (incomplete draft)
       - href: reference/index.qmd
         text: API Reference
 
