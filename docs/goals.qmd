@@ -1,11 +1,13 @@
 # Open Music Kit: Goals and Design Values
 
-<!--
+::: {.callout-note}
+AI USE DISCLOSURE:
+
 The first draft of this document was written by ChatGPT,
 after countless hours of discussion about the goals of this project.
 While I might have worded or organized things differently if I had hand-written it,
-is fully aligned with my thinking on this project.
--->
+it is fully aligned with my thinking on this project.
+:::
 
 Open Music Kit exists to provide a general-purpose computational representation of music
 capable of describing music faithfully across 

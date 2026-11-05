@@ -1,0 +1,105 @@
+---
+title: OMK Graph
+---
+
+The primary data structure holding musical material is `OmkGraph`.
+
+**Nodes** on an `OmkGraph` inherit from `OmkObject`, 
+and represent anything you typically think of as *marks on a score* or discreet musical events.
+Notes, rests, bar lines, time and key signatures, clefs, articulations, instrument designations,
+lyrics, slurs, ties, phrase markings, chords, tempo markings, rehearsal numbers ---
+these and many other things you might want to include in a score or piece of music
+(including analysis and other "meta-musical" material) are nodes on the graph,
+represented by instances of subclasses of `OMKObject`.
+
+**Edges**, which connect nodes to each other and define their relationships,
+are instances of subclasses of `OMKEdge`.
+Edges can specify any type of relationship:
+simultaneity, order, precedence, connection, attachment, inclusion, and many others.
+
+::: {.callout-note}
+We use the terms OmkGraph, OmkObject, and OmkEdge, 
+rather than just "graph", "node", and "edge",
+to indicate the logical/conceptual musical graph structure that OMK users interact with,
+and to distinguish it from any underlying graph implementations used by OMK.
+:::
+
+## OmkObjects
+
+::: {.callout-note}
+The following is not an exhaustive list of all OmkObject types,
+but a conceptual overview of the kinds of musical material that can be represented,
+and how they are organized in the graph.
+:::
+
+### Structure and Musical Organization
+
+An OMKGraph can have one or more Score nodes (or none),
+which represent a distinct musical work or piece.
+
+A Score node can connect to one or more Part nodes, 
+which represent distinct musical parts or voices within that work.
+
+Part nodes connect to the head node in a series of SequentialEvents,
+which represent the musical material in the part, connected by a series of Next edges.
+
+SequentialEvents include notes, rests, bar lines, time signatures, key signatures, clefs, and other musical material appearing in a line of music.
+("Line" is not a formally defined term in OMK,
+but is generally used to refer to a series of SequentialEvents connected by Next edges, which can be thought of as a musical line or voice.)
+SequentialEvents carry a Duration (which will be ZeroDuration for things like bar lines, time signatures, and key signatures).
+(OmkObjects which are not SequentialEvents, such as Score, Part, and Marking nodes, do not carry a Duration.)
+
+Timing and cross-line simultaneity are calculated as needed
+(usually at render time, whether that is to an engraved score, MusicXML, graph visualizer, MIDI, audio, or some analysis tool), 
+by traversing the lines and summing Durations.
+In the case of lines with disparate TemporalSystems, a TemporalRatio will need to be defined governing the relationship between the lines.
+
+For convenience, and for the case of incomplete lines,
+Simultaneous edges can be used to connect SequentialEvents across lines.
+These is also a SyncLine construct, which can be used to connect simultaneous nodes across multiple lines
+without having to connect each node to every other node in the simultaneity.
+(This is never necessary, but can be convenient, especially for completed scores.
+Graphs imported from MusicXML automatically create SyncLines and connect simultaneous bar lines to them.)
+
+Bar lines and explicitly defined measures are optional.
+Renderers can calculate measures based on the time signature and the durations of the notes and rests in a line.
+(This is similar to LilyPond's approach, which does not require bar lines to be explicitly defined in the input.)
+Additionally, there is no constraint that bar lines must create measures that match the time signature,
+but renderers may raise errors or emit warnings if they encounter measures that do not match the time signature.
+
+Lines can branch, using Branch edges to connect a SequentialEvent in a line to a SequentialEvent in a parallel line.
+
+### Musical Material
+
+A NoteEvent is a SequentialEvent that represents a note, group of simultaneous notes, or a rest.
+It carries a collection of Tones and a Duration. (Rests are NoteEvents with a SilentTone.)
+
+A ChordEvent is a SequentialEvent that represents a chord (such as in a lead sheet).
+It carries a Chord and a Duration.
+(Unlike many notation software systems, OMK does not require a ChordEvent to be connected to a NoteEvent;
+a line of Chords is independent of any other line.)
+
+NoteEvents and ChordEvents can be under-specified.
+That is, they can carry a Duration without Tones or a Chord,
+and they can carry Tones or a Chord without a Duration.
+A missing Tone or Chord is not interpreted as a rest or unpitched sound, but is simply unspecified.
+(Rests are specified with a SilentTone.)
+A missing Duration is not interpreted as a ZeroDuration or unmetered duration, but is simply unspecified.
+This allows for the representation of musical material that is incomplete or under-specified,
+which can be useful in certain analytical or compositional contexts.
+
+Time Signatures are represented by MeterEvent nodes,
+which carry a Measurable TemporalElement such as a TimeSignature, or a similar construct in another TemporalSystem.
+Key Signature are represented by ModalContextEvent nodes,
+which carry a ModalContext such as a Key.
+
+Markings, such as articulations, slurs, ties, phrase markings, dynamics, rehearsal numbers, and other performance or interpretive instructions,
+are represented by a Marking node if they are attached to a single SequentialEvent,
+or a MarkSpanner node if they are attached to a series of SequentialEvents.
+
+Lyrics are represented by lines of LyricSyllable nodes,
+which are a type of SequentialEvent (they can carry a Duration).
+LyricSyllables can be connected to one or more NoteEvents or ChordEvents with `LYRIC` edges,
+but this is not required, and a LyricSyllable can exist without being connected to any musical material.
+(A set of lyrics, with no other musical material, is a valid OmkGraph or Score, 
+as is a set of lyrics and chords alone.)

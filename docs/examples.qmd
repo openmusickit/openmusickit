@@ -2,10 +2,6 @@
 title: "Examples"
 ---
 
-This page is executable:
-every code block below is run when the documentation is built,
-and the output shown is the real output.
-
 ## Imports
 
 The top-level `openmusickit` namespace holds what any piece of music is built from,

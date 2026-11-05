@@ -17,13 +17,21 @@ website:
     left:
       - href: index.qmd
         text: Home
+      - href: basics.md
+        text: Basics
+      - href: graph.qmd
+        text: Graph
+      - href: abstract_music_primitives.md
+        text: Abstract Music Primitives
       - href: examples.qmd
         text: Examples
-      - href: musicxml.qmd
-        text: MusicXML
-      - href: json.qmd
-        text: OMK JSON
-      - text: Specification
+      - text: Interchange Formats
+        menu:
+          - href: musicxml.qmd
+            text: MusicXML
+          - href: json.qmd
+            text: OMK JSON
+      - text: Specifications
         menu:
           - href: spec/omk-json.qmd
             text: OMK JSON format (draft)
@@ -31,10 +39,12 @@ website:
             text: "Vocabulary: omk"
           - href: spec/vocabulary-wsmn.qmd
             text: "Vocabulary: wsmn"
-      - href: overview.md
-        text: Overview
-      - href: goals.md
-        text: Goals
+      - text: Additional Reading
+        menu:
+          - href: overview.md
+            text: Overview
+          - href: goals.md
+            text: Goals
       - href: reference/index.qmd
         text: API Reference
 
