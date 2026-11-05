@@ -1424,6 +1424,17 @@ dev = [
     { name = "quartodoc" },
     { name = "ruff" },
 ]
+docs = [
+    { name = "griffe" },
+    { name = "quarto-cli" },
+    { name = "quartodoc" },
+]
+test = [
+    { name = "hypothesis" },
+    { name = "jsonschema" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1441,6 +1452,17 @@ dev = [
     { name = "quarto-cli", specifier = ">=1.10.18" },
     { name = "quartodoc", specifier = ">=0.11.1" },
     { name = "ruff", specifier = ">=0.16.8" },
+]
+docs = [
+    { name = "griffe", specifier = "<2" },
+    { name = "quarto-cli", specifier = ">=1.10.18" },
+    { name = "quartodoc", specifier = ">=0.11.1" },
+]
+test = [
+    { name = "hypothesis", specifier = ">=6.168.0" },
+    { name = "jsonschema", specifier = ">=4.26.0" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
 ]
 
 [[package]]

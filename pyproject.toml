@@ -1,17 +1,31 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmusickit"
 version = "0.1.0"
-description = "Open Music Kit: Music encoding/decoding tools for computational analysis and machine learning."
+description = "A symbolic music representation library: scores as graphs of musical objects, at any level of completeness, in any musical system."
 authors = [
   { name = "Adam Michael Wood", email = "adam.michael.wood@gmail.com" }
 ]
-license = { text = "AGPL-3.0" }
+license = "AGPL-3.0-only"
 readme = "README.md"
 requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
 
 # Add your base dependencies here
 dependencies = [
@@ -19,11 +33,12 @@ dependencies = [
     "bidict>=0.24.1",
 ]
 
-# [project.urls]
-# Homepage = "https://github.com/openmusickit"
-# Documentation = "https://openmusickit.org"
-# Repository = "https://github.com/openmusickit/openmusickit"
-# Issues = "https://github.com/openmusickit/openmusickit/issues"
+[project.urls]
+Homepage = "https://openmusickit.org"
+Documentation = "https://openmusickit.org"
+Repository = "https://github.com/openmusickit/openmusickit"
+Issues = "https://github.com/openmusickit/openmusickit/issues"
+Changelog = "https://github.com/openmusickit/openmusickit/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -31,15 +46,25 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+openmusickit = ["py.typed"]
+
 [dependency-groups]
-dev = [
-    "griffe<2",  # quartodoc 0.11 still calls a parser keyword that griffe 2 removed
+test = [
     "hypothesis>=6.168.0",
     "jsonschema>=4.26.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+]
+# Separate from `test` because quartodoc needs pydantic-core, which has no Python 3.15 wheel yet.
+docs = [
+    "griffe<2",  # quartodoc 0.11 still calls a parser keyword that griffe 2 removed
     "quarto-cli>=1.10.18",
     "quartodoc>=0.11.1",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "docs"},
     "ruff>=0.16.8",
 ]
 
