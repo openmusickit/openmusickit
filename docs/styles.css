@@ -15,3 +15,8 @@ svg text[font-family="monospace"] {
 .omk-drawing {
   overflow-x: auto;
 }
+
+/* Dotted module names have no spaces to wrap at and are wider than the sidebar. */
+.sidebar-navigation .sidebar-item-text {
+  overflow-wrap: anywhere;
+}

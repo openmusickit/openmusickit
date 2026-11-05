@@ -72,39 +72,43 @@ as it makes fewer demands and assumptions.
 ### Interval
 
 An Interval is a distance (or other relevant relationship) between two Tones.
-A TonalSystem should normally create a set of Tones \(T\) and Intervals \(I\),
+A TonalSystem should normally create a set of Tones $T$ and Intervals $I$,
 with some defined set of algebraic relationships of the form:
 
-\[
-\operatorname{alter_tone}: T \times I \to T
-
-\operatorname{measure_relationship}: T \times T \to I
-\]
+$$
+\begin{aligned}
+\operatorname{alter\_tone} &: T \times I \to T \\
+\operatorname{measure\_relationship} &: T \times T \to I
+\end{aligned}
+$$
 
 WSMN_Tonal, for example, includes:
 
-\[
-\operatorname{transpose}: T \times I \to T
-
-\operatorname{distance}: T \times T \to I
-\]
+$$
+\begin{aligned}
+\operatorname{transpose} &: T \times I \to T \\
+\operatorname{distance} &: T \times T \to I
+\end{aligned}
+$$
 
 TonalSystems may also include relationships of the form:
 
-\[
-\operatorname{some_operation}: T \times T \to T
-
-\operatorname{some_operation}: I \times I \to I
-\]
+$$
+\begin{aligned}
+\operatorname{some\_operation} &: T \times T \to T \\
+\operatorname{some\_operation} &: I \times I \to I
+\end{aligned}
+$$
 
 For example, in WSMN, you can invert a Tone over another Tone,
 or add two intervals together.
 
-\[
-\operatorname{invert}\bigl(G, C \bigr) = F
-
-Maj3 + min3 = Per5
-\]
+$$
+\begin{aligned}
+\operatorname{invert}\bigl(G, C \bigr) &= F \\
+\mathrm{Maj3} + \mathrm{min3} &= \mathrm{Per5}
+\end{aligned}
+$$
 
 In Western Music Theory, there is a strict mathematical isomorphism between pitches and intervals.
 For this reason, Intervals in WSMN_Tonal are also implemented with TonalVector.

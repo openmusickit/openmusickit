@@ -16,9 +16,11 @@ and a built-in implementation of Western Standard Music Notation (WSMN).
 
 ## Where to start
 
+- [Basics](basics.qmd) introduces the core concepts of OMK and how to use them.
+  - [Abstract Music Primitives](abstract_music_primitives.md) describes the musical objects and their relationships.
+  - [Graph](graph.qmd) explains the OMKGraph data structure.
 - [Examples](examples.qmd) walks through tones, intervals, durations, notes, chords, lyrics,
   and building a small score graph.
-- [Overview](overview.md) describes the design of the data model and the planned ecosystem.
 - [Goals](goals.qmd) explains the values that drive the design.
 - [API Reference](reference/index.qmd) documents every public module.
 

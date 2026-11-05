@@ -6,7 +6,7 @@ project:
     - "*.md"
     - "!README.md"
 
-# Pull in the sidebar that quartodoc generates for the reference section.
+# Pull in the site's sidebar, which quartodoc generates (see `quartodoc.sidebar` below).
 # Run `python build_reference.py` before rendering or previewing (see README.md);
 # it wraps `quartodoc build` and keeps dunder methods in the reference.
 # It is deliberately not a `pre-render` step: the build rewrites this sidebar
@@ -17,44 +17,12 @@ metadata-files:
 
 website:
   title: "Open Music Kit"
-  navbar:
-    left:
-      - href: index.qmd
-        text: Home
-      - href: basics.md
-        text: Basics
-      - href: graph.qmd
-        text: Graph
-      - href: abstract_music_primitives.md
-        text: Abstract Music Primitives
-      - href: examples.qmd
-        text: Examples
-      - text: Interchange Formats
-        menu:
-          - href: musicxml.qmd
-            text: MusicXML
-          - href: json.qmd
-            text: OMK JSON
-      - text: Specifications
-        menu:
-          - href: spec/omk-json.qmd
-            text: OMK JSON format (draft)
-          - href: spec/vocabulary-omk.qmd
-            text: "Vocabulary: omk"
-          - href: spec/vocabulary-wsmn.qmd
-            text: "Vocabulary: wsmn"
-      - text: Additional Reading
-        menu:
-          - href: overview.md
-            text: Overview
-          - href: goals.qmd
-            text: Goals
-          - href: https://github.com/openmusickit/openmusickit/blob/main/paper/mathy.pdf
-            text: Some incomplete, informal notes on the mathematics of OMK
-          - href: https://github.com/openmusickit/openmusickit/blob/main/paper/paper.md
-            text: OMK Paper (incomplete draft)
-      - href: reference/index.qmd
-        text: API Reference
+
+# Show the sidebar on every page. Quarto otherwise shows it only on the pages it lists,
+# and quartodoc lists a page per module, not the per-member pages under each one.
+# The id must not match a path: Quarto rewrites a value like `reference` to `../reference`
+# on pages in that directory, and it then matches no sidebar.
+sidebar: site-navigation
 
 format:
   html:
@@ -72,7 +40,53 @@ quartodoc:
   package: openmusickit
   dir: reference
   title: API Reference
-  sidebar: reference/_sidebar.yml
+  # The whole site's navigation lives here rather than under `website.sidebar`:
+  # a page shows only one sidebar, so the reference pages need their entries
+  # in the same sidebar as everything else, and only quartodoc can list those.
+  # It replaces `{{ contents }}` with them when it writes the file.
+  sidebar:
+    id: site-navigation
+    file: reference/_sidebar.yml
+    style: docked
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: Home
+      - href: basics.md
+        text: Basics
+      - href: graph.qmd
+        text: Graph
+      - href: abstract_music_primitives.md
+        text: Abstract Music Primitives
+      - href: examples.qmd
+        text: Examples
+      - section: Interchange Formats
+        contents:
+          - href: musicxml.qmd
+            text: MusicXML
+          - href: json.qmd
+            text: OMK JSON
+      - section: Specifications
+        contents:
+          - href: spec/omk-json.qmd
+            text: OMK JSON format (draft)
+          - href: spec/vocabulary-omk.qmd
+            text: "Vocabulary: omk"
+          - href: spec/vocabulary-wsmn.qmd
+            text: "Vocabulary: wsmn"
+      - section: Additional Reading
+        contents:
+          - href: overview.md
+            text: Overview
+          - href: goals.qmd
+            text: Goals
+          - href: https://github.com/openmusickit/openmusickit/blob/main/paper/mathy.pdf
+            text: Some incomplete, informal notes on the mathematics of OMK
+          - href: https://github.com/openmusickit/openmusickit/blob/main/paper/paper.md
+            text: OMK Paper (incomplete draft)
+      - section: API Reference
+        contents:
+          - "{{ contents }}"
   # Import the package and inspect it, instead of parsing the source statically:
   # static analysis cannot see dataclass-generated __init__ signatures.
   renderer:

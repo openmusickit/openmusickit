@@ -73,6 +73,53 @@ def _quote_dunders(reference_dir: str) -> None:
             path.write_text(fixed)
 
 
+_DOCTEST_PROMPT = re.compile(r"( {0,3})>>>( |$)")
+
+
+def _fence_doctests(text: str) -> str:
+    """Wrap bare doctest blocks in Python code fences.
+
+    griffe fences the examples under an ``Examples`` heading,
+    but passes a bare ``>>>`` through as Markdown,
+    which reads it as a nested blockquote.
+    A blank line always ends a doctest block, since doctest requires it to end the expected output.
+    Four or more spaces of indent is already a Markdown code block, so is left alone.
+
+    Examples
+    --------
+    >>> _fence_doctests("Text.\\n\\n>>> 1 + 1\\n2\\n\\nMore.")
+    'Text.\\n\\n```python\\n>>> 1 + 1\\n2\\n```\\n\\nMore.'
+    """
+    result = []
+    in_fence = False
+    doctest_indent = None  # the open doctest block's indent; None when there is no open block
+    for line in text.split("\n"):
+        if doctest_indent is not None:
+            if line.strip():
+                result.append(line)
+                continue
+            result.append(f"{doctest_indent}```")
+            doctest_indent = None
+        elif line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence and (prompt := _DOCTEST_PROMPT.match(line)):
+            doctest_indent = prompt.group(1)
+            result.append(f"{doctest_indent}```python")
+        result.append(line)
+    if doctest_indent is not None:
+        result.append(f"{doctest_indent}```")
+    return "\n".join(result)
+
+
+def _fence_all_doctests(reference_dir: str) -> None:
+    """Apply ``_fence_doctests`` to every generated reference page."""
+    for path in pathlib.Path(reference_dir).glob("*.qmd"):
+        text = path.read_text()
+        fixed = _fence_doctests(text)
+        if fixed != text:
+            path.write_text(fixed)
+
+
 def main() -> None:
     docs_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(docs_dir)
@@ -81,6 +128,7 @@ def main() -> None:
     builder = Builder.from_quarto_config("_quarto.yml")
     builder.build()
     _quote_dunders(builder.dir)
+    _fence_all_doctests(builder.dir)
 
 
 if __name__ == "__main__":

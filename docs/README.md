@@ -18,7 +18,8 @@ uv run quarto preview              # build, serve on localhost, rebuild pages as
 uv run quarto render               # build only, into docs/_site/
 ```
 
-Run `build_reference.py` first, and again whenever docstrings change,
+Run `build_reference.py` first, and again whenever docstrings or the site navigation change
+(the navigation is `quartodoc.sidebar` in `_quarto.yml`, written out by this script),
 then restart `quarto preview` if it is running:
 it does not recover from the reference pages being regenerated underneath it.
 The script is `quartodoc build` plus a patch that keeps dunder methods
