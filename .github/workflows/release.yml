@@ -1,0 +1,135 @@
+# Publish a release to PyPI. Starting this workflow is the button: it publishes if every check passes.
+#
+# To release version X.Y.Z:
+#   1. On main, set the version in pyproject.toml, run `uv lock`,
+#      and add an "X.Y.Z (date)" entry to CHANGELOG.md.
+#   2. Create and push a branch named release/X.Y.Z from that commit.
+#   3. Actions -> Release -> Run workflow, and choose that branch.
+#
+# PyPI versions cannot be replaced. A mistake found after publishing needs a new version.
+#
+# Publishing uses PyPI Trusted Publishing, which is configured on PyPI for this file's name
+# and the `pypi` environment; renaming either means updating PyPI. The environment accepts
+# only release/* branches.
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - id: check
+        name: Check the branch, version, changelog and tag agree
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            release/*) version="${GITHUB_REF_NAME#release/}" ;;
+            *) echo "::error::Run this on a release/X.Y.Z branch, not $GITHUB_REF_NAME"; exit 1 ;;
+          esac
+          project_version="$(uv version --short)"
+          if [ "$project_version" != "$version" ]; then
+            echo "::error::Branch says $version, but pyproject.toml says $project_version"
+            exit 1
+          fi
+          if ! grep -q "^$version (" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no entry for $version"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "::error::Tag v$version already exists"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14", "3.15"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}  # takes precedence over .python-version
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Install Graphviz, for the tests that render with it
+        run: sudo apt-get update && sudo apt-get install --yes graphviz
+      # Only the `test` group: the docs tools do not install on every Python here.
+      - run: uv sync --locked --no-default-groups --group test
+      - name: Full test set
+        run: uv run --no-sync pytest --hypothesis-profile=thorough -m "" -q
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv build
+      - name: Import every module from the wheel, on each Python
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/import_all.py" <<'PY'
+          import importlib
+          import pkgutil
+
+          import openmusickit
+
+          for module in pkgutil.walk_packages(openmusickit.__path__, "openmusickit."):
+              importlib.import_module(module.name)
+          PY
+          wheel="$(ls "$PWD"/dist/*.whl)"
+          cd "$RUNNER_TEMP"
+          for python in 3.12 3.13 3.14 3.15; do
+            uv run --isolated --no-project --python "$python" --with "$wheel" python import_all.py
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - run: uv publish --trusted-publishing always dist/*
+
+  record:
+    needs: [guard, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Tag the release and create it on GitHub, from its changelog entry
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.guard.outputs.version }}
+        run: |
+          notes="$(awk -v heading="^$VERSION \\\\(" '
+            $0 ~ heading { found = 1; getline; next }
+            found && /^[0-9]+\.[0-9]+\.[0-9]+ \(/ { exit }
+            found { print }
+          ' CHANGELOG.md)"
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes "$notes"

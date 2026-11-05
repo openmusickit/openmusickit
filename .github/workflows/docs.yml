@@ -1,0 +1,60 @@
+# Test, build and deploy the documentation site to GitHub Pages.
+# src/ is a trigger as well as docs/: the API reference is generated from its docstrings,
+# and the executable pages run against it.
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "src/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv sync --locked
+      - name: Fast test set
+        run: uv run --no-sync pytest -q
+      - name: Build the API reference
+        working-directory: docs
+        run: uv run --no-sync python build_reference.py
+      - name: Render the site
+        working-directory: docs
+        # A raising code cell fails the render on its own (`error: false` in _quarto.yml).
+        # An unresolved link is only a warning to Quarto, so it is checked for here.
+        run: |
+          uv run --no-sync quarto render 2>&1 | tee "$RUNNER_TEMP/render.log"
+          if grep "Unable to resolve link target" "$RUNNER_TEMP/render.log"; then
+            echo "::error::The docs contain links Quarto cannot resolve"
+            exit 1
+          fi
+        shell: bash
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
