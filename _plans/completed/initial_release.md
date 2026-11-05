@@ -11,6 +11,10 @@ Released. `pip install openmusickit` gives 0.1.0, and the docs are deployed to o
 - **Checked from outside:** `pip install` in a new environment gave 0.1.0,
   all 86 modules imported, and the README's MusicXML example ran on a real score.
 - **Docs:** first deploy succeeded (the docs build takes about 10 minutes on GitHub).
+- **HTTPS:** enforced at 20:15 UTC, about six hours after the deploy.
+  The certificate did not arrive by itself, even once the old DNS records had expired from caches.
+  Clearing and re-adding the custom domain on the repo got it issued within two minutes.
+  The domain had been set before DNS pointed at GitHub, which is probably why.
 
 Differences from the plan:
 
