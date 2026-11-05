@@ -31,3 +31,11 @@ and that reload cancels whatever page you were navigating to.
 `quarto preview` renders pages on demand the first time you open them,
 so a brief "Render" overlay on first navigation is normal.
 Everything generated (`reference/`, `_site/`, `.quarto/`, `objects.json`) is gitignored.
+
+## Deployment
+
+`.github/workflows/docs.yml` publishes the site to <https://openmusickit.org> through GitHub Pages
+whenever a push to `main` touches `docs/` or `src/`.
+It runs the fast test set, then the two build commands above,
+and deploys only if all of them pass.
+A code cell that raises fails the build, and so does a link Quarto cannot resolve.

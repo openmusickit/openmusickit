@@ -19,20 +19,24 @@ and a built-in implementation of Western Standard Music Notation (WSMN).
 - [Examples](examples.qmd) walks through tones, intervals, durations, notes, chords, lyrics,
   and building a small score graph.
 - [Overview](overview.md) describes the design of the data model and the planned ecosystem.
-- [Goals](goals.md) explains the values that drive the design.
+- [Goals](goals.qmd) explains the values that drive the design.
 - [API Reference](reference/index.qmd) documents every public module.
 
 ## Installation
 
-OMK is not yet published on PyPI.
-Clone the repository and install it with [uv](https://docs.astral.sh/uv/):
+```bash
+pip install openmusickit
+```
+
+OMK requires Python 3.12 or later.
+Drawing a graph as SVG or PNG needs [Graphviz](https://graphviz.org/download/) installed;
+generating DOT, and these docs, do not.
+
+To work on OMK itself,
+clone the repository and install it with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 git clone https://github.com/openmusickit/openmusickit
 cd openmusickit
 uv sync
 ```
-
-OMK requires Python 3.12 or later.
-Drawing a graph as SVG or PNG needs [Graphviz](https://graphviz.org/download/) installed;
-generating DOT, and these docs, do not.

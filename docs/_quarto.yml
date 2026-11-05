@@ -1,6 +1,10 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
+    - "*.md"
+    - "!README.md"
 
 # Pull in the sidebar that quartodoc generates for the reference section.
 # Run `python build_reference.py` before rendering or previewing (see README.md);
@@ -43,7 +47,7 @@ website:
         menu:
           - href: overview.md
             text: Overview
-          - href: goals.md
+          - href: goals.qmd
             text: Goals
           - href: https://github.com/openmusickit/openmusickit/blob/main/paper/mathy.pdf
             text: Some incomplete, informal notes on the mathematics of OMK

@@ -43,12 +43,12 @@ OMK uses a graph,
 which is a data structure made up of nodes (things) and edges (relationships).
 So notes, chords, lyric syllables, and other things you typically think of as "marks on a score"
 are each nodes in a graph,
-and the edges (connections) show how they related to each other.
+and the edges (connections) show how they relate to each other.
 This allows for many divergent relational and hierarchical structures to be represented at once.
 
 ## Abstract Music Primitives
 
-There are many musical system in the world,
+There are many musical systems in the world,
 and only a few related ones use the things many of us most associate with "music theory" or notated scores:
 letter names for pitches, durations like "quarter note", chords like "C maj" or "D min", key signatures, time signatures.
 But (nearly) all music systems have some notion of different types of sounds happening at some time in relationship to other sounds.
@@ -64,7 +64,7 @@ and the graph can hold objects from any system together in a single score.
 
 OMK also separates tonal and temporal systems from each other,
 so a single score could (for example) mix Western-style note names with Gamelan-style temporal structure.
-There are also mechanism for defining conversions between various systems.
+There are also mechanisms for defining conversions between various systems.
 
 ### Western Standard Music Notation
 
